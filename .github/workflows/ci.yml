@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tipos
+        run: npm run typecheck
+      - name: Testes
+        run: npm test
+      - name: Regras de arquitetura
+        run: npm run lint:arch
+      - name: Diagramas atualizados
+        run: npm run diagrams:check
+      - name: Renderiza diagramas (valida a sintaxe Mermaid)
+        run: npm run diagrams:svg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: diagramas-svg
+          path: docs/diagrams/svg
+      - name: Build
+        run: npm run build

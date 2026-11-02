@@ -1,0 +1,3 @@
+# Mantém os diagramas sincronizados com o código a cada commit.
+npm run --silent diagrams
+git add docs/diagrams

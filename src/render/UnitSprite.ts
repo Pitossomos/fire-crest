@@ -1,0 +1,78 @@
+import Phaser from 'phaser';
+import type { Point } from '../core/grid';
+import type { Unit } from '../core/unit';
+import { COLORS, SCALE, TILE } from './layout';
+import { unitTextureKey } from './textures';
+
+const HP_COLOR = { player: COLORS.hpPlayer, enemy: COLORS.hpEnemy, ally: COLORS.hpAlly } as const;
+
+/** Representação visual de uma unidade: sprite, barra de HP e marcador de chefe. */
+export class UnitSprite {
+  readonly unit: Unit;
+  private readonly container: Phaser.GameObjects.Container;
+  private readonly sprite: Phaser.GameObjects.Image;
+  private readonly hpBar: Phaser.GameObjects.Graphics;
+  private readonly scene: Phaser.Scene;
+
+  constructor(scene: Phaser.Scene, unit: Unit) {
+    this.scene = scene;
+    this.unit = unit;
+    const key = unitTextureKey(unit.classDef.sprite, unit.weapon.type, unit.faction);
+    this.sprite = scene.add.image(TILE / 2, TILE / 2, key).setScale(SCALE);
+    if (unit.faction === 'enemy') this.sprite.setFlipX(true);
+    this.hpBar = scene.add.graphics();
+    const parts: Phaser.GameObjects.GameObject[] = [this.sprite, this.hpBar];
+    if (unit.boss) {
+      parts.push(
+        scene.add.text(TILE - 4, 2, '★', { fontFamily: 'monospace', fontSize: '14px', color: '#ffd34d' }).setOrigin(1, 0),
+      );
+    }
+    this.container = scene.add.container(unit.x * TILE, unit.y * TILE, parts).setDepth(10);
+    this.refresh();
+  }
+
+  /** Atualiza HP e o tom acinzentado de "já agiu". */
+  refresh(): void {
+    const u = this.unit;
+    this.container.setVisible(u.isAlive());
+    if (u.hasActed) this.sprite.setTint(0x7a7a7a);
+    else this.sprite.clearTint();
+    const g = this.hpBar;
+    g.clear();
+    const w = TILE - 12;
+    const ratio = Math.max(0, u.hp / u.maxHp);
+    g.fillStyle(COLORS.hpBack, 0.9);
+    g.fillRect(6, TILE - 6, w, 4);
+    g.fillStyle(HP_COLOR[u.faction], 1);
+    g.fillRect(6, TILE - 6, Math.round(w * ratio), 4);
+  }
+
+  /** Coloca o sprite na posição atual da unidade, sem animação. */
+  snap(): void {
+    this.container.setPosition(this.unit.x * TILE, this.unit.y * TILE);
+  }
+
+  /** Anima o deslocamento tile a tile ao longo do caminho. */
+  async walk(path: Point[], msPerTile = 90): Promise<void> {
+    for (const p of path.slice(1)) {
+      await new Promise<void>((resolve) => {
+        this.scene.tweens.add({
+          targets: this.container, x: p.x * TILE, y: p.y * TILE,
+          duration: msPerTile, ease: 'Linear', onComplete: () => resolve(),
+        });
+      });
+    }
+  }
+
+  setSelected(selected: boolean): void {
+    this.scene.tweens.killTweensOf(this.sprite);
+    this.sprite.setY(TILE / 2);
+    if (selected) {
+      this.scene.tweens.add({ targets: this.sprite, y: TILE / 2 - 3, duration: 260, yoyo: true, repeat: -1 });
+    }
+  }
+
+  destroy(): void {
+    this.container.destroy();
+  }
+}
