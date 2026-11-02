@@ -16,6 +16,7 @@ main.ts ─► scenes/ ─► render/ ─► phaser
 | render | `src/render/` | Componentes visuais (mapa, sprites, painel, menus) e a pixel-art procedural | core, data, phaser |
 | core | `src/core/` | Regras do jogo: grade, pathfinding, estado da batalha, (combate, IA…) | data |
 | data | `src/data/` | Definições estáticas (classes, armas, personagens, fases) e tipos do modelo | — |
+| save | `src/save/` | Persistência do save em `localStorage`, por trás de uma interface injetável | core, data |
 
 As regras são **verificadas automaticamente** pelo dependency-cruiser (`.dependency-cruiser.cjs`, rodado com `npm run lint:arch` e na CI). Por exemplo, `core/` importar `phaser` quebra o build da CI.
 
@@ -53,7 +54,28 @@ Os geradores ficam em `scripts/diagrams/` (`generate.ts`, `class-diagram.ts`, `e
 4. Ao confirmar, `BattleState.moveUnit()` valida e devolve o caminho; `UnitSprite.walk()` anima tile a tile.
 5. `ActionMenu` oferece as ações; "Esperar" chama `BattleState.wait()`. Quando ninguém mais pode agir, `endPhase()` avança a fase.
 
+## Cenas e fluxo da campanha
+
+```
+Boot ─► Title ─► Battle ⇄ Dialogue (sobreposta)
+          ▲        │
+          │        ▼
+          └──── Result ──► Battle (próxima fase / tentar de novo)
+```
+
+- **Title:** Novo jogo (Clássico/Casual) cria um `SaveData` (`core/campaign.ts`) e grava com `save/save.ts`; Continuar retoma o save.
+- **Battle:** monta as unidades com `buildStageUnits(stage, save)` (roster, permadeath, recrutas). Fluxo: diálogo de abertura, turnos com eventos (`core/events.ts`) e IA (`core/ai.ts`), e checagem de `evaluate()` (`core/objectives.ts`) após cada ação.
+- **Vitória:** diálogo final → `applyVictory()` grava o roster → **Result** mostra o time e leva à próxima fase.
+- **Derrota:** **Result** oferece tentar de novo com o save do início da fase.
+
 ## Testes
 
-- `npm test` — testes unitários (Vitest) de `core/`, da integridade de `data/` e dos templates de pixel-art.
-- `npm run e2e` — teste de fumaça com Playwright contra o `npm run dev`: abre o título, entra na Fase 1, move Aren, encerra o turno, inspeciona um inimigo e verifica que não há erros no console.
+- `npm test` — testes unitários (Vitest): regras do `core/` (combate, IA, objetivos, eventos, campanha), save, integridade de `data/` e das 5 fases, templates de pixel-art e uma simulação do capítulo inteiro com IA dos dois lados.
+- `npm run e2e` — teste de fumaça com Playwright contra o `npm run dev`. Percorre:
+  - título → diálogo de abertura → mover, atacar e usar item;
+  - fase inimiga → vitória → diálogo final → resultado → Fase 2 com o roster salvo;
+  - "Continuar" no título;
+  - na Fase 4: conversar com a Lys (recrutamento) e curar;
+  - derrota → tentar de novo.
+
+  Em todo o percurso, verifica que não há erros no console.

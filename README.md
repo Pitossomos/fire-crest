@@ -33,6 +33,16 @@ Abra http://localhost:5173.
 
 ## Estado atual
 
-Marcos **M0** (infraestrutura) e **M1** (mapa e movimento) concluídos: dá para jogar a Fase 1 movendo as unidades, ver o alcance de movimento e de ataque (seu e dos inimigos) e passar os turnos. Combate e IA são os próximos marcos — veja o [roadmap](docs/DESIGN.md#roadmap).
+O **Capítulo 1 — Brasas no Vale** está completo e jogável do início ao fim:
+
+- 5 fases com objetivos diferentes: derrotar todos, tomar o portão, sobreviver, derrotar o chefe;
+- 6 personagens jogáveis, com recrutamento por conversa, por evento e por sobrevivência;
+- combate com previsão, triângulo de armas, críticos, ataque duplo e contra-ataque;
+- EXP e level-up, cura com cajado, poções, reforços e IA inimiga com três comportamentos;
+- diálogos com retratos;
+- campanha com save automático entre fases, nos modos **Clássico** (permadeath) e **Casual**;
+- efeitos sonoros (tecla M liga e desliga).
+
+Veja o [roadmap e os desvios do plano](docs/DESIGN.md#roadmap).
 
 A arte atual é **pixel-art procedural** gerada em código (`src/render/art.ts`) e será substituída por assets CC0 — veja [`public/assets/CREDITS.md`](public/assets/CREDITS.md).

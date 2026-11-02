@@ -25,7 +25,9 @@ Os primeiros portadores fundaram o **Reino de Solmarch** e acenderam os **Sete F
 
 ## Antagonistas (Capítulo 1)
 
-- **Grull, o Rasga-Cercas** — chefe bandido contratado pela Ordem (Fases 1 e 2).
+- **Brom, o Capanga** — braço direito de Grull, que lidera os batedores na Fase 1.
+- **Grull, o Rasga-Cercas** — chefe bandido contratado pela Ordem (Fase 2).
+- **Abade Morvane** — carcereiro de Cinzaforte, monge do Ocaso (Fase 4).
 - **Vela Mortiça** — uma Esvaída que já foi a guardiã do bosque (Fase 3).
 - **Inquisidora Seraphine Vael** — caçadora de portadores da Ordem e chefe final do capítulo. No fim, foge e promete voltar.
 

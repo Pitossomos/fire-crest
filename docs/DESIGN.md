@@ -69,6 +69,10 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 | Cancelar / voltar | X / Esc / Backspace | Clique direito |
 | Encerrar o turno | E | Clicar num tile vazio → "Encerrar turno" |
 | Ver o alcance de um inimigo | Selecionar o inimigo | Clicar no inimigo |
+| Ligar/desligar o som | M | — |
+| Pular diálogo | Esc | — |
+
+**Atalhos de desenvolvimento** (URL): `?stage=c1s4` abre a fase direto (roster novo, modo Casual); `?seed=42` fixa o RNG.
 
 ## Balanceamento
 
@@ -87,4 +91,14 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 | M4 | Fase 1 completa com diálogos (DialogueScene) e motor de eventos (antecipado do M5) | ✅ |
 | M5 | Conversar, curar, itens (Poção/Elixir), tomar, fase aliada | ✅ |
 | M6 | Fases 2–5 (mapas, eventos, diálogos), validação automática das fases e simulação de balanceamento | ✅ |
-| M7 | Título com save, Clássico/Casual, resultado, polimento, assets CC0 | ⏳ |
+| M7 | Campanha com save, título (Clássico/Casual/Continuar), tela de resultado, efeitos sonoros sintetizados, transições | ✅ |
+
+### Desvios do plano original
+
+- **Arte:** pixel-art procedural feita para o projeto (`src/render/art.ts`), porque o download dos pacotes CC0 da Kenney estava bloqueado no ambiente de desenvolvimento. Os sprites podem ser trocados por assets sem mudar a lógica.
+- **Mapas:** texto (um caractere por terreno) em vez de Tiled. São mais simples de revisar em diffs e de validar em testes.
+- **Mapas 15×10:** todas as fases cabem na tela sem rolagem de câmera. O "mapa maior" da Fase 5 virou um mapa mais denso.
+- **Sons:** sintetizados com WebAudio (`src/render/sfx.ts`), sem arquivos externos. A tecla M liga e desliga o som.
+- **Tela de preparação:** cortada (era opcional). Os itens iniciais vêm dos personagens e o roster passa de fase em fase.
+- **UIScene:** dividida em componentes de `render/` (painel, menus, previsão, efeitos) usados pela `BattleScene`.
+- **Ordem:** o motor de eventos foi antecipado para o M4 (dicas de tutorial), e a campanha/save para o M6 (simulação de balanceamento).

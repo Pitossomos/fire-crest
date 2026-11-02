@@ -178,7 +178,14 @@ classDiagram
     class mod_render_pixel_canvas["pixel-canvas.ts"] {
       <<module>>
     }
+    class mod_render_sfx["sfx.ts"] {
+      <<module>>
+    }
     class SidePanel
+    class TextMenu
+    class TextMenuOption {
+      <<interface>>
+    }
     class mod_render_textures["textures.ts"] {
       <<module>>
     }
@@ -208,7 +215,14 @@ classDiagram
     class mod_scenes_DialogueScene["DialogueScene.ts"] {
       <<module>>
     }
+    class ResultScene
+    class ResultData {
+      <<interface>>
+    }
     class TitleScene
+    class mod_scenes_TitleScene["TitleScene.ts"] {
+      <<module>>
+    }
   }
   class Phaser_Scene["Phaser.Scene"] {
     <<external>>
@@ -228,6 +242,7 @@ classDiagram
   BattleScene --> ForecastPanel : forecastPanel
   BattleScene --> MapView : mapView
   BattleScene --> Point : cursor
+  BattleScene --> SaveData : save
   BattleScene --> Selection : selection
   BattleScene --> SidePanel : panel
   BattleScene --> Targeting : targeting
@@ -276,11 +291,14 @@ classDiagram
   Phaser_Scene <|-- BattleScene
   Phaser_Scene <|-- BootScene
   Phaser_Scene <|-- DialogueScene
+  Phaser_Scene <|-- ResultScene
   Phaser_Scene <|-- TitleScene
   RangeInfo "1" *-- "*" Point : attack
   RangeInfo "1" *-- "*" Point : move
   RangeInfo "1" *-- "*" ReachNode : reach
   ReachNode --> Point : point
+  ResultData --> SaveData : save
+  ResultScene --> TextMenu : menu
   RosterEntry "1" *-- "*" InventorySlot : items
   RosterEntry --> CharacterDef : characterId
   RosterEntry --> WeaponDef : weaponId
@@ -300,6 +318,8 @@ classDiagram
   Targeting "1" *-- "*" Unit : targets
   Targeting --> Selection : sel
   TerrainHeal --> Unit : unit
+  TextMenu "1" *-- "*" TextMenuOption : options
+  TitleScene --> TextMenu : menu
   Unit "1" *-- "*" CarriedItem : items
   Unit --> ClassDef : classDef
   Unit --> WeaponDef : weapon
@@ -915,6 +935,12 @@ classDiagram
       <<module>>
       +hash2(x: number, y: number, seed: any) number
     }
+    class mod_render_sfx["sfx.ts"] {
+      <<module>>
+      +isMuted() boolean
+      +toggleMute() boolean
+      +playSfx(scene: Phaser.Scene, name: SfxName) void
+    }
     class SidePanel {
       -turnText: Phaser.GameObjects.Text
       -terrainText: Phaser.GameObjects.Text
@@ -926,6 +952,25 @@ classDiagram
       +setTerrain(t: TerrainDef) void
       +setUnit(u: Unit | undefined) void
       +setHelp(message: string) void
+    }
+    class TextMenu {
+      -scene: Phaser.Scene
+      -items: Phaser.GameObjects.Text[]
+      -options: TextMenuOption[]
+      -index: number
+      -onPick: Function
+      -done: boolean
+      +selectedId: string
+      -onKey(ev: KeyboardEvent) void
+      -move(delta: number) void
+      -select(i: number, silent: any) void
+      -confirm() void
+    }
+    class TextMenuOption {
+      <<interface>>
+      +id: string
+      +label: string
+      +enabled?: boolean
     }
     class mod_render_textures["textures.ts"] {
       <<module>>
@@ -953,6 +998,7 @@ classDiagram
     }
   }
   ActionMenu "1" *-- "*" MenuOption : options
+  TextMenu "1" *-- "*" TextMenuOption : options
 ```
 
 ## Camada `save`
@@ -1005,6 +1051,7 @@ classDiagram
       -menuCancel: Function
       -forecastPanel: ForecastPanel
       -eventEngine: EventEngine
+      -save: SaveData
       -ended: boolean
       +outcome: victory | defeat
       -targeting: Targeting
@@ -1091,9 +1138,27 @@ classDiagram
       <<module>>
       +runDialogue(scene: Phaser.Scene, lines: DialogueLine[]) Promise~void~
     }
+    class ResultScene {
+      +menu: TextMenu
+      +create(data: ResultData) void
+      -drawRoster(save: SaveData) void
+    }
+    class ResultData {
+      <<interface>>
+      +result: victory | defeat
+      +stageName: string
+      +save: SaveData
+    }
     class TitleScene {
+      +menu: TextMenu
       +create() void
+      -newGame(mode: GameMode) SaveData
+      -startBattle(save: SaveData) void
       -spawnEmber(anywhere: boolean) void
+    }
+    class mod_scenes_TitleScene["TitleScene.ts"] {
+      <<module>>
+      +urlParams() object
     }
   }
   class Phaser_Scene["Phaser.Scene"] {
@@ -1104,6 +1169,7 @@ classDiagram
   Phaser_Scene <|-- BattleScene
   Phaser_Scene <|-- BootScene
   Phaser_Scene <|-- DialogueScene
+  Phaser_Scene <|-- ResultScene
   Phaser_Scene <|-- TitleScene
   Targeting --> Selection : sel
 ```

@@ -41,17 +41,23 @@ const battle = () => page.evaluate(() => {
   const aren = b.units.find((u) => u.characterId === 'aren');
   return { mode: s.mode, turn: b.turn, phase: b.phase, outcome: s.outcome, aren: { x: aren.x, y: aren.y, acted: aren.hasActed, exp: aren.exp, level: aren.level } };
 });
-const idle = () => window.__FIRE_CREST__.scene.getScene('Battle')?.mode === 'idle' && !window.__FIRE_CREST__.scene.isActive('Dialogue');
+const idle = () => window.__FIRE_CREST__?.scene.isActive('Battle')
+  && window.__FIRE_CREST__.scene.getScene('Battle').mode === 'idle'
+  && !window.__FIRE_CREST__.scene.isActive('Dialogue');
 
 // --- Título ---
 await page.goto(url);
 await page.waitForFunction(() => window.__FIRE_CREST__?.scene.isActive('Title'));
 await page.waitForTimeout(600);
 await shot('01-title');
-await press('Enter', 1000);
+await press('Enter', 200);
 
 // --- Diálogo de abertura (M4) ---
-if (!(await dialogueOpen())) fail('esperava o diálogo de abertura');
+try {
+  await page.waitForFunction(() => window.__FIRE_CREST__.scene.isActive('Dialogue'), null, { timeout: 5000 });
+} catch {
+  fail('esperava o diálogo de abertura');
+}
 await press('Enter', 600); // completa o texto da 1ª fala
 await shot('02-dialogue');
 await until(idle, null, 20000, 'batalha pronta');
@@ -164,7 +170,8 @@ if (!s.outcome) {
   }
 }
 
-// --- Vitória (M3/M4): derrota todos os inimigos via hook e checa o desfecho ---
+// --- Vitória → diálogo → resultado → próxima fase (M3/M4/M7) ---
+const sceneActive = (key) => page.evaluate((k) => window.__FIRE_CREST__.scene.isActive(k), key);
 if (!s.outcome) {
   const out = await page.evaluate(() => {
     const sc = window.__FIRE_CREST__.scene.getScene('Battle');
@@ -174,11 +181,89 @@ if (!s.outcome) {
   });
   if (out !== 'victory') fail(`esperava vitória, veio ${out}`);
   await page.waitForTimeout(900);
-  await shot('09-victory');
-  await press('Enter', 600);
+  await shot('10-victory');
+  await press('Enter', 700);
   if (!(await dialogueOpen())) fail('esperava o diálogo pós-batalha');
-  await shot('10-post-dialogue');
+  await shot('11-post-dialogue');
+  await until(() => window.__FIRE_CREST__.scene.isActive('Result'), null, 15000, 'tela de resultado');
+  await page.waitForTimeout(500);
+  await shot('12-result');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('fire-crest-save-v1')));
+  if (saved?.nextStageIndex !== 1) fail(`save deveria apontar para a Fase 2, veio ${saved?.nextStageIndex}`);
+  const arenLevel = saved.roster.find((r) => r.characterId === 'aren').level;
+  await press('Enter', 600); // Próxima fase
+  await until(idle, null, 20000, 'Fase 2 pronta');
+  const s2 = await page.evaluate(() => {
+    const b = window.__FIRE_CREST__.scene.getScene('Battle').battle;
+    const aren = b.units.find((u) => u.characterId === 'aren');
+    return { stage: b.stage.id, level: aren.level, weapon: aren.weapon.id };
+  });
+  if (s2.stage !== 'c1s2') fail(`esperava a Fase 2, veio ${s2.stage}`);
+  if (s2.level !== arenLevel) fail(`Aren deveria manter o nível ${arenLevel}, veio ${s2.level}`);
+  if (s2.weapon !== 'ember_blade') fail('Aren deveria receber a Lâmina de Brasa na Fase 2');
+  await shot('13-stage2');
+
+  // Título com "Continuar"
+  await page.goto(url);
+  await page.waitForFunction(() => window.__FIRE_CREST__?.scene.isActive('Title'));
+  await page.waitForTimeout(500);
+  const firstOption = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Title').menu.selectedId);
+  if (firstOption !== 'continue') fail(`o título deveria oferecer "Continuar", veio ${firstOption}`);
+  await shot('14-title-continue');
 }
+
+// --- Fase 4 via ?stage: conversar (recrutar Lys) e curar (M5) ---
+await page.goto(`${url}/?stage=c1s4&seed=7`);
+await until(idle, null, 20000, 'Fase 4 pronta');
+await page.evaluate(() => {
+  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+  const b = sc.battle;
+  const aren = b.units.find((u) => u.characterId === 'aren');
+  aren.moveTo({ x: 2, y: 8 }); // ao lado de Lys (1,8)
+  sc.sprites.get(aren.id).snap();
+  sc.setCursor(aren.position);
+});
+await press('KeyZ');
+await press('KeyZ', 300);
+await pick('talk:0');
+await until(() => {
+  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+  return sc.mode === 'idle' && !window.__FIRE_CREST__.scene.isActive('Dialogue');
+}, null, 20000, 'conversa com Lys');
+const lys = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').battle.units.find((u) => u.characterId === 'lys').faction);
+if (lys !== 'player') fail(`Lys deveria ter sido recrutada, facção ${lys}`);
+await page.evaluate(() => {
+  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+  const aren = sc.battle.units.find((u) => u.characterId === 'aren');
+  aren.hp = 5;
+  sc.sprites.get(aren.id).refresh();
+  sc.setCursor(sc.battle.units.find((u) => u.characterId === 'lys').position);
+});
+await press('KeyZ');
+await press('KeyZ', 300);
+await pick('heal');
+await shot('15-heal-target');
+await press('KeyZ', 200);
+await until(() => window.__FIRE_CREST__.scene.getScene('Battle').mode === 'idle', null, 15000, 'cura');
+const arenHp = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').battle.units.find((u) => u.characterId === 'aren').hp);
+if (arenHp <= 5) fail(`Lys deveria ter curado Aren (HP ${arenHp})`);
+await shot('16-after-heal');
+
+// --- Derrota → resultado → tentar de novo (M7) ---
+await page.evaluate(() => {
+  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+  sc.battle.units.find((u) => u.characterId === 'aren').hp = 0;
+  sc.checkOutcome();
+});
+await page.waitForTimeout(900);
+await press('Enter', 600);
+await until(() => window.__FIRE_CREST__.scene.isActive('Result'), null, 15000, 'resultado da derrota');
+await page.waitForTimeout(400);
+await shot('17-defeat');
+await press('Enter', 600); // Tentar de novo
+await until(idle, null, 20000, 'fase reiniciada');
+const retry = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').battle.stage.id);
+if (retry !== 'c1s4') fail(`"Tentar de novo" deveria reabrir a Fase 4, veio ${retry}`);
 
 if (errors.length) fail(`erros no console:\n${errors.join('\n')}`);
 await browser.close();
