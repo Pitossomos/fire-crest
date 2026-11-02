@@ -1,0 +1,84 @@
+import type { StageDef } from '../types';
+import { DEFAULT_LEGEND } from '../terrain';
+
+/** Fase 5 — O Farol Apagado: derrotar a Inquisidora Seraphine no portão do Farol. */
+export const STAGE_5: StageDef = {
+  id: 'c1s5',
+  chapterId: 'c1',
+  order: 5,
+  name: 'O Farol Apagado',
+  objective: { kind: 'boss', description: 'Derrote a Inquisidora Seraphine', targetId: 'seraphine' },
+  map: {
+    rows: [
+      'hhff....f..hh~~',
+      'hf....f...####~',
+      'f..h......#FF#~',
+      '...f..f...#,,#~',
+      '......=====G,F~',
+      '...f..f...#,,#~',
+      'f..h......#FF#~',
+      'hf....f...####~',
+      'hhf..f..f..hh~~',
+      'hhhff...ff.hhh~',
+    ],
+    legend: DEFAULT_LEGEND,
+  },
+  units: [
+    { characterId: 'aren', faction: 'player', x: 1, y: 4 },
+    { characterId: 'mira', faction: 'player', x: 1, y: 3 },
+    { characterId: 'hadric', faction: 'player', x: 2, y: 4 },
+    { characterId: 'wren', faction: 'player', x: 0, y: 4 },
+    { characterId: 'lys', faction: 'player', x: 0, y: 5 },
+    { characterId: 'corvin', faction: 'player', x: 1, y: 5 },
+    { characterId: 'seraphine', faction: 'enemy', x: 11, y: 4, ai: 'stationary', boss: true },
+    { classId: 'dusk_monk', weaponId: 'sleep_psalm', faction: 'enemy', x: 12, y: 3, level: 5, ai: 'stationary' },
+    { classId: 'dusk_monk', weaponId: 'sleep_psalm', faction: 'enemy', x: 12, y: 5, level: 5, ai: 'stationary' },
+    { classId: 'lancer', weaponId: 'iron_lance', faction: 'enemy', x: 9, y: 4, level: 5, ai: 'guard' },
+    { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 7, y: 2, level: 5, ai: 'aggressive' },
+    { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 7, y: 6, level: 5, ai: 'aggressive' },
+    { classId: 'hollow', weaponId: 'claws', faction: 'enemy', x: 5, y: 0, level: 5, ai: 'aggressive' },
+    { classId: 'hollow', weaponId: 'claws', faction: 'enemy', x: 5, y: 9, level: 5, ai: 'aggressive' },
+    { classId: 'archer', weaponId: 'iron_bow', faction: 'enemy', x: 8, y: 1, level: 5, ai: 'guard' },
+    { classId: 'dusk_monk', weaponId: 'sleep_psalm', faction: 'enemy', x: 9, y: 7, level: 5, ai: 'guard' },
+  ],
+  preDialogue: [
+    { speakerId: 'narrator', side: 'left', text: 'O Farol de Brasalva ergue-se sobre o penhasco, frio e escuro. Ao seu redor, monges de capuz pontudo cantam sem parar.' },
+    { speakerId: 'narrator', side: 'left', text: 'Seus hábitos negros são bordados de caveiras e de uma cruz sobre um monte, em vermelho e branco-osso — o Grande Esquema da Ordem do Ocaso.' },
+    { speakerId: 'seraphine', side: 'right', text: 'Então você é a brasa que fugiu de Grull, de Morvane e do bosque. Pequena. Tremendo. Ainda assim, quente.' },
+    { speakerId: 'seraphine', side: 'right', text: 'Venha, portador. Entregue a chama, e eu deixo a sua vila sonhar em paz para sempre.' },
+    { speakerId: 'aren', side: 'left', text: 'Brasalva já sonhou demais. Hoje ela acorda.' },
+    { speakerId: 'lys', side: 'left', text: 'Cuidado com o rosário dela, Aren. Cada conta é uma brasa roubada.' },
+  ],
+  postDialogue: [
+    { speakerId: 'narrator', side: 'left', text: 'Aren sobe as escadas do Farol e pousa a mão na pira fria. A Crista arde — e, pela primeira vez em vinte anos, a luz de Brasalva corta a noite.' },
+    { speakerId: 'hadric', side: 'right', text: 'Aren. Há algo que eu jurei contar quando o Farol voltasse a arder. Seu pai era Aldric Valdris. O último rei de Solmarch.' },
+    { speakerId: 'aren', side: 'left', text: '...O rei? Então a espada... a Crista... você sabia o tempo todo.' },
+    { speakerId: 'hadric', side: 'right', text: 'Eu prometi protegê-lo até que você estivesse pronto. Não tenho certeza de que está. Mas o mundo não vai esperar.' },
+    { speakerId: 'corvin', side: 'left', text: 'Más notícias: pelos meus cálculos, a Ordem já apagou três dos Sete Faróis. E não vai parar no quarto.' },
+    { speakerId: 'mira', side: 'left', text: 'Então a gente acende de volta. Um de cada vez. Como sempre.' },
+    { speakerId: 'narrator', side: 'left', text: 'Fim do Capítulo 1 — Brasas no Vale. A jornada continua...' },
+  ],
+  events: [
+    {
+      id: 'c1s5-reinforcements',
+      on: 'turnStart',
+      turn: 4,
+      spawns: [
+        { classId: 'hollow', weaponId: 'claws', faction: 'enemy', x: 0, y: 0, level: 5, ai: 'aggressive' },
+        { classId: 'hollow', weaponId: 'claws', faction: 'enemy', x: 0, y: 9, level: 5, ai: 'aggressive' },
+      ],
+      dialogue: [{ speakerId: 'wren', side: 'left', text: 'Esvaídos atrás de nós! A névoa está subindo do penhasco!' }],
+    },
+    {
+      id: 'c1s5-seraphine',
+      on: 'unitDefeated',
+      unitId: 'seraphine',
+      spawns: [],
+      dialogue: [
+        { speakerId: 'seraphine', side: 'right', text: 'Hah... impressionante. Mas uma inquisidora não morre num portão de vila.' },
+        { speakerId: 'seraphine', side: 'right', text: 'Guarde bem essa brasa, filho de rei. O Grão-Hierofante vai querer vê-la pessoalmente.' },
+        { speakerId: 'narrator', side: 'left', text: 'Uma nuvem de cinzas envolve Seraphine. Quando se dissipa, ela se foi — deixando só o eco do Salmo do Sono.' },
+      ],
+    },
+  ],
+};

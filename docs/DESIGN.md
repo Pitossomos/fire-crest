@@ -70,6 +70,12 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 | Encerrar o turno | E | Clicar num tile vazio → "Encerrar turno" |
 | Ver o alcance de um inimigo | Selecionar o inimigo | Clicar no inimigo |
 
+## Balanceamento
+
+- `tests/stages.test.ts` valida cada fase (mapa 15×10, posições, alcançabilidade do objetivo, referências de eventos e falas) e simula o capítulo inteiro com a IA jogando dos dois lados, com o roster passando de fase em fase.
+- `SIM_REPORT=1 npx vitest run tests/sim-report.test.ts --silent=false` imprime um relatório por fase (resultado, turno, quem caiu, níveis). O "jogador" simulado é bem mais ingênuo que um humano, então serve como piso, não como meta.
+- Ajustes feitos com base na simulação: dano dos inimigos reduzido (Bandido FOR 5, Machado de Ferro 7, Lanceiro FOR 6, Esvaído FOR 6, Salmo do Sono 5), Aren com HP 22 e DEF 6, Mira com HP 20 e DEF 4, bandido da ponte da Fase 2 parado, e alas da Fase 4 em `guard`.
+
 ## Roadmap
 
 | Marco | Conteúdo | Status |
@@ -80,5 +86,5 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 | M3 | IA inimiga e condições de vitória/derrota | ✅ |
 | M4 | Fase 1 completa com diálogos (DialogueScene) e motor de eventos (antecipado do M5) | ✅ |
 | M5 | Conversar, curar, itens (Poção/Elixir), tomar, fase aliada | ✅ |
-| M6 | Fases 2–5 | ⏳ |
+| M6 | Fases 2–5 (mapas, eventos, diálogos), validação automática das fases e simulação de balanceamento | ✅ |
 | M7 | Título com save, Clássico/Casual, resultado, polimento, assets CC0 | ⏳ |

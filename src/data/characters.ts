@@ -5,13 +5,13 @@ export const CHARACTERS: Record<string, CharacterDef> = {
   // --- Heróis ---
   aren: {
     id: 'aren', name: 'Aren Valdris', title: 'Vigia de Brasalva', classId: 'bearer', level: 1,
-    stats: stats(20, 6, 2, 6, 7, 6, 5, 2), growths: stats(75, 50, 15, 50, 50, 55, 35, 25),
+    stats: stats(22, 6, 2, 6, 7, 6, 6, 2), growths: stats(75, 50, 15, 50, 50, 55, 35, 25),
     weaponId: 'iron_sword', items: ['potion'],
     bio: 'Jovem vigia da vila fronteiriça de Brasalva. A Crista de Fogo despertou em sua mão na noite do ataque.',
   },
   mira: {
     id: 'mira', name: 'Mira Tolven', title: 'Mercenária', classId: 'swordfighter', level: 2,
-    stats: stats(19, 5, 0, 10, 11, 5, 3, 1), growths: stats(60, 40, 5, 60, 65, 45, 20, 25),
+    stats: stats(20, 5, 0, 10, 11, 5, 4, 1), growths: stats(60, 40, 5, 60, 65, 45, 20, 25),
     weaponId: 'iron_sword', items: ['potion'],
     bio: 'Amiga de infância de Aren. Endividada até o pescoço, sarcástica e leal até o fim.',
   },
@@ -58,9 +58,15 @@ export const CHARACTERS: Record<string, CharacterDef> = {
     weaponId: 'hand_axe',
     bio: 'Braço direito de Grull. Fala alto, bate mais alto ainda.',
   },
+  morvane: {
+    id: 'morvane', villain: true, name: 'Abade Morvane', title: 'Carcereiro de Cinzaforte', classId: 'dusk_monk', level: 7,
+    stats: stats(30, 0, 10, 7, 5, 3, 5, 8), growths: stats(55, 0, 50, 35, 30, 15, 20, 40),
+    weaponId: 'sleep_psalm',
+    bio: 'Abade da Ordem do Ocaso. Transformou a velha fortaleza de Cinzaforte em prisão para os "impuros".',
+  },
   seraphine: {
     id: 'seraphine', villain: true, name: 'Seraphine Vael', title: 'Inquisidora do Ocaso', classId: 'inquisitor', level: 10,
-    stats: stats(38, 6, 13, 11, 11, 8, 7, 12), growths: stats(70, 20, 60, 50, 45, 40, 30, 50),
+    stats: stats(34, 6, 10, 11, 10, 8, 6, 10), growths: stats(70, 20, 60, 50, 45, 40, 30, 50),
     weaponId: 'ash_rosary',
     bio: 'Caçadora de portadores. Veste o hábito do Grande Esquema bordado com caveiras e um sol eclipsado.',
   },
