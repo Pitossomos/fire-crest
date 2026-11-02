@@ -29,6 +29,10 @@ export function createUnit(p: UnitPlacement, db: GameDatabase, index: number): U
       characterId: ch.id,
       ai: p.ai,
       boss: p.boss,
+      items: (ch.items ?? []).map((id) => {
+        const def = lookup(db.items, id, 'Item');
+        return { def, uses: def.uses };
+      }),
     });
   }
   if (!p.classId) throw new Error(`Unidade ${index} sem characterId nem classId`);

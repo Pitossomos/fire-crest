@@ -7,7 +7,7 @@ import { Unit } from './unit';
 import { createUnit } from './unit-factory';
 import { type ReachNode, attackTiles, buildPath, computeReach, movementTiles } from './pathfinding';
 import { type CombatResult, canAttackWith, inWeaponRange, resolveCombat } from './combat';
-import { type LevelUp, combatExp, gainExp } from './leveling';
+import { HEAL_EXP, type LevelUp, combatExp, gainExp } from './leveling';
 import { areHostile } from './faction';
 import { Rng } from './rng';
 
@@ -29,6 +29,11 @@ export interface ExpGain {
 export interface TerrainHeal {
   unit: Unit;
   amount: number;
+}
+
+export interface HealOutcome {
+  amount: number;
+  exp?: ExpGain;
 }
 
 export interface AttackOutcome {
@@ -161,6 +166,36 @@ export class BattleState {
     }
     attacker.hasActed = true;
     return { result, exp };
+  }
+
+  /** Aliados feridos que a unidade pode curar com o cajado da posição atual. */
+  healTargets(unit: Unit): Unit[] {
+    const w = unit.weapon;
+    if (w.type !== 'staff' || !w.heal) return [];
+    return this.livingUnits.filter(
+      (t) => t !== unit && !areHostile(unit.faction, t.faction) && t.hp < t.maxHp
+        && inWeaponRange(unit, unit.position, t.position),
+    );
+  }
+
+  /** Cura com cajado: cura do cajado + MAG/2; dá EXP ao curandeiro do jogador. */
+  healUnit(healer: Unit, target: Unit): HealOutcome {
+    if (!this.healTargets(healer).includes(target)) throw new Error(`${healer.name} não pode curar ${target.name}`);
+    const amount = target.heal((healer.weapon.heal ?? 0) + Math.floor(healer.stats.mag / 2));
+    healer.hasActed = true;
+    if (healer.faction !== 'player') return { amount };
+    return { amount, exp: { unit: healer, amount: HEAL_EXP, levelUps: gainExp(healer, HEAL_EXP, this.rng) } };
+  }
+
+  /** Usa o item do slot indicado (Poção etc.); remove o item quando os usos acabam. */
+  useItem(unit: Unit, index: number): number {
+    const slot = unit.items[index];
+    if (!slot) throw new Error(`${unit.name} não tem item no slot ${index}`);
+    const amount = unit.heal(slot.def.heal);
+    slot.uses--;
+    if (slot.uses <= 0) unit.items.splice(index, 1);
+    unit.hasActed = true;
+    return amount;
   }
 
   /** O lorde pode tomar o objetivo estando onde está? */

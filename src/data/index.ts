@@ -1,8 +1,9 @@
-import type { CharacterDef, ClassDef, StageDef, TerrainDef, WeaponDef } from './types';
+import type { CharacterDef, ClassDef, ItemDef, StageDef, TerrainDef, WeaponDef } from './types';
 import { CLASSES } from './classes';
 import { WEAPONS } from './weapons';
 import { TERRAIN } from './terrain';
 import { CHARACTERS } from './characters';
+import { ITEMS } from './items';
 import { CHAPTER_1_STAGES } from './chapter1';
 
 /** Acesso somente-leitura a todas as definições estáticas do jogo. */
@@ -11,6 +12,7 @@ export interface GameDatabase {
   weapons: Record<string, WeaponDef>;
   terrain: Record<string, TerrainDef>;
   characters: Record<string, CharacterDef>;
+  items: Record<string, ItemDef>;
   stages: Record<string, StageDef>;
 }
 
@@ -19,6 +21,7 @@ export const DB: GameDatabase = {
   weapons: WEAPONS,
   terrain: TERRAIN,
   characters: CHARACTERS,
+  items: ITEMS,
   stages: Object.fromEntries(CHAPTER_1_STAGES.map((s) => [s.id, s])),
 };
 

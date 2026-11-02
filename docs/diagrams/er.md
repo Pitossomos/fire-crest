@@ -27,6 +27,7 @@ erDiagram
     Stats stats
     Stats growths
     string weaponId FK "-> WeaponDef"
+    list items FK "-> ItemDef; opcional"
     string bio
     boolean villain "opcional"
   }
@@ -57,6 +58,16 @@ erDiagram
     list spawns "UnitPlacement[]"
     string recruitId FK "-> CharacterDef; opcional"
   }
+  InventorySlot {
+    string itemId FK "-> ItemDef"
+    number uses
+  }
+  ItemDef {
+    string id PK
+    string name
+    number heal
+    number uses
+  }
   MapDef {
     list rows "string[]"
     map legend FK "-> TerrainDef"
@@ -75,6 +86,7 @@ erDiagram
     number exp
     Stats stats
     string weaponId FK "-> WeaponDef"
+    list items "InventorySlot[]"
     boolean alive
   }
   SaveData {
@@ -95,6 +107,7 @@ erDiagram
     list preDialogue "DialogueLine[]"
     list postDialogue "DialogueLine[]"
     list events "EventTrigger[]"
+    list recruitOnClear FK "-> CharacterDef; opcional"
   }
   TerrainDef {
     string id PK
@@ -115,6 +128,7 @@ erDiagram
     number level "opcional"
     AiBehavior ai "opcional"
     boolean boss "opcional"
+    boolean joins "opcional"
   }
   WeaponDef {
     string id PK
@@ -129,6 +143,7 @@ erDiagram
     number heal "opcional"
   }
   ChapterDef }o--o{ StageDef : "stageIds"
+  CharacterDef }o--o{ ItemDef : "items"
   CharacterDef }o--|| ClassDef_ : "classId"
   CharacterDef }o--|| WeaponDef : "weaponId"
   DialogueLine }o--|| CharacterDef : "speakerId"
@@ -137,8 +152,10 @@ erDiagram
   EventTrigger }o--o| CharacterDef : "otherUnitId"
   EventTrigger }o--o| CharacterDef : "recruitId"
   EventTrigger }o--o| CharacterDef : "unitId"
+  InventorySlot }o--|| ItemDef : "itemId"
   MapDef }o--o{ TerrainDef : "legend"
   ObjectiveDef }o--o| CharacterDef : "targetId"
+  RosterEntry ||--o{ InventorySlot : "items"
   RosterEntry }o--|| CharacterDef : "characterId"
   RosterEntry }o--|| WeaponDef : "weaponId"
   SaveData ||--o{ RosterEntry : "roster"
@@ -149,6 +166,7 @@ erDiagram
   StageDef ||--o{ UnitPlacement : "units"
   StageDef ||--|| MapDef : "map"
   StageDef ||--|| ObjectiveDef : "objective"
+  StageDef }o--o{ CharacterDef : "recruitOnClear"
   StageDef }o--|| ChapterDef : "chapterId"
   UnitPlacement }o--o| CharacterDef : "characterId"
   UnitPlacement }o--o| ClassDef_ : "classId"
@@ -164,6 +182,8 @@ erDiagram
 | `ClassDef` | Classe de unidade: atributos-base, crescimento e armas permitidas. | `src/data/types.ts` |
 | `DialogueLine` | Uma fala de diálogo. | `src/data/types.ts` |
 | `EventTrigger` | Evento disparado durante a batalha. | `src/data/types.ts` |
+| `InventorySlot` | Item no inventário de uma unidade, com os usos restantes. | `src/data/types.ts` |
+| `ItemDef` | Item consumível (ex.: Poção). | `src/data/types.ts` |
 | `MapDef` | Mapa de uma fase em texto: cada caractere é um terreno. | `src/data/types.ts` |
 | `ObjectiveDef` | Condição de vitória de uma fase. | `src/data/types.ts` |
 | `RosterEntry` | Estado salvo de um personagem entre fases. | `src/data/types.ts` |

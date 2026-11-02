@@ -79,6 +79,6 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 | M2 | Combate: previsão, resolução, contra-ataque, morte, EXP/level-up | ✅ |
 | M3 | IA inimiga e condições de vitória/derrota | ✅ |
 | M4 | Fase 1 completa com diálogos (DialogueScene) e motor de eventos (antecipado do M5) | ✅ |
-| M5 | Eventos, conversar, curar, aliado NPC, reforços | ⏳ |
+| M5 | Conversar, curar, itens (Poção/Elixir), tomar, fase aliada | ✅ |
 | M6 | Fases 2–5 | ⏳ |
 | M7 | Título com save, Clássico/Casual, resultado, polimento, assets CC0 | ⏳ |

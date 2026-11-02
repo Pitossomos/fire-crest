@@ -22,6 +22,7 @@ import { TILE } from '../render/layout';
 type Mode = 'idle' | 'selected' | 'moving' | 'menu' | 'inspect' | 'targeting' | 'busy';
 
 interface Targeting {
+  kind: 'attack' | 'heal';
   sel: Selection;
   targets: Unit[];
   index: number;
@@ -233,7 +234,8 @@ export class BattleScene extends Phaser.Scene {
         break;
       case 'targeting': {
         const t = this.targeting!;
-        void this.executeAttack(t.sel.unit, t.targets[t.index]);
+        if (t.kind === 'attack') void this.executeAttack(t.sel.unit, t.targets[t.index]);
+        else void this.executeHeal(t.sel.unit, t.targets[t.index]);
         break;
       }
       default:
@@ -293,29 +295,88 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private openUnitMenu(sel: Selection): void {
+    const u = sel.unit;
     const options: MenuOption[] = [];
-    const targets = this.state.targetsInRange(sel.unit);
-    if (this.state.canSeize(sel.unit)) options.push({ id: 'seize', label: 'Tomar' });
+    const targets = this.state.targetsInRange(u);
+    const healable = this.state.healTargets(u);
+    const talks = this.eventEngine.talkOptions(u);
+    if (this.state.canSeize(u)) options.push({ id: 'seize', label: 'Tomar' });
     if (targets.length > 0) options.push({ id: 'attack', label: 'Atacar' });
+    if (healable.length > 0) options.push({ id: 'heal', label: 'Curar' });
+    talks.forEach(([, other], i) => options.push({ id: `talk:${i}`, label: `Conversar (${other.name.split(' ')[0]})` }));
+    if (u.items.length > 0) options.push({ id: 'item', label: 'Item' });
     options.push({ id: 'wait', label: 'Esperar' });
     this.menuCancel = () => this.undoMove(sel);
     this.setMode('menu');
-    const { x, y } = MapView.toPixel(sel.unit.position);
+    const { x, y } = MapView.toPixel(u.position);
     this.menu.open(x + TILE + 6, y - 6, options, (id) => {
       this.menuCancel = undefined;
-      if (id === 'wait') void this.finishAction(sel.unit);
-      else if (id === 'attack') this.startTargeting(sel, targets);
+      if (id === 'wait') void this.finishAction(u);
+      else if (id === 'attack') this.startTargeting('attack', sel, targets);
+      else if (id === 'heal') this.startTargeting('heal', sel, healable);
+      else if (id === 'item') this.openItemMenu(sel);
+      else if (id.startsWith('talk:')) void this.executeTalk(u, talks[Number(id.slice(5))][0]);
       else if (id === 'seize') {
-        this.state.seize(sel.unit);
-        void this.finishAction(sel.unit);
+        this.state.seize(u);
+        void this.finishAction(u);
       }
     });
   }
 
-  private startTargeting(sel: Selection, targets: Unit[]): void {
-    this.targeting = { sel, targets, index: 0 };
+  private openItemMenu(sel: Selection): void {
+    const u = sel.unit;
+    const options: MenuOption[] = u.items.map((it, i) => ({
+      id: String(i), label: `${it.def.name} (${it.uses})`, enabled: u.hp < u.maxHp,
+    }));
+    options.push({ id: 'back', label: 'Voltar' });
+    this.menuCancel = () => this.openUnitMenu(sel);
+    this.setMode('menu');
+    this.panel.setHelp(u.hp < u.maxHp ? 'Escolha o item para usar.' : `${u.name} está com o HP cheio.`);
+    const { x, y } = MapView.toPixel(u.position);
+    this.menu.open(x + TILE + 6, y - 6, options, (id) => {
+      this.menuCancel = undefined;
+      if (id === 'back') {
+        this.openUnitMenu(sel);
+        return;
+      }
+      void this.executeItem(u, Number(id));
+    });
+  }
+
+  private async executeItem(unit: Unit, index: number): Promise<void> {
+    this.setMode('busy');
+    const amount = this.state.useItem(unit, index);
+    this.sprites.get(unit.id)?.refresh();
+    await floatText(this, unit.x, unit.y, `+${amount} HP`, '#7CFC9A', 18);
+    await this.finishAction(unit);
+  }
+
+  private async executeTalk(unit: Unit, event: Parameters<EventEngine['talk']>[1]): Promise<void> {
+    this.setMode('busy');
+    const fx = this.eventEngine.talk(unit, event);
+    await this.runEvents([fx]);
+    await this.finishAction(unit);
+  }
+
+  private async executeHeal(healer: Unit, target: Unit): Promise<void> {
+    this.targeting = undefined;
+    this.mapView.clearRanges();
+    this.setMode('busy');
+    const out = this.state.healUnit(healer, target);
+    this.sprites.get(target.id)?.refresh();
+    await floatText(this, target.x, target.y, `+${out.amount} HP`, '#7CFC9A', 20);
+    if (out.exp) {
+      await floatText(this, healer.x, healer.y, `+${out.exp.amount} EXP`, '#9fe3b0', 16);
+      for (const up of out.exp.levelUps) await levelUpPopup(this, healer, up);
+    }
+    this.refreshPanel();
+    await this.finishAction(healer);
+  }
+
+  private startTargeting(kind: Targeting['kind'], sel: Selection, targets: Unit[]): void {
+    this.targeting = { kind, sel, targets, index: 0 };
     const tiles = targets.map((t) => t.position);
-    this.mapView.showRanges([], tiles);
+    this.mapView.showRanges([], tiles, kind === 'heal' ? 'heal' : 'attack');
     this.setMode('targeting');
     this.selectTarget(0);
   }
@@ -328,7 +389,12 @@ export class BattleScene extends Phaser.Scene {
     this.mapView.moveCursor(target.position);
     this.panel.setTerrain(this.state.map.terrainAt(target.position));
     this.panel.setUnit(target);
-    this.forecastPanel.show(forecast(this.state.map, t.sel.unit, target));
+    if (t.kind === 'attack') {
+      this.forecastPanel.show(forecast(this.state.map, t.sel.unit, target));
+    } else {
+      const amount = Math.min(target.maxHp - target.hp, (t.sel.unit.weapon.heal ?? 0) + Math.floor(t.sel.unit.stats.mag / 2));
+      this.panel.setHelp(`Curar ${target.name}: +${amount} HP (${target.hp} → ${target.hp + amount}) · Z/Enter: confirmar · X/Esc: voltar`);
+    }
   }
 
   private cancelTargeting(): void {

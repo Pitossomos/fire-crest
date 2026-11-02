@@ -1,4 +1,10 @@
-import type { AiBehavior, ClassDef, Faction, Stats, WeaponDef } from '../data/types';
+import type { AiBehavior, ClassDef, Faction, ItemDef, Stats, WeaponDef } from '../data/types';
+
+/** Item carregado, com usos restantes. */
+export interface CarriedItem {
+  def: ItemDef;
+  uses: number;
+}
 import type { Point } from './grid';
 
 export interface UnitInit {
@@ -14,6 +20,9 @@ export interface UnitInit {
   characterId?: string;
   ai?: AiBehavior;
   boss?: boolean;
+  items?: CarriedItem[];
+  exp?: number;
+  hp?: number;
 }
 
 /** Unidade em batalha (estado mutável durante a fase). */
@@ -35,6 +44,7 @@ export class Unit {
   x: number;
   y: number;
   hasActed = false;
+  items: CarriedItem[];
 
   constructor(init: UnitInit) {
     this.id = init.id;
@@ -45,7 +55,9 @@ export class Unit {
     this.level = init.level;
     this.stats = { ...init.stats };
     this.growths = { ...init.growths };
-    this.hp = init.stats.hp;
+    this.hp = init.hp ?? init.stats.hp;
+    this.exp = init.exp ?? 0;
+    this.items = (init.items ?? []).map((i) => ({ ...i }));
     this.x = init.position.x;
     this.y = init.position.y;
     this.characterId = init.characterId;

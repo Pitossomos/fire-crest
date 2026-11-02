@@ -131,6 +131,39 @@ if (!s.outcome) {
 }
 await shot('08-after-combat');
 
+// --- Item (M5): Mira ferida usa uma Poção pelo menu ---
+/** Escolhe a opção do menu aberto pelo id (navega com ↓ e confirma). */
+async function pick(optionId) {
+  const idx = await page.evaluate((id) => window.__FIRE_CREST__.scene.getScene('Battle').menu.options.findIndex((o) => o.id === id), optionId);
+  if (idx < 0) { fail(`opção de menu ausente: ${optionId}`); return; }
+  for (let i = 0; i < idx; i++) await press('ArrowDown', 60);
+  await press('KeyZ', 250);
+}
+if (!s.outcome) {
+  const mira = await page.evaluate(() => {
+    const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+    const m = sc.battle.units.find((u) => u.characterId === 'mira');
+    if (!m.isAlive() || m.hasActed) return null;
+    m.hp = Math.max(1, m.maxHp - 12);
+    sc.setCursor(m.position);
+    return { hp: m.hp, uses: m.items[0]?.uses };
+  });
+  if (mira) {
+    await press('KeyZ');
+    await press('KeyZ', 300);
+    await pick('item');
+    await shot('09a-item-menu');
+    await pick('0');
+    await until(() => window.__FIRE_CREST__.scene.getScene('Battle').mode !== 'busy', null, 10000, 'uso do item');
+    const after = await page.evaluate(() => {
+      const m = window.__FIRE_CREST__.scene.getScene('Battle').battle.units.find((u) => u.characterId === 'mira');
+      return { hp: m.hp, uses: m.items[0]?.uses, acted: m.hasActed };
+    });
+    if (after.hp !== mira.hp + 10) fail(`Poção deveria curar 10 (de ${mira.hp} para ${mira.hp + 10}), ficou ${after.hp}`);
+    if (after.uses !== mira.uses - 1) fail('Poção deveria gastar um uso');
+  }
+}
+
 // --- Vitória (M3/M4): derrota todos os inimigos via hook e checa o desfecho ---
 if (!s.outcome) {
   const out = await page.evaluate(() => {

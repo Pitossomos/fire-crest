@@ -32,6 +32,9 @@ classDiagram
     class TerrainHeal {
       <<interface>>
     }
+    class HealOutcome {
+      <<interface>>
+    }
     class AttackOutcome {
       <<interface>>
     }
@@ -86,6 +89,9 @@ classDiagram
       <<module>>
     }
     class Unit
+    class CarriedItem {
+      <<interface>>
+    }
     class UnitInit {
       <<interface>>
     }
@@ -104,6 +110,12 @@ classDiagram
       <<interface>>
     }
     class WeaponDef {
+      <<interface>>
+    }
+    class ItemDef {
+      <<interface>>
+    }
+    class InventorySlot {
       <<interface>>
     }
     class ClassDef {
@@ -214,7 +226,9 @@ classDiagram
   BattleState --> GameDatabase : db
   BattleState --> Rng : rng
   BattleState --> StageDef : stage
+  CarriedItem --> ItemDef : def
   ChapterDef "1" *-- "*" StageDef : stageIds
+  CharacterDef "1" *-- "*" ItemDef : items
   CharacterDef --> ClassDef : classId
   CharacterDef --> WeaponDef : weaponId
   CombatResult "1" *-- "*" Strike : strikes
@@ -239,9 +253,12 @@ classDiagram
   Forecast --> Unit : defender
   GameDatabase "1" *-- "*" CharacterDef : characters
   GameDatabase "1" *-- "*" ClassDef : classes
+  GameDatabase "1" *-- "*" ItemDef : items
   GameDatabase "1" *-- "*" StageDef : stages
   GameDatabase "1" *-- "*" TerrainDef : terrain
   GameDatabase "1" *-- "*" WeaponDef : weapons
+  HealOutcome --> ExpGain : exp
+  InventorySlot --> ItemDef : itemId
   MapDef "1" *-- "*" TerrainDef : legend
   MapView --> BattleMap : map
   ObjectiveDef --> CharacterDef : targetId
@@ -253,6 +270,7 @@ classDiagram
   RangeInfo "1" *-- "*" Point : move
   RangeInfo "1" *-- "*" ReachNode : reach
   ReachNode --> Point : point
+  RosterEntry "1" *-- "*" InventorySlot : items
   RosterEntry --> CharacterDef : characterId
   RosterEntry --> WeaponDef : weaponId
   SaveData "1" *-- "*" RosterEntry : roster
@@ -260,6 +278,7 @@ classDiagram
   Selection --> Point : origin
   Selection --> RangeInfo : range
   Selection --> Unit : unit
+  StageDef "1" *-- "*" CharacterDef : recruitOnClear
   StageDef "1" *-- "*" DialogueLine : postDialogue
   StageDef "1" *-- "*" DialogueLine : preDialogue
   StageDef "1" *-- "*" EventTrigger : events
@@ -270,8 +289,10 @@ classDiagram
   Targeting "1" *-- "*" Unit : targets
   Targeting --> Selection : sel
   TerrainHeal --> Unit : unit
+  Unit "1" *-- "*" CarriedItem : items
   Unit --> ClassDef : classDef
   Unit --> WeaponDef : weapon
+  UnitInit "1" *-- "*" CarriedItem : items
   UnitInit --> ClassDef : classDef
   UnitInit --> Point : position
   UnitInit --> WeaponDef : weapon
@@ -333,6 +354,9 @@ classDiagram
       -nearestFree(start: Point) Point
       +targetsInRange(unit: Unit) Unit[]
       +attack(attacker: Unit, defender: Unit) AttackOutcome
+      +healTargets(unit: Unit) Unit[]
+      +healUnit(healer: Unit, target: Unit) HealOutcome
+      +useItem(unit: Unit, index: number) number
       +canSeize(unit: Unit) boolean
       +seize(unit: Unit) void
       +undoMove(unit: Unit, origin: Point) void
@@ -355,6 +379,11 @@ classDiagram
       <<interface>>
       +unit: Unit
       +amount: number
+    }
+    class HealOutcome {
+      <<interface>>
+      +amount: number
+      +exp?: ExpGain
     }
     class AttackOutcome {
       <<interface>>
@@ -498,6 +527,7 @@ classDiagram
       +x: number
       +y: number
       +hasActed: boolean
+      +items: CarriedItem[]
       +maxHp: number
       +move: number
       +isLord: boolean
@@ -507,6 +537,11 @@ classDiagram
       +takeDamage(amount: number) void
       +heal(amount: number) number
       +moveTo(p: Point) void
+    }
+    class CarriedItem {
+      <<interface>>
+      +def: ItemDef
+      +uses: number
     }
     class UnitInit {
       <<interface>>
@@ -522,6 +557,9 @@ classDiagram
       +characterId?: string
       +ai?: AiBehavior
       +boss?: boolean
+      +items?: CarriedItem[]
+      +exp?: number
+      +hp?: number
     }
   }
   AiPlan --> Point : moveTo
@@ -544,11 +582,14 @@ classDiagram
   Forecast --> StrikeStats : defenderStats
   Forecast --> Unit : attacker
   Forecast --> Unit : defender
+  HealOutcome --> ExpGain : exp
   RangeInfo "1" *-- "*" Point : attack
   RangeInfo "1" *-- "*" Point : move
   RangeInfo "1" *-- "*" ReachNode : reach
   ReachNode --> Point : point
   TerrainHeal --> Unit : unit
+  Unit "1" *-- "*" CarriedItem : items
+  UnitInit "1" *-- "*" CarriedItem : items
   UnitInit --> Point : position
 ```
 
@@ -569,6 +610,7 @@ classDiagram
       +weapons: Record~string, WeaponDef~
       +terrain: Record~string, TerrainDef~
       +characters: Record~string, CharacterDef~
+      +items: Record~string, ItemDef~
       +stages: Record~string, StageDef~
     }
     class mod_data_index["index.ts"] {
@@ -601,6 +643,18 @@ classDiagram
       +magic: boolean
       +heal?: number
     }
+    class ItemDef {
+      <<interface>>
+      +id: string
+      +name: string
+      +heal: number
+      +uses: number
+    }
+    class InventorySlot {
+      <<interface>>
+      +itemId: Ref~ItemDef~
+      +uses: number
+    }
     class ClassDef {
       <<interface>>
       +id: string
@@ -622,6 +676,7 @@ classDiagram
       +stats: Stats
       +growths: Stats
       +weaponId: Ref~WeaponDef~
+      +items?: Ref~ItemDef~[]
       +bio: string
       +villain?: boolean
     }
@@ -642,6 +697,7 @@ classDiagram
       +level?: number
       +ai?: AiBehavior
       +boss?: boolean
+      +joins?: boolean
     }
     class ObjectiveDef {
       <<interface>>
@@ -683,6 +739,7 @@ classDiagram
       +preDialogue: DialogueLine[]
       +postDialogue: DialogueLine[]
       +events: EventTrigger[]
+      +recruitOnClear?: Ref~CharacterDef~[]
     }
     class ChapterDef {
       <<interface>>
@@ -697,6 +754,7 @@ classDiagram
       +exp: number
       +stats: Stats
       +weaponId: Ref~WeaponDef~
+      +items: InventorySlot[]
       +alive: boolean
     }
     class SaveData {
@@ -709,6 +767,7 @@ classDiagram
     }
   }
   ChapterDef "1" *-- "*" StageDef : stageIds
+  CharacterDef "1" *-- "*" ItemDef : items
   CharacterDef --> ClassDef : classId
   CharacterDef --> WeaponDef : weaponId
   DialogueLine --> CharacterDef : speakerId
@@ -719,15 +778,19 @@ classDiagram
   EventTrigger --> CharacterDef : unitId
   GameDatabase "1" *-- "*" CharacterDef : characters
   GameDatabase "1" *-- "*" ClassDef : classes
+  GameDatabase "1" *-- "*" ItemDef : items
   GameDatabase "1" *-- "*" StageDef : stages
   GameDatabase "1" *-- "*" TerrainDef : terrain
   GameDatabase "1" *-- "*" WeaponDef : weapons
+  InventorySlot --> ItemDef : itemId
   MapDef "1" *-- "*" TerrainDef : legend
   ObjectiveDef --> CharacterDef : targetId
+  RosterEntry "1" *-- "*" InventorySlot : items
   RosterEntry --> CharacterDef : characterId
   RosterEntry --> WeaponDef : weaponId
   SaveData "1" *-- "*" RosterEntry : roster
   SaveData --> ChapterDef : chapterId
+  StageDef "1" *-- "*" CharacterDef : recruitOnClear
   StageDef "1" *-- "*" DialogueLine : postDialogue
   StageDef "1" *-- "*" DialogueLine : preDialogue
   StageDef "1" *-- "*" EventTrigger : events
@@ -914,7 +977,11 @@ classDiagram
       -clearInspect() void
       -moveSelected(to: Point) Promise~void~
       -openUnitMenu(sel: Selection) void
-      -startTargeting(sel: Selection, targets: Unit[]) void
+      -openItemMenu(sel: Selection) void
+      -executeItem(unit: Unit, index: number) Promise~void~
+      -executeTalk(unit: Unit, event: Parameters~EventEngine[talk]~[1]) Promise~void~
+      -executeHeal(healer: Unit, target: Unit) Promise~void~
+      -startTargeting(kind: Targeting[kind], sel: Selection, targets: Unit[]) void
       -selectTarget(i: number) void
       -cancelTargeting() void
       -executeAttack(attacker: Unit, defender: Unit) Promise~void~
@@ -937,6 +1004,7 @@ classDiagram
     }
     class Targeting {
       <<interface>>
+      +kind: attack | heal
       +sel: Selection
       +targets: Unit[]
       +index: number
