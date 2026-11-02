@@ -15,6 +15,12 @@ import { actionOrder, planAction } from '../core/ai';
 import { evaluate } from '../core/objectives';
 import { type EventEffects, EventEngine } from '../core/events';
 import { runDialogue } from './DialogueScene';
+import type { ResultData } from './ResultScene';
+import { applyVictory, buildStageUnits, newCampaign } from '../core/campaign';
+import { CHAPTER_1 } from '../data/chapter1';
+import type { SaveData } from '../data/types';
+import { writeSave } from '../save/save';
+import { playSfx, toggleMute } from '../render/sfx';
 import { forecast } from '../core/combat';
 import { TILE } from '../render/layout';
 
@@ -36,7 +42,7 @@ interface Selection {
 }
 
 const HELP: Record<Mode, string> = {
-  idle: 'Setas/WASD ou mouse: cursor · Z/Enter/clique: selecionar · E: encerrar turno',
+  idle: 'Setas/WASD ou mouse: cursor · Z/Enter/clique: selecionar · E: encerrar turno · M: som',
   selected: 'Escolha o destino (azul). Vermelho = alcance da arma · X/Esc/botão direito: cancelar',
   moving: '',
   menu: '↑/↓: escolher · Z/Enter/clique: confirmar · X/Esc: voltar',
@@ -61,6 +67,7 @@ export class BattleScene extends Phaser.Scene {
   private menuCancel?: () => void;
   private forecastPanel!: ForecastPanel;
   private eventEngine!: EventEngine;
+  private save!: SaveData;
   private ended = false;
   /** Resultado final (lido por testes de ponta a ponta). */
   outcome?: 'victory' | 'defeat';
@@ -75,9 +82,13 @@ export class BattleScene extends Phaser.Scene {
     return this.state;
   }
 
-  create(data: { stageId?: string }): void {
-    const stage = lookup(DB.stages, data.stageId ?? 'c1s1', 'Fase');
-    this.state = new BattleState(stage, DB);
+  create(data: { save?: SaveData; stageId?: string; seed?: number }): void {
+    // Sem save (atalho de desenvolvimento): campanha Casual começando na fase pedida.
+    const stageId = data.save ? CHAPTER_1.stageIds[data.save.nextStageIndex] : (data.stageId ?? 'c1s1');
+    const stage = lookup(DB.stages, stageId, 'Fase');
+    this.save = data.save ?? { ...newCampaign('casual'), nextStageIndex: Math.max(0, CHAPTER_1.stageIds.indexOf(stageId)) };
+    this.state = new BattleState(stage, DB, { seed: data.seed, units: buildStageUnits(stage, this.save, DB) });
+    this.cameras.main.fadeIn(350);
     this.eventEngine = new EventEngine(this.state);
     this.sprites.clear();
     this.mode = 'busy';
@@ -171,6 +182,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private onKey(code: string): void {
+    if (code === 'KeyM') {
+      this.panel.setHelp(toggleMute() ? 'Som desligado (M para ligar).' : 'Som ligado (M para desligar).');
+      return;
+    }
     if (this.ended) return;
     const dirs: Record<string, Point> = {
       ArrowUp: { x: 0, y: -1 }, KeyW: { x: 0, y: -1 },
@@ -194,7 +209,10 @@ export class BattleScene extends Phaser.Scene {
     if (d) {
       if (this.mode === 'busy' || this.mode === 'moving') return;
       const next = { x: this.cursor.x + d.x, y: this.cursor.y + d.y };
-      if (this.state.map.inBounds(next)) this.setCursor(next);
+      if (this.state.map.inBounds(next)) {
+        playSfx(this, 'cursor');
+        this.setCursor(next);
+      }
     } else if (['Enter', 'KeyZ', 'Space'].includes(code)) {
       this.confirm();
     } else if (['Escape', 'KeyX', 'Backspace'].includes(code)) {
@@ -244,6 +262,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private cancel(): void {
+    if (this.mode !== 'idle' && this.mode !== 'busy') playSfx(this, 'cancel');
     if (this.menu.isOpen) {
       const back = this.menuCancel;
       this.menu.close();
@@ -257,6 +276,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private select(unit: Unit): void {
+    playSfx(this, 'select');
     const range = this.state.rangeFor(unit);
     this.selection = { unit, origin: unit.position, range, moveKeys: new Set(range.move.map(pointKey)) };
     this.mapView.showRanges(range.move, range.attack, unit.weapon.type === 'staff' ? 'heal' : 'attack');
@@ -290,6 +310,7 @@ export class BattleScene extends Phaser.Scene {
     this.mapView.clearRanges();
     this.sprites.get(sel.unit.id)?.setSelected(false);
     const path = this.state.moveUnit(sel.unit, to);
+    if (path.length > 1) playSfx(this, 'move');
     await this.sprites.get(sel.unit.id)?.walk(path);
     this.openUnitMenu(sel);
   }
@@ -346,6 +367,7 @@ export class BattleScene extends Phaser.Scene {
   private async executeItem(unit: Unit, index: number): Promise<void> {
     this.setMode('busy');
     const amount = this.state.useItem(unit, index);
+    playSfx(this, 'heal');
     this.sprites.get(unit.id)?.refresh();
     await floatText(this, unit.x, unit.y, `+${amount} HP`, '#7CFC9A', 18);
     await this.finishAction(unit);
@@ -363,11 +385,15 @@ export class BattleScene extends Phaser.Scene {
     this.mapView.clearRanges();
     this.setMode('busy');
     const out = this.state.healUnit(healer, target);
+    playSfx(this, 'heal');
     this.sprites.get(target.id)?.refresh();
     await floatText(this, target.x, target.y, `+${out.amount} HP`, '#7CFC9A', 20);
     if (out.exp) {
       await floatText(this, healer.x, healer.y, `+${out.exp.amount} EXP`, '#9fe3b0', 16);
-      for (const up of out.exp.levelUps) await levelUpPopup(this, healer, up);
+      for (const up of out.exp.levelUps) {
+        playSfx(this, 'levelup');
+        await levelUpPopup(this, healer, up);
+      }
     }
     this.refreshPanel();
     await this.finishAction(healer);
@@ -426,9 +452,11 @@ export class BattleScene extends Phaser.Scene {
       const dSprite = this.sprites.get(d.id)!;
       await aSprite.lunge(d.position);
       if (!strike.hit) {
+        playSfx(this, 'miss');
         dSprite.dodge();
         await floatText(this, d.x, d.y, 'Errou', '#cfd8e3');
       } else {
+        playSfx(this, strike.crit ? 'crit' : 'hit');
         dSprite.flash();
         dSprite.refresh();
         const label = strike.crit ? `CRÍTICO! -${strike.damage}` : `-${strike.damage}`;
@@ -438,13 +466,17 @@ export class BattleScene extends Phaser.Scene {
     }
     for (const u of [attacker, defender]) {
       if (!u.isAlive()) {
+        playSfx(this, 'death');
         await this.sprites.get(u.id)!.fadeOut();
         await this.runEvents(this.eventEngine.unitDefeated(u));
       }
     }
     for (const gain of outcome.exp) {
       await floatText(this, gain.unit.x, gain.unit.y, `+${gain.amount} EXP`, '#9fe3b0', 16);
-      for (const up of gain.levelUps) await levelUpPopup(this, gain.unit, up);
+      for (const up of gain.levelUps) {
+        playSfx(this, 'levelup');
+        await levelUpPopup(this, gain.unit, up);
+      }
     }
     this.refreshSprites();
     this.refreshPanel();
@@ -556,11 +588,19 @@ export class BattleScene extends Phaser.Scene {
     outcomeBanner(this, result === 'victory' ? 'Vitória!' : 'Derrota...', result === 'victory' ? 0x8a4a2a : 0x2a2230);
     this.panel.setHelp(result === 'victory'
       ? 'Fase concluída! Pressione Enter ou clique para continuar.'
-      : 'Aren caiu e a Crista se apagou... Enter ou clique para voltar ao título.');
+      : 'Aren caiu e a Crista se apagou... Enter ou clique para continuar.');
+    playSfx(this, result === 'victory' ? 'victory' : 'defeat');
     await this.wait(600);
     await this.waitForConfirm();
-    if (result === 'victory') await runDialogue(this, this.state.stage.postDialogue);
-    this.scene.start('Title');
+    let save = this.save;
+    if (result === 'victory') {
+      await runDialogue(this, this.state.stage.postDialogue);
+      save = applyVictory(this.save, this.state);
+      writeSave(save);
+    }
+    this.cameras.main.fadeOut(300);
+    await this.wait(320);
+    this.scene.start('Result', { result, stageName: this.state.stage.name, save } satisfies ResultData);
   }
 
   private wait(ms: number): Promise<void> {
@@ -584,6 +624,7 @@ export class BattleScene extends Phaser.Scene {
   private async announcePhase(): Promise<void> {
     this.panel.setTurn(this.state.turn, this.state.phase);
     const label = { player: 'Fase do Jogador', enemy: 'Fase Inimiga', ally: 'Fase Aliada' }[this.state.phase];
+    playSfx(this, 'phase');
     await showPhaseBanner(this, this.state.phase === 'player' ? `Turno ${this.state.turn} — ${label}` : label, this.state.phase);
   }
 

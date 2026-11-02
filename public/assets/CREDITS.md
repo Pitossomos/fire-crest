@@ -1,6 +1,9 @@
 # Créditos de assets
 
-Por enquanto **não há assets de terceiros**: terrenos e unidades são pixel-art procedural gerada em código (`src/render/art.ts`), feita para este projeto.
+Por enquanto **não há assets de terceiros**:
+
+- **Gráficos:** terrenos, unidades e retratos são pixel-art procedural gerada em código (`src/render/art.ts`), feita para este projeto.
+- **Sons:** efeitos sintetizados em tempo real com WebAudio (`src/render/sfx.ts`).
 
 Planejado (licença **CC0**), a ser adicionado nesta pasta:
 

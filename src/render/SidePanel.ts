@@ -34,7 +34,9 @@ export class SidePanel {
     for (const ly of [96, 196]) bg.lineBetween(x + 12, ly, x + width - 12, ly);
 
     const px = x + 14;
-    text(scene, px, 12, 16, COLORS.accent).setText(stageName);
+    const title = text(scene, px, 12, 16, COLORS.accent).setText(stageName);
+    // Nomes longos ("A Fortaleza de Cinzaforte") diminuem a fonte até caber no painel.
+    for (let size = 16; title.width > width - 24 && size > 11; size--) title.setFontSize(size);
     this.turnText = text(scene, px, 36, 13);
     text(scene, px, 58, 12, COLORS.textDim).setText(`Objetivo: ${objective}`).setWordWrapWidth(width - 28);
     this.terrainText = text(scene, px, 106, 13);
