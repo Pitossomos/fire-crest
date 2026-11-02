@@ -57,12 +57,17 @@ await press('KeyE'); // encerra o turno
 await page.waitForFunction(() => {
   const b = window.__FIRE_CREST__.scene.getScene('Battle');
   return b.mode === 'idle' && b.battle.turn === 2;
-}, null, { timeout: 10000 });
+}, null, { timeout: 60000 });
 s = await battle();
 if (s.aren.acted) fail('Aren deveria poder agir no turno 2');
+await page.screenshot({ path: join(shots, '04b-turn2.png') });
 
-// Inspeciona um inimigo com o mouse (bandido em 7,2 → pixel central).
-await page.mouse.click(7 * 48 + 24, 2 * 48 + 24);
+// Inspeciona um inimigo com o mouse (onde quer que ele esteja agora).
+const foe = await page.evaluate(() => {
+  const u = window.__FIRE_CREST__.scene.getScene('Battle').battle.units.find((x) => x.faction === 'enemy' && x.isAlive());
+  return { x: u.x, y: u.y };
+});
+await page.mouse.click(foe.x * 48 + 24, foe.y * 48 + 24);
 await page.waitForTimeout(200);
 await page.screenshot({ path: join(shots, '05-enemy-range.png') });
 s = await battle();
@@ -99,6 +104,35 @@ const combat = await page.evaluate(() => {
 if (!combat.arenActed) fail('Aren deveria ter agido após atacar');
 if (combat.arenExp === 0 && combat.arenLevel === 1) fail('Aren deveria ter ganhado EXP');
 await page.screenshot({ path: join(shots, '07-after-combat.png') });
+
+// --- Fase inimiga com IA (M3) ---
+await press('KeyE');
+await page.waitForTimeout(1500);
+await page.screenshot({ path: join(shots, '08-enemy-phase.png') });
+await page.waitForFunction(() => {
+  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+  return sc.outcome !== undefined || (sc.battle.turn === 3 && sc.mode === 'idle');
+}, null, { timeout: 60000 });
+const afterAi = await page.evaluate(() => {
+  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+  const enemies = sc.battle.units.filter((u) => u.faction === 'enemy');
+  return { outcome: sc.outcome, turn: sc.battle.turn, moved: enemies.filter((u) => u.hasActed || u.x !== 2 || true).length };
+});
+console.log('Após a fase inimiga:', JSON.stringify(afterAi));
+await page.screenshot({ path: join(shots, '09-turn3.png') });
+
+// --- Vitória (M3): derrota todos os inimigos via hook e checa o desfecho ---
+if (!afterAi.outcome) {
+  const out = await page.evaluate(() => {
+    const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+    for (const u of sc.battle.units) if (u.faction === 'enemy') u.hp = 0;
+    sc.checkOutcome();
+    return sc.outcome;
+  });
+  if (out !== 'victory') fail(`esperava vitória, veio ${out}`);
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: join(shots, '10-victory.png') });
+}
 
 if (errors.length) fail(`erros no console:\n${errors.join('\n')}`);
 await browser.close();

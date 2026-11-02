@@ -25,6 +25,12 @@ export interface ExpGain {
   levelUps: LevelUp[];
 }
 
+/** Cura recebida por terreno no início da fase. */
+export interface TerrainHeal {
+  unit: Unit;
+  amount: number;
+}
+
 export interface AttackOutcome {
   result: CombatResult;
   exp: ExpGain[];
@@ -49,6 +55,10 @@ export class BattleState {
   readonly rng: Rng;
   turn = 1;
   phase: Faction = 'player';
+  /** Objetivo "tomar" cumprido. */
+  seized = false;
+  /** Curas de terreno aplicadas no início da fase atual. */
+  phaseHeals: TerrainHeal[] = [];
 
   constructor(stage: StageDef, db: GameDatabase, opts: BattleOptions = {}) {
     this.stage = stage;
@@ -124,6 +134,18 @@ export class BattleState {
     return { result, exp };
   }
 
+  /** O lorde pode tomar o objetivo estando onde está? */
+  canSeize(unit: Unit): boolean {
+    const o = this.stage.objective;
+    return o.kind === 'seize' && unit.isLord && unit.x === o.x && unit.y === o.y;
+  }
+
+  seize(unit: Unit): void {
+    if (!this.canSeize(unit)) throw new Error(`${unit.name} não pode tomar este ponto`);
+    this.seized = true;
+    unit.hasActed = true;
+  }
+
   /** Desfaz um movimento ainda não confirmado (antes de escolher a ação). */
   undoMove(unit: Unit, origin: Point): void {
     unit.moveTo(origin);
@@ -154,7 +176,16 @@ export class BattleState {
         break;
       }
     }
-    for (const u of this.unitsOf(this.phase)) u.hasActed = false;
+    this.phaseHeals = [];
+    // Só a facção da vez fica "acinzentada" ao agir; as demais voltam ao normal.
+    for (const u of this.livingUnits) u.hasActed = false;
+    for (const u of this.unitsOf(this.phase)) {
+      const pct = this.map.terrainAt(u.position).heal;
+      if (pct > 0 && u.hp < u.maxHp) {
+        const amount = u.heal(Math.max(1, Math.floor((u.maxHp * pct) / 100)));
+        if (amount > 0) this.phaseHeals.push({ unit: u, amount });
+      }
+    }
     return this.phase;
   }
 }

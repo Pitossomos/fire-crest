@@ -83,3 +83,36 @@ export function buildPath(reach: Map<string, ReachNode>, target: Point): Point[]
   }
   return path;
 }
+
+/**
+ * Campo de distâncias (custo de movimento) de cada tile até o alvo mais próximo,
+ * via Dijkstra com várias origens. Usado pela IA para se aproximar contornando
+ * rios e muralhas. Ignora unidades no caminho.
+ */
+export function distanceField(map: BattleMap, targets: Point[]): Map<string, number> {
+  const dist = new Map<string, number>();
+  const open: { p: Point; d: number }[] = [];
+  for (const t of targets) {
+    dist.set(pointKey(t), 0);
+    open.push({ p: t, d: 0 });
+  }
+  const targetKeys = new Set(targets.map(pointKey));
+  while (open.length > 0) {
+    open.sort((a, b) => a.d - b.d);
+    const cur = open.shift()!;
+    if (cur.d > (dist.get(pointKey(cur.p)) ?? Infinity)) continue;
+    // Custo para entrar em `cur` vindo de um vizinho.
+    const enter = targetKeys.has(pointKey(cur.p)) ? 1 : map.moveCost(cur.p);
+    if (enter === null) continue;
+    for (const n of neighbors(cur.p)) {
+      if (map.moveCost(n) === null) continue;
+      const d = cur.d + enter;
+      const key = pointKey(n);
+      if (d < (dist.get(key) ?? Infinity)) {
+        dist.set(key, d);
+        open.push({ p: n, d });
+      }
+    }
+  }
+  return dist;
+}
