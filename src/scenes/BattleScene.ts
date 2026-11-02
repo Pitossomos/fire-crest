@@ -13,6 +13,8 @@ import { ForecastPanel } from '../render/ForecastPanel';
 import { floatText, levelUpPopup, outcomeBanner } from '../render/effects';
 import { actionOrder, planAction } from '../core/ai';
 import { evaluate } from '../core/objectives';
+import { type EventEffects, EventEngine } from '../core/events';
+import { runDialogue } from './DialogueScene';
 import { forecast } from '../core/combat';
 import { TILE } from '../render/layout';
 
@@ -57,6 +59,7 @@ export class BattleScene extends Phaser.Scene {
   private selection?: Selection;
   private menuCancel?: () => void;
   private forecastPanel!: ForecastPanel;
+  private eventEngine!: EventEngine;
   private ended = false;
   /** Resultado final (lido por testes de ponta a ponta). */
   outcome?: 'victory' | 'defeat';
@@ -74,6 +77,7 @@ export class BattleScene extends Phaser.Scene {
   create(data: { stageId?: string }): void {
     const stage = lookup(DB.stages, data.stageId ?? 'c1s1', 'Fase');
     this.state = new BattleState(stage, DB);
+    this.eventEngine = new EventEngine(this.state);
     this.sprites.clear();
     this.mode = 'busy';
     this.selection = undefined;
@@ -92,7 +96,34 @@ export class BattleScene extends Phaser.Scene {
     this.bindInput();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.mapView.destroy());
 
-    void this.announcePhase().then(() => this.setMode('idle'));
+    void this.intro();
+  }
+
+  /** Diálogo de abertura → banner do turno 1 → eventos de início de turno. */
+  private async intro(): Promise<void> {
+    await this.wait(300);
+    await runDialogue(this, this.state.stage.preDialogue);
+    await this.announcePhase();
+    await this.runEvents(this.eventEngine.turnStart());
+    this.setMode('idle');
+  }
+
+  /** Mostra os efeitos de eventos: reforços surgem, recrutas mudam de cor, diálogos rodam. */
+  private async runEvents(effects: EventEffects[]): Promise<void> {
+    for (const fx of effects) {
+      for (const u of fx.spawned) {
+        const sprite = new UnitSprite(this, u);
+        this.sprites.set(u.id, sprite);
+        await sprite.fadeIn();
+      }
+      for (const u of fx.recruited) {
+        this.sprites.get(u.id)?.applyTexture();
+        this.sprites.get(u.id)?.refresh();
+        await floatText(this, u.x, u.y, 'Recrutado!', '#9cc0ff', 18);
+      }
+      await runDialogue(this, fx.dialogue);
+    }
+    this.refreshPanel();
   }
 
   // -------------------------------------------------------------------------
@@ -272,11 +303,11 @@ export class BattleScene extends Phaser.Scene {
     const { x, y } = MapView.toPixel(sel.unit.position);
     this.menu.open(x + TILE + 6, y - 6, options, (id) => {
       this.menuCancel = undefined;
-      if (id === 'wait') this.finishAction(sel.unit);
+      if (id === 'wait') void this.finishAction(sel.unit);
       else if (id === 'attack') this.startTargeting(sel, targets);
       else if (id === 'seize') {
         this.state.seize(sel.unit);
-        this.finishAction(sel.unit);
+        void this.finishAction(sel.unit);
       }
     });
   }
@@ -316,7 +347,7 @@ export class BattleScene extends Phaser.Scene {
     this.setMode('busy');
     const outcome = this.state.attack(attacker, defender);
     await this.playCombat(attacker, defender, outcome);
-    this.finishAction(attacker);
+    await this.finishAction(attacker);
   }
 
   /** Anima os golpes, mortes, EXP e level-ups de um combate já resolvido. */
@@ -340,7 +371,10 @@ export class BattleScene extends Phaser.Scene {
       this.refreshPanel();
     }
     for (const u of [attacker, defender]) {
-      if (!u.isAlive()) await this.sprites.get(u.id)!.fadeOut();
+      if (!u.isAlive()) {
+        await this.sprites.get(u.id)!.fadeOut();
+        await this.runEvents(this.eventEngine.unitDefeated(u));
+      }
     }
     for (const gain of outcome.exp) {
       await floatText(this, gain.unit.x, gain.unit.y, `+${gain.amount} EXP`, '#9fe3b0', 16);
@@ -357,13 +391,17 @@ export class BattleScene extends Phaser.Scene {
     this.select(sel.unit);
   }
 
-  private finishAction(unit: Unit): void {
+  private async finishAction(unit: Unit): Promise<void> {
     this.state.wait(unit);
     this.sprites.get(unit.id)?.refresh();
     this.selection = undefined;
     this.mapView.clearRanges();
     this.refreshPanel();
     if (this.checkOutcome()) return;
+    if (unit.isAlive()) {
+      this.setMode('busy');
+      await this.runEvents(this.eventEngine.tileReached(unit));
+    }
     this.setMode('idle');
     if (this.state.phaseExhausted()) void this.runEndPhase();
   }
@@ -392,6 +430,7 @@ export class BattleScene extends Phaser.Scene {
       this.refreshSprites();
       await this.announcePhase();
       await this.showTerrainHeals();
+      if (this.state.phase === 'player') await this.runEvents(this.eventEngine.turnStart());
       if (this.checkOutcome()) return;
       if (this.state.phase !== 'player' && (await this.runAiPhase())) return;
     } while (this.state.phase !== 'player');
@@ -454,6 +493,7 @@ export class BattleScene extends Phaser.Scene {
       : 'Aren caiu e a Crista se apagou... Enter ou clique para voltar ao título.');
     await this.wait(600);
     await this.waitForConfirm();
+    if (result === 'victory') await runDialogue(this, this.state.stage.postDialogue);
     this.scene.start('Title');
   }
 

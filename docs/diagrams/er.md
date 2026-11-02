@@ -28,6 +28,7 @@ erDiagram
     Stats growths
     string weaponId FK "-> WeaponDef"
     string bio
+    boolean villain "opcional"
   }
   ClassDef_["ClassDef"] {
     string id PK

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { TitleScene } from './scenes/TitleScene';
 import { BattleScene } from './scenes/BattleScene';
+import { DialogueScene } from './scenes/DialogueScene';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from './render/layout';
 
 const game = new Phaser.Game({
@@ -12,7 +13,7 @@ const game = new Phaser.Game({
   backgroundColor: COLORS.background,
   pixelArt: true,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, TitleScene, BattleScene],
+  scene: [BootScene, TitleScene, BattleScene, DialogueScene],
 });
 
 // Exposto em desenvolvimento para depuração e testes automatizados (Playwright).

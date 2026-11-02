@@ -1,7 +1,7 @@
-import type { Faction, StageDef } from '../data/types';
+import type { Faction, StageDef, UnitPlacement } from '../data/types';
 import type { GameDatabase } from '../data';
 import { BattleMap } from './battle-map';
-import { type Point, pointKey } from './grid';
+import { type Point, neighbors, pointKey } from './grid';
 import { PHASE_ORDER } from './faction';
 import { Unit } from './unit';
 import { createUnit } from './unit-factory';
@@ -59,6 +59,7 @@ export class BattleState {
   seized = false;
   /** Curas de terreno aplicadas no início da fase atual. */
   phaseHeals: TerrainHeal[] = [];
+  private nextIndex: number;
 
   constructor(stage: StageDef, db: GameDatabase, opts: BattleOptions = {}) {
     this.stage = stage;
@@ -66,6 +67,7 @@ export class BattleState {
     this.rng = new Rng(opts.seed ?? Date.now());
     this.map = new BattleMap(stage.map, db.terrain);
     this.units = opts.units ?? stage.units.map((p, i) => createUnit(p, db, i));
+    this.nextIndex = this.units.length;
     for (const u of this.units) {
       if (!this.map.inBounds(u.position)) throw new Error(`${u.name} fora do mapa`);
       if (this.map.moveCost(u.position) === null) throw new Error(`${u.name} em terreno intransponível`);
@@ -104,6 +106,33 @@ export class BattleState {
     const path = buildPath(range.reach, to);
     unit.moveTo(to);
     return path;
+  }
+
+  /**
+   * Cria uma unidade no meio da batalha (reforço/recruta). Se o tile pedido
+   * estiver ocupado, usa o tile livre e transponível mais próximo.
+   */
+  spawnUnit(p: UnitPlacement): Unit {
+    const unit = createUnit(p, this.db, this.nextIndex++);
+    unit.moveTo(this.nearestFree(unit.position));
+    this.units.push(unit);
+    return unit;
+  }
+
+  private nearestFree(start: Point): Point {
+    const seen = new Set([pointKey(start)]);
+    const queue = [start];
+    while (queue.length > 0) {
+      const p = queue.shift()!;
+      if (this.map.moveCost(p) !== null && !this.unitAt(p)) return p;
+      for (const n of neighbors(p)) {
+        if (this.map.inBounds(n) && !seen.has(pointKey(n))) {
+          seen.add(pointKey(n));
+          queue.push(n);
+        }
+      }
+    }
+    throw new Error('Mapa sem espaço livre');
   }
 
   /** Inimigos vivos que a unidade pode atacar da posição atual. */

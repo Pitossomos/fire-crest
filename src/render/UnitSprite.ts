@@ -17,9 +17,8 @@ export class UnitSprite {
   constructor(scene: Phaser.Scene, unit: Unit) {
     this.scene = scene;
     this.unit = unit;
-    const key = unitTextureKey(unit.classDef.sprite, unit.weapon.type, unit.faction);
-    this.sprite = scene.add.image(TILE / 2, TILE / 2, key).setScale(SCALE);
-    if (unit.faction === 'enemy') this.sprite.setFlipX(true);
+    this.sprite = scene.add.image(TILE / 2, TILE / 2, '__DEFAULT').setScale(SCALE);
+    this.applyTexture();
     this.hpBar = scene.add.graphics();
     const parts: Phaser.GameObjects.GameObject[] = [this.sprite, this.hpBar];
     if (unit.boss) {
@@ -29,6 +28,21 @@ export class UnitSprite {
     }
     this.container = scene.add.container(unit.x * TILE, unit.y * TILE, parts).setDepth(10);
     this.refresh();
+  }
+
+  /** Textura conforme classe, arma e facção (muda quando a unidade é recrutada). */
+  applyTexture(): void {
+    const u = this.unit;
+    this.sprite.setTexture(unitTextureKey(u.classDef.sprite, u.weapon.type, u.faction));
+    this.sprite.setFlipX(u.faction === 'enemy');
+  }
+
+  /** Surge (reforços). */
+  fadeIn(): Promise<void> {
+    this.container.setAlpha(0);
+    return new Promise((resolve) => {
+      this.scene.tweens.add({ targets: this.container, alpha: 1, duration: 400, onComplete: () => resolve() });
+    });
   }
 
   /** Atualiza HP e o tom acinzentado de "já agiu". */
