@@ -525,6 +525,15 @@ export function drawTerrain(terrainId: string, variant: number): PixelCanvas {
     case 'water':
       water(c, variant);
       break;
+    case 'floor':
+      c.fill('#6e6670');
+      for (let row = 0; row < 2; row++) {
+        for (let col = 0; col < 2; col++) {
+          c.rect(col * 8 + 1, row * 8 + 1, 6, 6, (row + col + variant) % 2 === 0 ? '#857c88' : '#7a7280');
+        }
+      }
+      if (hash2(variant, 3) > 0.5) c.set(4 + variant, 10, '#5a525c');
+      break;
     case 'wall':
       bricks(c, '#6a6a76', '#3a3a44', '#55555f');
       break;

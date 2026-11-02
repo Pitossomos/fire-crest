@@ -38,8 +38,8 @@ describe('fórmulas', () => {
       { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 1, y: 0 });
     // Aren: FOR 6 + Espada 5 + 1 (vantagem) − DEF 3 = 9
     expect(strikeStats(a, d, s.map.terrainAt(d.position)).damage).toBe(9);
-    // Bandido: FOR 6 + Machado 8 − 1 (desvantagem) − DEF 5 = 8
-    expect(strikeStats(d, a, s.map.terrainAt(a.position)).damage).toBe(8);
+    // Bandido: FOR 5 + Machado 7 − 1 (desvantagem) − DEF 6 = 5
+    expect(strikeStats(d, a, s.map.terrainAt(a.position)).damage).toBe(5);
   });
 
   it('floresta reduz dano e acerto do atacante', () => {

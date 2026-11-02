@@ -13,7 +13,7 @@ export const CLASSES: Record<string, ClassDef> = {
   },
   lancer: {
     id: 'lancer', name: 'Lanceiro', move: 4, weaponTypes: ['lance'], sprite: 'unit_lancer',
-    baseStats: stats(24, 7, 0, 4, 2, 2, 10, 0), growths: stats(85, 50, 0, 35, 20, 25, 60, 10),
+    baseStats: stats(24, 6, 0, 4, 2, 2, 10, 0), growths: stats(85, 50, 0, 35, 20, 25, 60, 10),
   },
   archer: {
     id: 'archer', name: 'Arqueiro', move: 5, weaponTypes: ['bow'], sprite: 'unit_archer',
@@ -30,11 +30,11 @@ export const CLASSES: Record<string, ClassDef> = {
   // --- Inimigos ---
   bandit: {
     id: 'bandit', name: 'Bandido', move: 5, weaponTypes: ['axe'], sprite: 'unit_bandit',
-    baseStats: stats(22, 6, 0, 2, 4, 0, 3, 0), growths: stats(80, 50, 0, 20, 30, 15, 20, 5),
+    baseStats: stats(22, 5, 0, 2, 4, 0, 3, 0), growths: stats(80, 50, 0, 20, 30, 15, 20, 5),
   },
   hollow: {
     id: 'hollow', name: 'Esvaído', move: 4, weaponTypes: ['claw'], sprite: 'unit_hollow',
-    baseStats: stats(28, 7, 0, 1, 2, 0, 2, 0), growths: stats(90, 45, 0, 10, 15, 0, 25, 0),
+    baseStats: stats(28, 6, 0, 1, 2, 0, 2, 0), growths: stats(90, 45, 0, 10, 15, 0, 25, 0),
   },
   dusk_monk: {
     id: 'dusk_monk', name: 'Monge do Ocaso', move: 5, weaponTypes: ['dark', 'staff'], sprite: 'unit_dusk_monk',

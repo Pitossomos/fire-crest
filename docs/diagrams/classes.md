@@ -41,6 +41,9 @@ classDiagram
     class RangeInfo {
       <<interface>>
     }
+    class mod_core_campaign["campaign.ts"] {
+      <<module>>
+    }
     class StrikeStats {
       <<interface>>
     }
@@ -180,6 +183,14 @@ classDiagram
       <<module>>
     }
     class UnitSprite
+  }
+  namespace save {
+    class KeyValueStore {
+      <<interface>>
+    }
+    class mod_save_save["save.ts"] {
+      <<module>>
+    }
   }
   namespace scenes {
     class BattleScene
@@ -395,6 +406,13 @@ classDiagram
       +reach: Map~string, ReachNode~
       +move: Point[]
       +attack: Point[]
+    }
+    class mod_core_campaign["campaign.ts"] {
+      <<module>>
+      +newCampaign(mode: GameMode, chapterId: any) SaveData
+      +buildStageUnits(stage: StageDef, save: SaveData, db: GameDatabase) Unit[]
+      +applyVictory(save: SaveData, state: BattleState) SaveData
+      +livingRoster(save: SaveData) RosterEntry[]
     }
     class StrikeStats {
       <<interface>>
@@ -935,6 +953,33 @@ classDiagram
     }
   }
   ActionMenu "1" *-- "*" MenuOption : options
+```
+
+## Camada `save`
+
+Atributos e métodos dos tipos em `src/save/`. Relações apenas internas à camada.
+
+```mermaid
+---
+title: Classes — save
+---
+classDiagram
+  direction LR
+  namespace save {
+    class KeyValueStore {
+      <<interface>>
+      +getItem(key: string) string | null
+      +setItem(key: string, value: string) void
+      +removeItem(key: string) void
+    }
+    class mod_save_save["save.ts"] {
+      <<module>>
+      +defaultStore() KeyValueStore | undefined
+      +loadSave(store: KeyValueStore | undefined) SaveData | undefined
+      +writeSave(data: SaveData, store: KeyValueStore | undefined) boolean
+      +clearSave(store: KeyValueStore | undefined) void
+    }
+  }
 ```
 
 ## Camada `scenes`
