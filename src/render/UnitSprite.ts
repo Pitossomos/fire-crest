@@ -34,7 +34,6 @@ export class UnitSprite {
   /** Atualiza HP e o tom acinzentado de "já agiu". */
   refresh(): void {
     const u = this.unit;
-    this.container.setVisible(u.isAlive());
     if (u.hasActed) this.sprite.setTint(0x7a7a7a);
     else this.sprite.clearTint();
     const g = this.hpBar;
@@ -62,6 +61,39 @@ export class UnitSprite {
         });
       });
     }
+  }
+
+  /** Investida curta em direção a um tile (golpe). */
+  lunge(toward: Point): Promise<void> {
+    const dx = Math.sign(toward.x - this.unit.x) * 12;
+    const dy = Math.sign(toward.y - this.unit.y) * 12;
+    return new Promise((resolve) => {
+      this.scene.tweens.add({
+        targets: this.sprite, x: TILE / 2 + dx, y: TILE / 2 + dy, duration: 110, yoyo: true, ease: 'Quad.easeOut',
+        onComplete: () => resolve(),
+      });
+    });
+  }
+
+  /** Pisca em branco ao receber dano. */
+  flash(): void {
+    this.sprite.setTintFill(0xffffff);
+    this.scene.time.delayedCall(90, () => this.refresh());
+  }
+
+  /** Treme sem tomar dano (golpe errado). */
+  dodge(): void {
+    this.scene.tweens.add({ targets: this.sprite, x: TILE / 2 + 6, duration: 70, yoyo: true });
+  }
+
+  /** Some ao morrer. */
+  fadeOut(): Promise<void> {
+    return new Promise((resolve) => {
+      this.scene.tweens.add({
+        targets: this.container, alpha: 0, duration: 450,
+        onComplete: () => { this.container.setVisible(false); this.container.setAlpha(1); resolve(); },
+      });
+    });
   }
 
   setSelected(selected: boolean): void {

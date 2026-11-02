@@ -15,21 +15,21 @@ title: Arquitetura — camadas
 flowchart TB
   app["<b>main.ts — bootstrap do Phaser</b><br/>1 módulo(s)"]:::layer_app
   scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>3 módulo(s)"]:::layer_scenes
-  render["<b>render/ — componentes visuais</b><br/>9 módulo(s)"]:::layer_render
-  core["<b>core/ — regras do jogo (puro)</b><br/>8 módulo(s)"]:::layer_core
+  render["<b>render/ — componentes visuais</b><br/>11 módulo(s)"]:::layer_render
+  core["<b>core/ — regras do jogo (puro)</b><br/>10 módulo(s)"]:::layer_core
   data["<b>data/ — definições e conteúdo</b><br/>9 módulo(s)"]:::layer_data
   ext_phaser[("phaser")]:::external
   app -->|"1 import(s)"| ext_phaser
   app -->|"1 import(s)"| render
   app -->|"3 import(s)"| scenes
-  core -->|"1 import(s), 6 só tipos"| data
-  render -.->|"5 só tipos"| core
+  core -->|"1 import(s), 8 só tipos"| data
+  render -.->|"9 só tipos"| core
   render -.->|"4 só tipos"| data
-  render -->|"6 import(s)"| ext_phaser
-  scenes -->|"3 import(s), 1 só tipos"| core
+  render -->|"8 import(s)"| ext_phaser
+  scenes -->|"4 import(s), 1 só tipos"| core
   scenes -->|"2 import(s)"| data
   scenes -->|"3 import(s)"| ext_phaser
-  scenes -->|"8 import(s)"| render
+  scenes -->|"10 import(s)"| render
   classDef external fill:#e9e2cc,stroke:#5c4630,color:#1f1a24
   classDef layer_app fill:#f3dcc0,stroke:#8a4a2a,color:#1f1a24
   classDef layer_scenes fill:#f6c9c4,stroke:#7a2420,color:#1f1a24
@@ -58,11 +58,13 @@ flowchart TB
   end
   subgraph layer_render["src/render"]
     src_render_ActionMenu_ts["ActionMenu.ts"]
+    src_render_ForecastPanel_ts["ForecastPanel.ts"]
     src_render_MapView_ts["MapView.ts"]
     src_render_PhaseBanner_ts["PhaseBanner.ts"]
     src_render_SidePanel_ts["SidePanel.ts"]
     src_render_UnitSprite_ts["UnitSprite.ts"]
     src_render_art_ts["art.ts"]
+    src_render_effects_ts["effects.ts"]
     src_render_layout_ts["layout.ts"]
     src_render_pixel_canvas_ts["pixel-canvas.ts"]
     src_render_textures_ts["textures.ts"]
@@ -70,8 +72,10 @@ flowchart TB
   subgraph layer_core["src/core"]
     src_core_battle_map_ts["battle-map.ts"]
     src_core_battle_state_ts["battle-state.ts"]
+    src_core_combat_ts["combat.ts"]
     src_core_faction_ts["faction.ts"]
     src_core_grid_ts["grid.ts"]
+    src_core_leveling_ts["leveling.ts"]
     src_core_pathfinding_ts["pathfinding.ts"]
     src_core_rng_ts["rng.ts"]
     src_core_unit_factory_ts["unit-factory.ts"]
@@ -90,11 +94,15 @@ flowchart TB
   end
   ext_phaser[("phaser")]:::external
   src_core_battle_state_ts --> src_core_battle_map_ts
+  src_core_battle_state_ts --> src_core_combat_ts
   src_core_battle_state_ts --> src_core_faction_ts
   src_core_battle_state_ts --> src_core_grid_ts
+  src_core_battle_state_ts --> src_core_leveling_ts
   src_core_battle_state_ts --> src_core_pathfinding_ts
+  src_core_battle_state_ts --> src_core_rng_ts
   src_core_battle_state_ts --> src_core_unit_factory_ts
   src_core_battle_state_ts --> src_core_unit_ts
+  src_core_combat_ts --> src_core_grid_ts
   src_core_pathfinding_ts --> src_core_faction_ts
   src_core_pathfinding_ts --> src_core_grid_ts
   src_core_unit_factory_ts --> src_core_unit_ts
@@ -117,6 +125,10 @@ flowchart TB
   src_render_ActionMenu_ts --> src_render_layout_ts
   src_render_art_ts --> src_render_layout_ts
   src_render_art_ts --> src_render_pixel_canvas_ts
+  src_render_effects_ts --> ext_phaser
+  src_render_effects_ts --> src_render_layout_ts
+  src_render_ForecastPanel_ts --> ext_phaser
+  src_render_ForecastPanel_ts --> src_render_layout_ts
   src_render_MapView_ts --> ext_phaser
   src_render_MapView_ts --> src_render_layout_ts
   src_render_MapView_ts --> src_render_pixel_canvas_ts
@@ -132,10 +144,13 @@ flowchart TB
   src_render_UnitSprite_ts --> src_render_textures_ts
   src_scenes_BattleScene_ts --> ext_phaser
   src_scenes_BattleScene_ts --> src_core_battle_state_ts
+  src_scenes_BattleScene_ts --> src_core_combat_ts
   src_scenes_BattleScene_ts --> src_core_grid_ts
   src_scenes_BattleScene_ts --> src_core_pathfinding_ts
   src_scenes_BattleScene_ts --> src_data_index_ts
   src_scenes_BattleScene_ts --> src_render_ActionMenu_ts
+  src_scenes_BattleScene_ts --> src_render_effects_ts
+  src_scenes_BattleScene_ts --> src_render_ForecastPanel_ts
   src_scenes_BattleScene_ts --> src_render_layout_ts
   src_scenes_BattleScene_ts --> src_render_MapView_ts
   src_scenes_BattleScene_ts --> src_render_PhaseBanner_ts

@@ -6,6 +6,29 @@ import { PHASE_ORDER } from './faction';
 import { Unit } from './unit';
 import { createUnit } from './unit-factory';
 import { type ReachNode, attackTiles, buildPath, computeReach, movementTiles } from './pathfinding';
+import { type CombatResult, canAttackWith, inWeaponRange, resolveCombat } from './combat';
+import { type LevelUp, combatExp, gainExp } from './leveling';
+import { areHostile } from './faction';
+import { Rng } from './rng';
+
+export interface BattleOptions {
+  /** Semente do RNG (combate e level-up reproduzíveis). */
+  seed?: number;
+  /** Unidades já montadas (campanha); padrão: criadas a partir da fase. */
+  units?: Unit[];
+}
+
+/** EXP ganha por uma unidade numa ação. */
+export interface ExpGain {
+  unit: Unit;
+  amount: number;
+  levelUps: LevelUp[];
+}
+
+export interface AttackOutcome {
+  result: CombatResult;
+  exp: ExpGain[];
+}
 
 /** Áreas destacadas quando uma unidade é selecionada. */
 export interface RangeInfo {
@@ -22,13 +45,17 @@ export class BattleState {
   readonly stage: StageDef;
   readonly map: BattleMap;
   readonly units: Unit[];
+  readonly db: GameDatabase;
+  readonly rng: Rng;
   turn = 1;
   phase: Faction = 'player';
 
-  constructor(stage: StageDef, db: GameDatabase) {
+  constructor(stage: StageDef, db: GameDatabase, opts: BattleOptions = {}) {
     this.stage = stage;
+    this.db = db;
+    this.rng = new Rng(opts.seed ?? Date.now());
     this.map = new BattleMap(stage.map, db.terrain);
-    this.units = stage.units.map((p, i) => createUnit(p, db, i));
+    this.units = opts.units ?? stage.units.map((p, i) => createUnit(p, db, i));
     for (const u of this.units) {
       if (!this.map.inBounds(u.position)) throw new Error(`${u.name} fora do mapa`);
       if (this.map.moveCost(u.position) === null) throw new Error(`${u.name} em terreno intransponível`);
@@ -67,6 +94,34 @@ export class BattleState {
     const path = buildPath(range.reach, to);
     unit.moveTo(to);
     return path;
+  }
+
+  /** Inimigos vivos que a unidade pode atacar da posição atual. */
+  targetsInRange(unit: Unit): Unit[] {
+    if (!canAttackWith(unit)) return [];
+    return this.livingUnits.filter(
+      (t) => areHostile(unit.faction, t.faction) && inWeaponRange(unit, unit.position, t.position),
+    );
+  }
+
+  /** Executa um ataque, distribui EXP às unidades do jogador e marca o atacante como tendo agido. */
+  attack(attacker: Unit, defender: Unit): AttackOutcome {
+    if (!this.targetsInRange(attacker).includes(defender)) {
+      throw new Error(`${attacker.name} não alcança ${defender.name}`);
+    }
+    const result = resolveCombat(this.map, attacker, defender, this.rng);
+    const exp: ExpGain[] = [];
+    for (const [u, enemy, killed] of [
+      [attacker, defender, result.defenderDied],
+      [defender, attacker, result.attackerDied],
+    ] as const) {
+      if (u.faction !== 'player' || !u.isAlive()) continue;
+      const dealt = result.strikes.some((s) => s.attackerId === u.id && s.damage > 0);
+      const amount = combatExp(u, enemy, dealt, killed);
+      exp.push({ unit: u, amount, levelUps: gainExp(u, amount, this.rng) });
+    }
+    attacker.hasActed = true;
+    return { result, exp };
   }
 
   /** Desfaz um movimento ainda não confirmado (antes de escolher a ação). */
