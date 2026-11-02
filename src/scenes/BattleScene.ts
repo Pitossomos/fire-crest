@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { DB, lookup } from '../data';
-import { BattleState, type RangeInfo } from '../core/battle-state';
+import { type AttackOutcome, BattleState, type RangeInfo } from '../core/battle-state';
 import { type Point, pointKey, samePoint } from '../core/grid';
 import { buildPath } from '../core/pathfinding';
 import type { Unit } from '../core/unit';
@@ -9,10 +9,19 @@ import { UnitSprite } from '../render/UnitSprite';
 import { SidePanel } from '../render/SidePanel';
 import { ActionMenu, type MenuOption } from '../render/ActionMenu';
 import { showPhaseBanner } from '../render/PhaseBanner';
+import { ForecastPanel } from '../render/ForecastPanel';
+import { floatText, levelUpPopup } from '../render/effects';
+import { forecast } from '../core/combat';
 import { TILE } from '../render/layout';
 
 /** Modos de interação do jogador. */
-type Mode = 'idle' | 'selected' | 'moving' | 'menu' | 'inspect' | 'busy';
+type Mode = 'idle' | 'selected' | 'moving' | 'menu' | 'inspect' | 'targeting' | 'busy';
+
+interface Targeting {
+  sel: Selection;
+  targets: Unit[];
+  index: number;
+}
 
 interface Selection {
   unit: Unit;
@@ -27,6 +36,7 @@ const HELP: Record<Mode, string> = {
   moving: '',
   menu: '↑/↓: escolher · Z/Enter/clique: confirmar · X/Esc: voltar',
   inspect: 'Alcance de ameaça da unidade · X/Esc/clique: fechar',
+  targeting: 'Escolha o alvo: setas/mouse alternam · Z/Enter/clique: atacar · X/Esc: voltar',
   busy: '',
 };
 
@@ -44,6 +54,8 @@ export class BattleScene extends Phaser.Scene {
   private cursor: Point = { x: 0, y: 0 };
   private selection?: Selection;
   private menuCancel?: () => void;
+  private forecastPanel!: ForecastPanel;
+  private targeting?: Targeting;
 
   constructor() {
     super('Battle');
@@ -65,6 +77,8 @@ export class BattleScene extends Phaser.Scene {
     for (const u of this.state.units) this.sprites.set(u.id, new UnitSprite(this, u));
     this.panel = new SidePanel(this, stage.name, stage.objective.description);
     this.menu = new ActionMenu(this);
+    this.forecastPanel = new ForecastPanel(this);
+    this.targeting = undefined;
 
     const lord = this.state.unitsOf('player').find((u) => u.isLord) ?? this.state.unitsOf('player')[0];
     this.setCursor(lord ? lord.position : { x: 0, y: 0 });
@@ -84,7 +98,13 @@ export class BattleScene extends Phaser.Scene {
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
       if (this.mode === 'busy' || this.mode === 'moving' || this.menu.isOpen) return;
       const tile = this.mapView.toTile(pointer.x, pointer.y);
-      if (tile && !samePoint(tile, this.cursor)) this.setCursor(tile);
+      if (!tile || samePoint(tile, this.cursor)) return;
+      if (this.mode === 'targeting') {
+        const i = this.targeting!.targets.findIndex((t) => samePoint(t.position, tile));
+        if (i >= 0) this.selectTarget(i);
+        return;
+      }
+      this.setCursor(tile);
     });
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       if (over.length > 0) return; // clique tratado por um item de menu
@@ -98,6 +118,14 @@ export class BattleScene extends Phaser.Scene {
       }
       const tile = this.mapView.toTile(pointer.x, pointer.y);
       if (!tile) return;
+      if (this.mode === 'targeting') {
+        const i = this.targeting!.targets.findIndex((t) => samePoint(t.position, tile));
+        if (i >= 0) {
+          this.selectTarget(i);
+          this.confirm();
+        }
+        return;
+      }
       this.setCursor(tile);
       this.confirm();
     });
@@ -118,6 +146,11 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
     const d = dirs[code];
+    if (d && this.mode === 'targeting') {
+      const t = this.targeting!;
+      this.selectTarget((t.index + (d.x + d.y > 0 ? 1 : -1) + t.targets.length) % t.targets.length);
+      return;
+    }
     if (d) {
       if (this.mode === 'busy' || this.mode === 'moving') return;
       const next = { x: this.cursor.x + d.x, y: this.cursor.y + d.y };
@@ -159,6 +192,11 @@ export class BattleScene extends Phaser.Scene {
       case 'inspect':
         this.clearInspect();
         break;
+      case 'targeting': {
+        const t = this.targeting!;
+        void this.executeAttack(t.sel.unit, t.targets[t.index]);
+        break;
+      }
       default:
         break;
     }
@@ -174,6 +212,7 @@ export class BattleScene extends Phaser.Scene {
     }
     if (this.mode === 'selected') this.deselect();
     else if (this.mode === 'inspect') this.clearInspect();
+    else if (this.mode === 'targeting') this.cancelTargeting();
   }
 
   private select(unit: Unit): void {
@@ -215,15 +254,87 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private openUnitMenu(sel: Selection): void {
-    // Atacar, Curar, Conversar e Item entram nos marcos M2 e M5.
-    const options: MenuOption[] = [{ id: 'wait', label: 'Esperar' }];
+    const options: MenuOption[] = [];
+    const targets = this.state.targetsInRange(sel.unit);
+    if (targets.length > 0) options.push({ id: 'attack', label: 'Atacar' });
+    options.push({ id: 'wait', label: 'Esperar' });
     this.menuCancel = () => this.undoMove(sel);
     this.setMode('menu');
     const { x, y } = MapView.toPixel(sel.unit.position);
     this.menu.open(x + TILE + 6, y - 6, options, (id) => {
       this.menuCancel = undefined;
       if (id === 'wait') this.finishAction(sel.unit);
+      else if (id === 'attack') this.startTargeting(sel, targets);
     });
+  }
+
+  private startTargeting(sel: Selection, targets: Unit[]): void {
+    this.targeting = { sel, targets, index: 0 };
+    const tiles = targets.map((t) => t.position);
+    this.mapView.showRanges([], tiles);
+    this.setMode('targeting');
+    this.selectTarget(0);
+  }
+
+  private selectTarget(i: number): void {
+    const t = this.targeting!;
+    t.index = i;
+    const target = t.targets[i];
+    this.cursor = target.position;
+    this.mapView.moveCursor(target.position);
+    this.panel.setTerrain(this.state.map.terrainAt(target.position));
+    this.panel.setUnit(target);
+    this.forecastPanel.show(forecast(this.state.map, t.sel.unit, target));
+  }
+
+  private cancelTargeting(): void {
+    const sel = this.targeting!.sel;
+    this.targeting = undefined;
+    this.forecastPanel.hide();
+    this.mapView.clearRanges();
+    this.setCursor(sel.unit.position);
+    this.openUnitMenu(sel);
+  }
+
+  private async executeAttack(attacker: Unit, defender: Unit): Promise<void> {
+    this.targeting = undefined;
+    this.forecastPanel.hide();
+    this.mapView.clearRanges();
+    this.setMode('busy');
+    const outcome = this.state.attack(attacker, defender);
+    await this.playCombat(attacker, defender, outcome);
+    this.finishAction(attacker);
+  }
+
+  /** Anima os golpes, mortes, EXP e level-ups de um combate já resolvido. */
+  private async playCombat(attacker: Unit, defender: Unit, outcome: AttackOutcome): Promise<void> {
+    const byId = (id: string) => (id === attacker.id ? attacker : defender);
+    for (const strike of outcome.result.strikes) {
+      const a = byId(strike.attackerId);
+      const d = byId(strike.targetId);
+      const aSprite = this.sprites.get(a.id)!;
+      const dSprite = this.sprites.get(d.id)!;
+      await aSprite.lunge(d.position);
+      if (!strike.hit) {
+        dSprite.dodge();
+        await floatText(this, d.x, d.y, 'Errou', '#cfd8e3');
+      } else {
+        dSprite.flash();
+        dSprite.refresh();
+        const label = strike.crit ? `CRÍTICO! -${strike.damage}` : `-${strike.damage}`;
+        await floatText(this, d.x, d.y, label, strike.crit ? '#ffd34d' : '#ff6b6b', strike.crit ? 22 : 20);
+      }
+      this.refreshPanel();
+    }
+    for (const u of [attacker, defender]) {
+      if (!u.isAlive()) await this.sprites.get(u.id)!.fadeOut();
+    }
+    for (const gain of outcome.exp) {
+      await floatText(this, gain.unit.x, gain.unit.y, `+${gain.amount} EXP`, '#9fe3b0', 16);
+      for (const up of gain.levelUps) await levelUpPopup(this, gain.unit, up);
+    }
+    this.refreshSprites();
+    this.refreshPanel();
   }
 
   private undoMove(sel: Selection): void {
@@ -288,6 +399,7 @@ export class BattleScene extends Phaser.Scene {
     this.mode = mode;
     this.panel.setHelp(HELP[mode]);
     this.mapView.setCursorVisible(mode !== 'busy' && mode !== 'moving');
+    if (mode !== 'targeting') this.forecastPanel?.hide();
   }
 
   private setCursor(p: Point): void {

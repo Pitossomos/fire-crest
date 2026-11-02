@@ -76,6 +76,18 @@ export class Unit {
     return this.isAlive() && !this.hasActed;
   }
 
+  /** Aplica dano (HP nunca fica negativo). */
+  takeDamage(amount: number): void {
+    this.hp = Math.max(0, this.hp - amount);
+  }
+
+  /** Cura até o HP máximo; retorna quanto curou de fato. */
+  heal(amount: number): number {
+    const before = this.hp;
+    this.hp = Math.min(this.maxHp, this.hp + amount);
+    return this.hp - before;
+  }
+
   moveTo(p: Point): void {
     this.x = p.x;
     this.y = p.y;

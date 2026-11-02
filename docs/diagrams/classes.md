@@ -17,8 +17,32 @@ classDiagram
   namespace core {
     class BattleMap
     class BattleState
+    class BattleOptions {
+      <<interface>>
+    }
+    class ExpGain {
+      <<interface>>
+    }
+    class AttackOutcome {
+      <<interface>>
+    }
     class RangeInfo {
       <<interface>>
+    }
+    class StrikeStats {
+      <<interface>>
+    }
+    class Forecast {
+      <<interface>>
+    }
+    class Strike {
+      <<interface>>
+    }
+    class CombatResult {
+      <<interface>>
+    }
+    class mod_core_combat["combat.ts"] {
+      <<module>>
     }
     class mod_core_faction["faction.ts"] {
       <<module>>
@@ -27,6 +51,12 @@ classDiagram
       <<interface>>
     }
     class mod_core_grid["grid.ts"] {
+      <<module>>
+    }
+    class LevelUp {
+      <<interface>>
+    }
+    class mod_core_leveling["leveling.ts"] {
       <<module>>
     }
     class ReachNode {
@@ -105,6 +135,10 @@ classDiagram
     class mod_render_art["art.ts"] {
       <<module>>
     }
+    class mod_render_effects["effects.ts"] {
+      <<module>>
+    }
+    class ForecastPanel
     class MapView
     class mod_render_PhaseBanner["PhaseBanner.ts"] {
       <<module>>
@@ -121,6 +155,9 @@ classDiagram
   }
   namespace scenes {
     class BattleScene
+    class Targeting {
+      <<interface>>
+    }
     class Selection {
       <<interface>>
     }
@@ -131,26 +168,40 @@ classDiagram
     <<external>>
   }
   ActionMenu "1" *-- "*" MenuOption : options
+  AttackOutcome "1" *-- "*" ExpGain : exp
+  AttackOutcome --> CombatResult : result
   BattleMap "1" *-- "*" TerrainDef : tiles
+  BattleOptions "1" *-- "*" Unit : units
   BattleScene "1" *-- "*" UnitSprite : sprites
   BattleScene --> ActionMenu : menu
   BattleScene --> BattleState : state
+  BattleScene --> ForecastPanel : forecastPanel
   BattleScene --> MapView : mapView
   BattleScene --> Point : cursor
   BattleScene --> Selection : selection
   BattleScene --> SidePanel : panel
+  BattleScene --> Targeting : targeting
   BattleState "1" *-- "*" Unit : units
   BattleState --> BattleMap : map
+  BattleState --> GameDatabase : db
+  BattleState --> Rng : rng
   BattleState --> StageDef : stage
   ChapterDef "1" *-- "*" StageDef : stageIds
   CharacterDef --> ClassDef : classId
   CharacterDef --> WeaponDef : weaponId
+  CombatResult "1" *-- "*" Strike : strikes
   DialogueLine --> CharacterDef : speakerId
   EventTrigger "1" *-- "*" DialogueLine : dialogue
   EventTrigger "1" *-- "*" UnitPlacement : spawns
   EventTrigger --> CharacterDef : otherUnitId
   EventTrigger --> CharacterDef : recruitId
   EventTrigger --> CharacterDef : unitId
+  ExpGain "1" *-- "*" LevelUp : levelUps
+  ExpGain --> Unit : unit
+  Forecast --> StrikeStats : attackerStats
+  Forecast --> StrikeStats : defenderStats
+  Forecast --> Unit : attacker
+  Forecast --> Unit : defender
   GameDatabase "1" *-- "*" CharacterDef : characters
   GameDatabase "1" *-- "*" ClassDef : classes
   GameDatabase "1" *-- "*" StageDef : stages
@@ -180,6 +231,8 @@ classDiagram
   StageDef --> ChapterDef : chapterId
   StageDef --> MapDef : map
   StageDef --> ObjectiveDef : objective
+  Targeting "1" *-- "*" Unit : targets
+  Targeting --> Selection : sel
   Unit --> ClassDef : classDef
   Unit --> WeaponDef : weapon
   UnitInit --> ClassDef : classDef
@@ -214,6 +267,8 @@ classDiagram
       +stage: StageDef
       +map: BattleMap
       +units: Unit[]
+      +db: GameDatabase
+      +rng: Rng
       +turn: number
       +phase: Faction
       +livingUnits: Unit[]
@@ -221,16 +276,72 @@ classDiagram
       +unitsOf(faction: Faction) Unit[]
       +rangeFor(unit: Unit) RangeInfo
       +moveUnit(unit: Unit, to: Point) Point[]
+      +targetsInRange(unit: Unit) Unit[]
+      +attack(attacker: Unit, defender: Unit) AttackOutcome
       +undoMove(unit: Unit, origin: Point) void
       +wait(unit: Unit) void
       +phaseExhausted() boolean
       +endPhase() Faction
+    }
+    class BattleOptions {
+      <<interface>>
+      +seed?: number
+      +units?: Unit[]
+    }
+    class ExpGain {
+      <<interface>>
+      +unit: Unit
+      +amount: number
+      +levelUps: LevelUp[]
+    }
+    class AttackOutcome {
+      <<interface>>
+      +result: CombatResult
+      +exp: ExpGain[]
     }
     class RangeInfo {
       <<interface>>
       +reach: Map~string, ReachNode~
       +move: Point[]
       +attack: Point[]
+    }
+    class StrikeStats {
+      <<interface>>
+      +damage: number
+      +hit: number
+      +crit: number
+      +strikes: number
+    }
+    class Forecast {
+      <<interface>>
+      +attacker: Unit
+      +defender: Unit
+      +attackerStats: StrikeStats
+      +defenderStats: StrikeStats
+    }
+    class Strike {
+      <<interface>>
+      +attackerId: string
+      +targetId: string
+      +hit: boolean
+      +crit: boolean
+      +damage: number
+      +targetHpAfter: number
+    }
+    class CombatResult {
+      <<interface>>
+      +strikes: Strike[]
+      +attackerDied: boolean
+      +defenderDied: boolean
+    }
+    class mod_core_combat["combat.ts"] {
+      <<module>>
+      +weaponTriangle(a: WeaponType, b: WeaponType) -1 | 0 | 1
+      +canAttackWith(unit: Unit) boolean
+      +inWeaponRange(unit: Unit, from: Point, target: Point) boolean
+      +strikeStats(a: Unit, d: Unit, dTerrain: TerrainDef) Omit~StrikeStats, strikes~
+      +forecast(map: BattleMap, attacker: Unit, defender: Unit, from: Point) Forecast
+      +resolveCombat(map: BattleMap, attacker: Unit, defender: Unit, rng: Rng) CombatResult
     }
     class mod_core_faction["faction.ts"] {
       <<module>>
@@ -249,6 +360,16 @@ classDiagram
       +manhattan(a: Point, b: Point) number
       +neighbors(p: Point) Point[]
       +tilesInRange(p: Point, min: number, max: number) Point[]
+    }
+    class LevelUp {
+      <<interface>>
+      +level: number
+      +gains: Stats
+    }
+    class mod_core_leveling["leveling.ts"] {
+      <<module>>
+      +combatExp(unit: Unit, enemy: Unit, dealtDamage: boolean, killed: boolean) number
+      +gainExp(unit: Unit, amount: number, rng: Rng) LevelUp[]
     }
     class ReachNode {
       <<interface>>
@@ -297,6 +418,8 @@ classDiagram
       +position: Point
       +isAlive() boolean
       +canAct() boolean
+      +takeDamage(amount: number) void
+      +heal(amount: number) number
       +moveTo(p: Point) void
     }
     class UnitInit {
@@ -315,8 +438,19 @@ classDiagram
       +boss?: boolean
     }
   }
+  AttackOutcome "1" *-- "*" ExpGain : exp
+  AttackOutcome --> CombatResult : result
+  BattleOptions "1" *-- "*" Unit : units
   BattleState "1" *-- "*" Unit : units
   BattleState --> BattleMap : map
+  BattleState --> Rng : rng
+  CombatResult "1" *-- "*" Strike : strikes
+  ExpGain "1" *-- "*" LevelUp : levelUps
+  ExpGain --> Unit : unit
+  Forecast --> StrikeStats : attackerStats
+  Forecast --> StrikeStats : defenderStats
+  Forecast --> Unit : attacker
+  Forecast --> Unit : defender
   RangeInfo "1" *-- "*" Point : attack
   RangeInfo "1" *-- "*" Point : move
   RangeInfo "1" *-- "*" ReachNode : reach
@@ -554,6 +688,19 @@ classDiagram
       +drawUnit(spec: UnitArtSpec) PixelCanvas
       +drawTerrain(terrainId: string, variant: number) PixelCanvas
     }
+    class mod_render_effects["effects.ts"] {
+      <<module>>
+      +floatText(scene: Phaser.Scene, tileX: number, tileY: number, text: string, color: string, size: any) Promise~void~
+      +levelUpPopup(scene: Phaser.Scene, unit: Unit, up: LevelUp) Promise~void~
+      +outcomeBanner(scene: Phaser.Scene, text: string, color: number) Phaser.GameObjects.Container
+    }
+    class ForecastPanel {
+      -scene: Phaser.Scene
+      -container: Phaser.GameObjects.Container
+      +show(f: Forecast) void
+      +hide() void
+      -column(u: Unit, s: StrikeStats, foe: Unit, x: number) Phaser.GameObjects.Text[]
+    }
     class MapView {
       -scene: Phaser.Scene
       -map: BattleMap
@@ -619,6 +766,10 @@ classDiagram
       +refresh() void
       +snap() void
       +walk(path: Point[], msPerTile: any) Promise~void~
+      +lunge(toward: Point) Promise~void~
+      +flash() void
+      +dodge() void
+      +fadeOut() Promise~void~
       +setSelected(selected: boolean) void
       +destroy() void
     }
@@ -647,6 +798,8 @@ classDiagram
       -cursor: Point
       -selection: Selection
       -menuCancel: Function
+      -forecastPanel: ForecastPanel
+      -targeting: Targeting
       +battle: BattleState
       +create(data: object) void
       -bindInput() void
@@ -659,6 +812,11 @@ classDiagram
       -clearInspect() void
       -moveSelected(to: Point) Promise~void~
       -openUnitMenu(sel: Selection) void
+      -startTargeting(sel: Selection, targets: Unit[]) void
+      -selectTarget(i: number) void
+      -cancelTargeting() void
+      -executeAttack(attacker: Unit, defender: Unit) Promise~void~
+      -playCombat(attacker: Unit, defender: Unit, outcome: AttackOutcome) Promise~void~
       -undoMove(sel: Selection) void
       -finishAction(unit: Unit) void
       -openMapMenu() void
@@ -668,6 +826,12 @@ classDiagram
       -setCursor(p: Point) void
       -refreshPanel() void
       -refreshSprites() void
+    }
+    class Targeting {
+      <<interface>>
+      +sel: Selection
+      +targets: Unit[]
+      +index: number
     }
     class Selection {
       <<interface>>
@@ -688,7 +852,9 @@ classDiagram
     <<external>>
   }
   BattleScene --> Selection : selection
+  BattleScene --> Targeting : targeting
   Phaser_Scene <|-- BattleScene
   Phaser_Scene <|-- BootScene
   Phaser_Scene <|-- TitleScene
+  Targeting --> Selection : sel
 ```

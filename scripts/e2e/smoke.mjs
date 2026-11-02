@@ -68,6 +68,38 @@ await page.screenshot({ path: join(shots, '05-enemy-range.png') });
 s = await battle();
 if (s.mode !== 'inspect') fail(`esperava modo inspect, veio ${s.mode}`);
 
+await press('KeyX'); // fecha a inspeção
+
+// --- Combate (M2): traz um bandido para perto de Aren e ataca ---
+await page.evaluate(() => {
+  const scene = window.__FIRE_CREST__.scene.getScene('Battle');
+  const b = scene.battle;
+  const aren = b.units.find((u) => u.characterId === 'aren');
+  const bandit = b.units.find((u) => u.faction === 'enemy' && u.isAlive());
+  bandit.moveTo({ x: aren.x, y: aren.y - 1 });
+  scene.sprites.get(bandit.id).snap();
+  scene.setCursor(aren.position);
+});
+await press('KeyZ'); // seleciona Aren
+await press('KeyZ', 300); // "move" para o próprio tile → menu
+let menu = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').mode);
+if (menu !== 'menu') fail(`esperava menu após mover, veio ${menu}`);
+await press('KeyZ'); // Atacar
+s = await battle();
+if (s.mode !== 'targeting') fail(`esperava modo targeting, veio ${s.mode}`);
+await page.screenshot({ path: join(shots, '06-forecast.png') });
+await press('KeyZ', 200); // confirma o ataque
+await page.waitForFunction(() => window.__FIRE_CREST__.scene.getScene('Battle').mode === 'idle', null, { timeout: 15000 });
+const combat = await page.evaluate(() => {
+  const b = window.__FIRE_CREST__.scene.getScene('Battle').battle;
+  const aren = b.units.find((u) => u.characterId === 'aren');
+  const hurt = b.units.filter((u) => u.hp < u.maxHp).length;
+  return { arenActed: aren.hasActed, arenExp: aren.exp, arenLevel: aren.level, hurt };
+});
+if (!combat.arenActed) fail('Aren deveria ter agido após atacar');
+if (combat.arenExp === 0 && combat.arenLevel === 1) fail('Aren deveria ter ganhado EXP');
+await page.screenshot({ path: join(shots, '07-after-combat.png') });
+
 if (errors.length) fail(`erros no console:\n${errors.join('\n')}`);
 await browser.close();
 console.log(process.exitCode ? 'Smoke test com falhas.' : `Smoke test OK. Screenshots em ${shots}/`);
