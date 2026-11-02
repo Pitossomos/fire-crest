@@ -51,6 +51,22 @@ export interface WeaponDef {
   heal?: number;
 }
 
+/** @entity Item consumível (ex.: Poção). */
+export interface ItemDef {
+  id: string;
+  name: string;
+  /** HP curado ao usar. */
+  heal: number;
+  /** Usos de um item novo. */
+  uses: number;
+}
+
+/** @entity Item no inventário de uma unidade, com os usos restantes. */
+export interface InventorySlot {
+  itemId: Ref<ItemDef>;
+  uses: number;
+}
+
 /** @entity Classe de unidade: atributos-base, crescimento e armas permitidas. */
 export interface ClassDef {
   id: string;
@@ -76,6 +92,8 @@ export interface CharacterDef {
   stats: Stats;
   growths: Stats;
   weaponId: Ref<WeaponDef>;
+  /** Itens iniciais. */
+  items?: Ref<ItemDef>[];
   bio: string;
   /** Antagonista (retrato com as cores inimigas). */
   villain?: boolean;
@@ -101,6 +119,8 @@ export interface UnitPlacement {
   level?: number;
   ai?: AiBehavior;
   boss?: boolean;
+  /** Personagem que entra no time nesta fase (mesmo sem estar no roster). */
+  joins?: boolean;
 }
 
 /** @entity Condição de vitória de uma fase. */
@@ -146,6 +166,8 @@ export interface StageDef {
   preDialogue: DialogueLine[];
   postDialogue: DialogueLine[];
   events: EventTrigger[];
+  /** Aliados NPC que entram no time se sobreviverem até o fim da fase. */
+  recruitOnClear?: Ref<CharacterDef>[];
 }
 
 /** @entity Capítulo da campanha. */
@@ -162,6 +184,7 @@ export interface RosterEntry {
   exp: number;
   stats: Stats;
   weaponId: Ref<WeaponDef>;
+  items: InventorySlot[];
   alive: boolean;
 }
 

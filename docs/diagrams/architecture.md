@@ -17,7 +17,7 @@ flowchart TB
   scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>4 módulo(s)"]:::layer_scenes
   render["<b>render/ — componentes visuais</b><br/>11 módulo(s)"]:::layer_render
   core["<b>core/ — regras do jogo (puro)</b><br/>13 módulo(s)"]:::layer_core
-  data["<b>data/ — definições e conteúdo</b><br/>9 módulo(s)"]:::layer_data
+  data["<b>data/ — definições e conteúdo</b><br/>10 módulo(s)"]:::layer_data
   ext_phaser[("phaser")]:::external
   app -->|"1 import(s)"| ext_phaser
   app -->|"1 import(s)"| render
@@ -91,6 +91,7 @@ flowchart TB
     src_data_characters_ts["characters.ts"]
     src_data_classes_ts["classes.ts"]
     src_data_index_ts["index.ts"]
+    src_data_items_ts["items.ts"]
     src_data_stats_ts["stats.ts"]
     src_data_terrain_ts["terrain.ts"]
     src_data_types_ts["types.ts"]
@@ -123,6 +124,7 @@ flowchart TB
   src_data_index_ts --> src_data_chapter1_index_ts
   src_data_index_ts --> src_data_characters_ts
   src_data_index_ts --> src_data_classes_ts
+  src_data_index_ts --> src_data_items_ts
   src_data_index_ts --> src_data_terrain_ts
   src_data_index_ts --> src_data_weapons_ts
   src_main_ts --> ext_phaser
