@@ -1,0 +1,34 @@
+{
+  "name": "fire-crest",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fire Crest — RPG tático por turnos (estilo Fire Emblem / Wesnoth) em TypeScript + Phaser.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint:arch": "depcruise src --config .dependency-cruiser.cjs",
+    "diagrams": "tsx scripts/diagrams/generate.ts",
+    "diagrams:svg": "tsx scripts/diagrams/generate.ts --svg",
+    "diagrams:check": "tsx scripts/diagrams/generate.ts && git diff --exit-code -- docs/diagrams",
+    "prepare": "husky || true",
+    "e2e": "node scripts/e2e/smoke.mjs"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^12.0.0",
+    "dependency-cruiser": "^18.7.1",
+    "husky": "^9.1.7",
+    "ts-morph": "^28.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}
