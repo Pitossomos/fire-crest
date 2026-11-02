@@ -53,6 +53,10 @@ classDiagram
     class mod_core_combat["combat.ts"] {
       <<module>>
     }
+    class EventEngine
+    class EventEffects {
+      <<interface>>
+    }
     class mod_core_faction["faction.ts"] {
       <<module>>
     }
@@ -174,6 +178,13 @@ classDiagram
       <<interface>>
     }
     class BootScene
+    class DialogueScene
+    class DialogueData {
+      <<interface>>
+    }
+    class mod_scenes_DialogueScene["DialogueScene.ts"] {
+      <<module>>
+    }
     class TitleScene
   }
   class Phaser_Scene["Phaser.Scene"] {
@@ -190,6 +201,7 @@ classDiagram
   BattleScene "1" *-- "*" UnitSprite : sprites
   BattleScene --> ActionMenu : menu
   BattleScene --> BattleState : state
+  BattleScene --> EventEngine : eventEngine
   BattleScene --> ForecastPanel : forecastPanel
   BattleScene --> MapView : mapView
   BattleScene --> Point : cursor
@@ -206,7 +218,14 @@ classDiagram
   CharacterDef --> ClassDef : classId
   CharacterDef --> WeaponDef : weaponId
   CombatResult "1" *-- "*" Strike : strikes
+  DialogueData "1" *-- "*" DialogueLine : lines
   DialogueLine --> CharacterDef : speakerId
+  DialogueScene "1" *-- "*" DialogueLine : lines
+  EventEffects "1" *-- "*" DialogueLine : dialogue
+  EventEffects "1" *-- "*" Unit : recruited
+  EventEffects "1" *-- "*" Unit : spawned
+  EventEffects --> EventTrigger : event
+  EventEngine --> BattleState : state
   EventTrigger "1" *-- "*" DialogueLine : dialogue
   EventTrigger "1" *-- "*" UnitPlacement : spawns
   EventTrigger --> CharacterDef : otherUnitId
@@ -228,6 +247,7 @@ classDiagram
   ObjectiveDef --> CharacterDef : targetId
   Phaser_Scene <|-- BattleScene
   Phaser_Scene <|-- BootScene
+  Phaser_Scene <|-- DialogueScene
   Phaser_Scene <|-- TitleScene
   RangeInfo "1" *-- "*" Point : attack
   RangeInfo "1" *-- "*" Point : move
@@ -303,11 +323,14 @@ classDiagram
       +phase: Faction
       +seized: boolean
       +phaseHeals: TerrainHeal[]
+      -nextIndex: number
       +livingUnits: Unit[]
       +unitAt(p: Point) Unit | undefined
       +unitsOf(faction: Faction) Unit[]
       +rangeFor(unit: Unit) RangeInfo
       +moveUnit(unit: Unit, to: Point) Point[]
+      +spawnUnit(p: UnitPlacement) Unit
+      -nearestFree(start: Point) Point
       +targetsInRange(unit: Unit) Unit[]
       +attack(attacker: Unit, defender: Unit) AttackOutcome
       +canSeize(unit: Unit) boolean
@@ -381,6 +404,25 @@ classDiagram
       +strikeStats(a: Unit, d: Unit, dTerrain: TerrainDef) Omit~StrikeStats, strikes~
       +forecast(map: BattleMap, attacker: Unit, defender: Unit, from: Point) Forecast
       +resolveCombat(map: BattleMap, attacker: Unit, defender: Unit, rng: Rng) CombatResult
+    }
+    class EventEngine {
+      -state: BattleState
+      -fired: Set~string~
+      +hasFired(id: string) boolean
+      -pending(kind: EventTrigger[on]) EventTrigger[]
+      +turnStart() EventEffects[]
+      +unitDefeated(unit: Unit) EventEffects[]
+      +tileReached(unit: Unit) EventEffects[]
+      +talkOptions(unit: Unit) [EventTrigger, Unit][]
+      +talk(unit: Unit, event: EventTrigger) EventEffects
+      -fire(event: EventTrigger) EventEffects
+    }
+    class EventEffects {
+      <<interface>>
+      +event: EventTrigger
+      +dialogue: DialogueLine[]
+      +spawned: Unit[]
+      +recruited: Unit[]
     }
     class mod_core_faction["faction.ts"] {
       <<module>>
@@ -493,6 +535,9 @@ classDiagram
   BattleState --> BattleMap : map
   BattleState --> Rng : rng
   CombatResult "1" *-- "*" Strike : strikes
+  EventEffects "1" *-- "*" Unit : recruited
+  EventEffects "1" *-- "*" Unit : spawned
+  EventEngine --> BattleState : state
   ExpGain "1" *-- "*" LevelUp : levelUps
   ExpGain --> Unit : unit
   Forecast --> StrikeStats : attackerStats
@@ -578,6 +623,7 @@ classDiagram
       +growths: Stats
       +weaponId: Ref~WeaponDef~
       +bio: string
+      +villain?: boolean
     }
     class MapDef {
       <<interface>>
@@ -812,6 +858,8 @@ classDiagram
       -sprite: Phaser.GameObjects.Image
       -hpBar: Phaser.GameObjects.Graphics
       -scene: Phaser.Scene
+      +applyTexture() void
+      +fadeIn() Promise~void~
       +refresh() void
       +snap() void
       +walk(path: Point[], msPerTile: any) Promise~void~
@@ -848,11 +896,14 @@ classDiagram
       -selection: Selection
       -menuCancel: Function
       -forecastPanel: ForecastPanel
+      -eventEngine: EventEngine
       -ended: boolean
       +outcome: victory | defeat
       -targeting: Targeting
       +battle: BattleState
       +create(data: object) void
+      -intro() Promise~void~
+      -runEvents(effects: EventEffects[]) Promise~void~
       -bindInput() void
       -onKey(code: string) void
       -confirm() void
@@ -869,7 +920,7 @@ classDiagram
       -executeAttack(attacker: Unit, defender: Unit) Promise~void~
       -playCombat(attacker: Unit, defender: Unit, outcome: AttackOutcome) Promise~void~
       -undoMove(sel: Selection) void
-      -finishAction(unit: Unit) void
+      -finishAction(unit: Unit) Promise~void~
       -openMapMenu() void
       -runEndPhase() Promise~void~
       -runAiPhase() Promise~boolean~
@@ -900,6 +951,33 @@ classDiagram
     class BootScene {
       +create() void
     }
+    class DialogueScene {
+      -lines: DialogueLine[]
+      -index: number
+      -onDone: Function
+      -body: Phaser.GameObjects.Text
+      -nameText: Phaser.GameObjects.Text
+      -namePlate: Phaser.GameObjects.Rectangle
+      -portrait: Phaser.GameObjects.Image
+      -portraitFrame: Phaser.GameObjects.Rectangle
+      -hint: Phaser.GameObjects.Text
+      -typing: Phaser.Time.TimerEvent
+      -fullText: string
+      -finished: boolean
+      +create(data: DialogueData) void
+      -showLine() void
+      -advance() void
+      -finish() void
+    }
+    class DialogueData {
+      <<interface>>
+      +lines: DialogueLine[]
+      +onDone: Function
+    }
+    class mod_scenes_DialogueScene["DialogueScene.ts"] {
+      <<module>>
+      +runDialogue(scene: Phaser.Scene, lines: DialogueLine[]) Promise~void~
+    }
     class TitleScene {
       +create() void
       -spawnEmber(anywhere: boolean) void
@@ -912,6 +990,7 @@ classDiagram
   BattleScene --> Targeting : targeting
   Phaser_Scene <|-- BattleScene
   Phaser_Scene <|-- BootScene
+  Phaser_Scene <|-- DialogueScene
   Phaser_Scene <|-- TitleScene
   Targeting --> Selection : sel
 ```

@@ -20,7 +20,8 @@ export interface UnitInit {
 export class Unit {
   readonly id: string;
   readonly name: string;
-  readonly faction: Faction;
+  /** Mutável: unidades podem ser recrutadas durante a batalha. */
+  faction: Faction;
   readonly classDef: ClassDef;
   readonly characterId?: string;
   readonly ai: AiBehavior;

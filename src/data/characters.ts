@@ -41,19 +41,25 @@ export const CHARACTERS: Record<string, CharacterDef> = {
   },
   // --- Antagonistas ---
   grull: {
-    id: 'grull', name: 'Grull', title: 'o Rasga-Cercas', classId: 'bandit', level: 5,
+    id: 'grull', villain: true, name: 'Grull', title: 'o Rasga-Cercas', classId: 'bandit', level: 5,
     stats: stats(30, 10, 0, 4, 5, 2, 5, 1), growths: stats(80, 50, 0, 20, 30, 15, 20, 5),
     weaponId: 'iron_axe',
     bio: 'Chefe bandido contratado pela Ordem do Ocaso para "limpar" o vale.',
   },
   vela: {
-    id: 'vela', name: 'Vela Mortiça', title: 'Guardiã Esvaída', classId: 'hollow', level: 6,
+    id: 'vela', villain: true, name: 'Vela Mortiça', title: 'Guardiã Esvaída', classId: 'hollow', level: 6,
     stats: stats(36, 10, 0, 3, 3, 0, 4, 2), growths: stats(90, 45, 0, 10, 15, 0, 25, 0),
     weaponId: 'claws',
     bio: 'Já foi a guardiã do Bosque dos Sussurros. O Cinzento levou suas memórias, mas não seu posto.',
   },
+  brom: {
+    id: 'brom', villain: true, name: 'Brom', title: 'o Capanga', classId: 'bandit', level: 3,
+    stats: stats(24, 7, 0, 3, 5, 1, 4, 0), growths: stats(80, 50, 0, 20, 30, 15, 20, 5),
+    weaponId: 'hand_axe',
+    bio: 'Braço direito de Grull. Fala alto, bate mais alto ainda.',
+  },
   seraphine: {
-    id: 'seraphine', name: 'Seraphine Vael', title: 'Inquisidora do Ocaso', classId: 'inquisitor', level: 10,
+    id: 'seraphine', villain: true, name: 'Seraphine Vael', title: 'Inquisidora do Ocaso', classId: 'inquisitor', level: 10,
     stats: stats(38, 6, 13, 11, 11, 8, 7, 12), growths: stats(70, 20, 60, 50, 45, 40, 30, 50),
     weaponId: 'ash_rosary',
     bio: 'Caçadora de portadores. Veste o hábito do Grande Esquema bordado com caveiras e um sol eclipsado.',

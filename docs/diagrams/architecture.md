@@ -14,22 +14,22 @@ title: Arquitetura — camadas
 ---
 flowchart TB
   app["<b>main.ts — bootstrap do Phaser</b><br/>1 módulo(s)"]:::layer_app
-  scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>3 módulo(s)"]:::layer_scenes
+  scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>4 módulo(s)"]:::layer_scenes
   render["<b>render/ — componentes visuais</b><br/>11 módulo(s)"]:::layer_render
-  core["<b>core/ — regras do jogo (puro)</b><br/>12 módulo(s)"]:::layer_core
+  core["<b>core/ — regras do jogo (puro)</b><br/>13 módulo(s)"]:::layer_core
   data["<b>data/ — definições e conteúdo</b><br/>9 módulo(s)"]:::layer_data
   ext_phaser[("phaser")]:::external
   app -->|"1 import(s)"| ext_phaser
   app -->|"1 import(s)"| render
-  app -->|"3 import(s)"| scenes
-  core -->|"1 import(s), 8 só tipos"| data
+  app -->|"4 import(s)"| scenes
+  core -->|"1 import(s), 9 só tipos"| data
   render -.->|"9 só tipos"| core
   render -.->|"4 só tipos"| data
   render -->|"8 import(s)"| ext_phaser
-  scenes -->|"6 import(s), 1 só tipos"| core
-  scenes -->|"2 import(s)"| data
-  scenes -->|"3 import(s)"| ext_phaser
-  scenes -->|"10 import(s)"| render
+  scenes -->|"7 import(s), 1 só tipos"| core
+  scenes -->|"4 import(s), 1 só tipos"| data
+  scenes -->|"4 import(s)"| ext_phaser
+  scenes -->|"12 import(s)"| render
   classDef external fill:#e9e2cc,stroke:#5c4630,color:#1f1a24
   classDef layer_app fill:#f3dcc0,stroke:#8a4a2a,color:#1f1a24
   classDef layer_scenes fill:#f6c9c4,stroke:#7a2420,color:#1f1a24
@@ -54,6 +54,7 @@ flowchart TB
   subgraph layer_scenes["src/scenes"]
     src_scenes_BattleScene_ts["BattleScene.ts"]
     src_scenes_BootScene_ts["BootScene.ts"]
+    src_scenes_DialogueScene_ts["DialogueScene.ts"]
     src_scenes_TitleScene_ts["TitleScene.ts"]
   end
   subgraph layer_render["src/render"]
@@ -74,6 +75,7 @@ flowchart TB
     src_core_battle_map_ts["battle-map.ts"]
     src_core_battle_state_ts["battle-state.ts"]
     src_core_combat_ts["combat.ts"]
+    src_core_events_ts["events.ts"]
     src_core_faction_ts["faction.ts"]
     src_core_grid_ts["grid.ts"]
     src_core_leveling_ts["leveling.ts"]
@@ -109,6 +111,7 @@ flowchart TB
   src_core_battle_state_ts --> src_core_unit_factory_ts
   src_core_battle_state_ts --> src_core_unit_ts
   src_core_combat_ts --> src_core_grid_ts
+  src_core_events_ts --> src_core_grid_ts
   src_core_pathfinding_ts --> src_core_faction_ts
   src_core_pathfinding_ts --> src_core_grid_ts
   src_core_unit_factory_ts --> src_core_unit_ts
@@ -126,6 +129,7 @@ flowchart TB
   src_main_ts --> src_render_layout_ts
   src_main_ts --> src_scenes_BattleScene_ts
   src_main_ts --> src_scenes_BootScene_ts
+  src_main_ts --> src_scenes_DialogueScene_ts
   src_main_ts --> src_scenes_TitleScene_ts
   src_render_ActionMenu_ts --> ext_phaser
   src_render_ActionMenu_ts --> src_render_layout_ts
@@ -152,6 +156,7 @@ flowchart TB
   src_scenes_BattleScene_ts --> src_core_ai_ts
   src_scenes_BattleScene_ts --> src_core_battle_state_ts
   src_scenes_BattleScene_ts --> src_core_combat_ts
+  src_scenes_BattleScene_ts --> src_core_events_ts
   src_scenes_BattleScene_ts --> src_core_grid_ts
   src_scenes_BattleScene_ts --> src_core_objectives_ts
   src_scenes_BattleScene_ts --> src_core_pathfinding_ts
@@ -164,9 +169,15 @@ flowchart TB
   src_scenes_BattleScene_ts --> src_render_PhaseBanner_ts
   src_scenes_BattleScene_ts --> src_render_SidePanel_ts
   src_scenes_BattleScene_ts --> src_render_UnitSprite_ts
+  src_scenes_BattleScene_ts --> src_scenes_DialogueScene_ts
   src_scenes_BootScene_ts --> ext_phaser
   src_scenes_BootScene_ts --> src_data_index_ts
   src_scenes_BootScene_ts --> src_render_textures_ts
+  src_scenes_DialogueScene_ts --> ext_phaser
+  src_scenes_DialogueScene_ts --> src_data_characters_ts
+  src_scenes_DialogueScene_ts --> src_data_index_ts
+  src_scenes_DialogueScene_ts --> src_render_layout_ts
+  src_scenes_DialogueScene_ts --> src_render_textures_ts
   src_scenes_TitleScene_ts --> ext_phaser
   src_scenes_TitleScene_ts --> src_render_layout_ts
   classDef external fill:#e9e2cc,stroke:#5c4630,color:#1f1a24

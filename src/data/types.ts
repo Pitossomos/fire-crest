@@ -77,6 +77,8 @@ export interface CharacterDef {
   growths: Stats;
   weaponId: Ref<WeaponDef>;
   bio: string;
+  /** Antagonista (retrato com as cores inimigas). */
+  villain?: boolean;
 }
 
 /** @entity Mapa de uma fase em texto: cada caractere é um terreno. */
