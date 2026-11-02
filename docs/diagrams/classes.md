@@ -15,12 +15,21 @@ title: Classes — visão geral
 classDiagram
   direction LR
   namespace core {
+    class AiPlan {
+      <<interface>>
+    }
+    class mod_core_ai["ai.ts"] {
+      <<module>>
+    }
     class BattleMap
     class BattleState
     class BattleOptions {
       <<interface>>
     }
     class ExpGain {
+      <<interface>>
+    }
+    class TerrainHeal {
       <<interface>>
     }
     class AttackOutcome {
@@ -57,6 +66,9 @@ classDiagram
       <<interface>>
     }
     class mod_core_leveling["leveling.ts"] {
+      <<module>>
+    }
+    class mod_core_objectives["objectives.ts"] {
       <<module>>
     }
     class ReachNode {
@@ -168,6 +180,9 @@ classDiagram
     <<external>>
   }
   ActionMenu "1" *-- "*" MenuOption : options
+  AiPlan --> Point : moveTo
+  AiPlan --> Unit : target
+  AiPlan --> Unit : unit
   AttackOutcome "1" *-- "*" ExpGain : exp
   AttackOutcome --> CombatResult : result
   BattleMap "1" *-- "*" TerrainDef : tiles
@@ -181,6 +196,7 @@ classDiagram
   BattleScene --> Selection : selection
   BattleScene --> SidePanel : panel
   BattleScene --> Targeting : targeting
+  BattleState "1" *-- "*" TerrainHeal : phaseHeals
   BattleState "1" *-- "*" Unit : units
   BattleState --> BattleMap : map
   BattleState --> GameDatabase : db
@@ -233,6 +249,7 @@ classDiagram
   StageDef --> ObjectiveDef : objective
   Targeting "1" *-- "*" Unit : targets
   Targeting --> Selection : sel
+  TerrainHeal --> Unit : unit
   Unit --> ClassDef : classDef
   Unit --> WeaponDef : weapon
   UnitInit --> ClassDef : classDef
@@ -255,6 +272,19 @@ title: Classes — core
 classDiagram
   direction LR
   namespace core {
+    class AiPlan {
+      <<interface>>
+      +unit: Unit
+      +moveTo: Point
+      +target?: Unit
+      +score: number
+    }
+    class mod_core_ai["ai.ts"] {
+      <<module>>
+      +scoreAttack(state: BattleState, unit: Unit, from: Point, target: Unit) number
+      +planAction(state: BattleState, unit: Unit) AiPlan
+      +actionOrder(state: BattleState, units: Unit[]) Unit[]
+    }
     class BattleMap {
       +width: number
       +height: number
@@ -271,6 +301,8 @@ classDiagram
       +rng: Rng
       +turn: number
       +phase: Faction
+      +seized: boolean
+      +phaseHeals: TerrainHeal[]
       +livingUnits: Unit[]
       +unitAt(p: Point) Unit | undefined
       +unitsOf(faction: Faction) Unit[]
@@ -278,6 +310,8 @@ classDiagram
       +moveUnit(unit: Unit, to: Point) Point[]
       +targetsInRange(unit: Unit) Unit[]
       +attack(attacker: Unit, defender: Unit) AttackOutcome
+      +canSeize(unit: Unit) boolean
+      +seize(unit: Unit) void
       +undoMove(unit: Unit, origin: Point) void
       +wait(unit: Unit) void
       +phaseExhausted() boolean
@@ -293,6 +327,11 @@ classDiagram
       +unit: Unit
       +amount: number
       +levelUps: LevelUp[]
+    }
+    class TerrainHeal {
+      <<interface>>
+      +unit: Unit
+      +amount: number
     }
     class AttackOutcome {
       <<interface>>
@@ -371,6 +410,10 @@ classDiagram
       +combatExp(unit: Unit, enemy: Unit, dealtDamage: boolean, killed: boolean) number
       +gainExp(unit: Unit, amount: number, rng: Rng) LevelUp[]
     }
+    class mod_core_objectives["objectives.ts"] {
+      <<module>>
+      +evaluate(state: BattleState) Outcome
+    }
     class ReachNode {
       <<interface>>
       +point: Point
@@ -383,6 +426,7 @@ classDiagram
       +movementTiles(reach: Map~string, ReachNode~, unit: Unit, occupancy: Occupancy) Point[]
       +attackTiles(map: BattleMap, destinations: Point[], minRange: number, maxRange: number) Point[]
       +buildPath(reach: Map~string, ReachNode~, target: Point) Point[]
+      +distanceField(map: BattleMap, targets: Point[]) Map~string, number~
     }
     class Rng {
       -state: number
@@ -438,9 +482,13 @@ classDiagram
       +boss?: boolean
     }
   }
+  AiPlan --> Point : moveTo
+  AiPlan --> Unit : target
+  AiPlan --> Unit : unit
   AttackOutcome "1" *-- "*" ExpGain : exp
   AttackOutcome --> CombatResult : result
   BattleOptions "1" *-- "*" Unit : units
+  BattleState "1" *-- "*" TerrainHeal : phaseHeals
   BattleState "1" *-- "*" Unit : units
   BattleState --> BattleMap : map
   BattleState --> Rng : rng
@@ -455,6 +503,7 @@ classDiagram
   RangeInfo "1" *-- "*" Point : move
   RangeInfo "1" *-- "*" ReachNode : reach
   ReachNode --> Point : point
+  TerrainHeal --> Unit : unit
   UnitInit --> Point : position
 ```
 
@@ -799,6 +848,8 @@ classDiagram
       -selection: Selection
       -menuCancel: Function
       -forecastPanel: ForecastPanel
+      -ended: boolean
+      +outcome: victory | defeat
       -targeting: Targeting
       +battle: BattleState
       +create(data: object) void
@@ -821,6 +872,12 @@ classDiagram
       -finishAction(unit: Unit) void
       -openMapMenu() void
       -runEndPhase() Promise~void~
+      -runAiPhase() Promise~boolean~
+      -showTerrainHeals() Promise~void~
+      -checkOutcome() boolean
+      -endBattle(result: victory | defeat) Promise~void~
+      -wait(ms: number) Promise~void~
+      -waitForConfirm() Promise~void~
       -announcePhase() Promise~void~
       -setMode(mode: Mode) void
       -setCursor(p: Point) void

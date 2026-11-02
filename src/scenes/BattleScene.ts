@@ -10,7 +10,9 @@ import { SidePanel } from '../render/SidePanel';
 import { ActionMenu, type MenuOption } from '../render/ActionMenu';
 import { showPhaseBanner } from '../render/PhaseBanner';
 import { ForecastPanel } from '../render/ForecastPanel';
-import { floatText, levelUpPopup } from '../render/effects';
+import { floatText, levelUpPopup, outcomeBanner } from '../render/effects';
+import { actionOrder, planAction } from '../core/ai';
+import { evaluate } from '../core/objectives';
 import { forecast } from '../core/combat';
 import { TILE } from '../render/layout';
 
@@ -55,6 +57,9 @@ export class BattleScene extends Phaser.Scene {
   private selection?: Selection;
   private menuCancel?: () => void;
   private forecastPanel!: ForecastPanel;
+  private ended = false;
+  /** Resultado final (lido por testes de ponta a ponta). */
+  outcome?: 'victory' | 'defeat';
   private targeting?: Targeting;
 
   constructor() {
@@ -79,6 +84,8 @@ export class BattleScene extends Phaser.Scene {
     this.menu = new ActionMenu(this);
     this.forecastPanel = new ForecastPanel(this);
     this.targeting = undefined;
+    this.ended = false;
+    this.outcome = undefined;
 
     const lord = this.state.unitsOf('player').find((u) => u.isLord) ?? this.state.unitsOf('player')[0];
     this.setCursor(lord ? lord.position : { x: 0, y: 0 });
@@ -107,7 +114,7 @@ export class BattleScene extends Phaser.Scene {
       this.setCursor(tile);
     });
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-      if (over.length > 0) return; // clique tratado por um item de menu
+      if (over.length > 0 || this.ended) return; // clique tratado por um item de menu
       if (pointer.rightButtonDown()) {
         this.cancel();
         return;
@@ -132,6 +139,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private onKey(code: string): void {
+    if (this.ended) return;
     const dirs: Record<string, Point> = {
       ArrowUp: { x: 0, y: -1 }, KeyW: { x: 0, y: -1 },
       ArrowDown: { x: 0, y: 1 }, KeyS: { x: 0, y: 1 },
@@ -256,6 +264,7 @@ export class BattleScene extends Phaser.Scene {
   private openUnitMenu(sel: Selection): void {
     const options: MenuOption[] = [];
     const targets = this.state.targetsInRange(sel.unit);
+    if (this.state.canSeize(sel.unit)) options.push({ id: 'seize', label: 'Tomar' });
     if (targets.length > 0) options.push({ id: 'attack', label: 'Atacar' });
     options.push({ id: 'wait', label: 'Esperar' });
     this.menuCancel = () => this.undoMove(sel);
@@ -265,6 +274,10 @@ export class BattleScene extends Phaser.Scene {
       this.menuCancel = undefined;
       if (id === 'wait') this.finishAction(sel.unit);
       else if (id === 'attack') this.startTargeting(sel, targets);
+      else if (id === 'seize') {
+        this.state.seize(sel.unit);
+        this.finishAction(sel.unit);
+      }
     });
   }
 
@@ -349,8 +362,9 @@ export class BattleScene extends Phaser.Scene {
     this.sprites.get(unit.id)?.refresh();
     this.selection = undefined;
     this.mapView.clearRanges();
-    this.setMode('idle');
     this.refreshPanel();
+    if (this.checkOutcome()) return;
+    this.setMode('idle');
     if (this.state.phaseExhausted()) void this.runEndPhase();
   }
 
@@ -370,19 +384,95 @@ export class BattleScene extends Phaser.Scene {
 
   /** Passa pelas fases não-jogador até voltar ao jogador. */
   private async runEndPhase(): Promise<void> {
+    if (this.ended) return;
     this.setMode('busy');
     this.mapView.clearRanges();
     do {
       this.state.endPhase();
       this.refreshSprites();
       await this.announcePhase();
-      if (this.state.phase !== 'player') {
-        // IA inimiga/aliada chega no marco M3; por ora a fase só passa.
-        await new Promise((r) => this.time.delayedCall(350, r));
-      }
+      await this.showTerrainHeals();
+      if (this.checkOutcome()) return;
+      if (this.state.phase !== 'player' && (await this.runAiPhase())) return;
     } while (this.state.phase !== 'player');
     this.refreshSprites();
+    const lord = this.state.unitsOf('player').find((u) => u.isLord);
+    if (lord) this.setCursor(lord.position);
     this.setMode('idle');
+  }
+
+  /** Fase inimiga/aliada: cada unidade decide e age, com animação. Retorna true se a batalha acabou. */
+  private async runAiPhase(): Promise<boolean> {
+    for (const unit of actionOrder(this.state, this.state.unitsOf(this.state.phase))) {
+      if (!unit.isAlive() || !unit.canAct()) continue;
+      const plan = planAction(this.state, unit);
+      const sprite = this.sprites.get(unit.id)!;
+      if (!samePoint(plan.moveTo, unit.position)) {
+        const path = this.state.moveUnit(unit, plan.moveTo);
+        await sprite.walk(path, 70);
+      }
+      if (plan.target) {
+        this.mapView.moveCursor(plan.target.position);
+        this.forecastPanel.show(forecast(this.state.map, unit, plan.target));
+        await this.wait(550);
+        this.forecastPanel.hide();
+        const outcome = this.state.attack(unit, plan.target);
+        await this.playCombat(unit, plan.target, outcome);
+      }
+      this.state.wait(unit);
+      sprite.refresh();
+      if (this.checkOutcome()) return true;
+    }
+    return false;
+  }
+
+  private async showTerrainHeals(): Promise<void> {
+    if (this.state.phaseHeals.length === 0) return;
+    await Promise.all(this.state.phaseHeals.map((h) => floatText(this, h.unit.x, h.unit.y, `+${h.amount}`, '#7CFC9A', 18)));
+    this.refreshSprites();
+  }
+
+  /** Verifica vitória/derrota e encerra a batalha se for o caso. */
+  private checkOutcome(): boolean {
+    if (this.ended) return true;
+    const result = evaluate(this.state);
+    if (result === 'ongoing') return false;
+    this.ended = true;
+    this.setMode('busy');
+    void this.endBattle(result);
+    return true;
+  }
+
+  private async endBattle(result: 'victory' | 'defeat'): Promise<void> {
+    this.menu.close();
+    this.forecastPanel.hide();
+    this.mapView.clearRanges();
+    this.outcome = result;
+    outcomeBanner(this, result === 'victory' ? 'Vitória!' : 'Derrota...', result === 'victory' ? 0x8a4a2a : 0x2a2230);
+    this.panel.setHelp(result === 'victory'
+      ? 'Fase concluída! Pressione Enter ou clique para continuar.'
+      : 'Aren caiu e a Crista se apagou... Enter ou clique para voltar ao título.');
+    await this.wait(600);
+    await this.waitForConfirm();
+    this.scene.start('Title');
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => this.time.delayedCall(ms, () => resolve()));
+  }
+
+  private waitForConfirm(): Promise<void> {
+    return new Promise((resolve) => {
+      const done = (ev?: KeyboardEvent) => {
+        if (ev && !['Enter', 'KeyZ', 'Space'].includes(ev.code)) return;
+        this.input.keyboard?.off('keydown', done);
+        this.input.off('pointerdown', click);
+        resolve();
+      };
+      const click = () => done();
+      this.input.keyboard?.on('keydown', done);
+      this.input.on('pointerdown', click);
+    });
   }
 
   private async announcePhase(): Promise<void> {

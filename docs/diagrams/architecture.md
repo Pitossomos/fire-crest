@@ -16,7 +16,7 @@ flowchart TB
   app["<b>main.ts — bootstrap do Phaser</b><br/>1 módulo(s)"]:::layer_app
   scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>3 módulo(s)"]:::layer_scenes
   render["<b>render/ — componentes visuais</b><br/>11 módulo(s)"]:::layer_render
-  core["<b>core/ — regras do jogo (puro)</b><br/>10 módulo(s)"]:::layer_core
+  core["<b>core/ — regras do jogo (puro)</b><br/>12 módulo(s)"]:::layer_core
   data["<b>data/ — definições e conteúdo</b><br/>9 módulo(s)"]:::layer_data
   ext_phaser[("phaser")]:::external
   app -->|"1 import(s)"| ext_phaser
@@ -26,7 +26,7 @@ flowchart TB
   render -.->|"9 só tipos"| core
   render -.->|"4 só tipos"| data
   render -->|"8 import(s)"| ext_phaser
-  scenes -->|"4 import(s), 1 só tipos"| core
+  scenes -->|"6 import(s), 1 só tipos"| core
   scenes -->|"2 import(s)"| data
   scenes -->|"3 import(s)"| ext_phaser
   scenes -->|"10 import(s)"| render
@@ -70,12 +70,14 @@ flowchart TB
     src_render_textures_ts["textures.ts"]
   end
   subgraph layer_core["src/core"]
+    src_core_ai_ts["ai.ts"]
     src_core_battle_map_ts["battle-map.ts"]
     src_core_battle_state_ts["battle-state.ts"]
     src_core_combat_ts["combat.ts"]
     src_core_faction_ts["faction.ts"]
     src_core_grid_ts["grid.ts"]
     src_core_leveling_ts["leveling.ts"]
+    src_core_objectives_ts["objectives.ts"]
     src_core_pathfinding_ts["pathfinding.ts"]
     src_core_rng_ts["rng.ts"]
     src_core_unit_factory_ts["unit-factory.ts"]
@@ -93,6 +95,10 @@ flowchart TB
     src_data_weapons_ts["weapons.ts"]
   end
   ext_phaser[("phaser")]:::external
+  src_core_ai_ts --> src_core_combat_ts
+  src_core_ai_ts --> src_core_faction_ts
+  src_core_ai_ts --> src_core_grid_ts
+  src_core_ai_ts --> src_core_pathfinding_ts
   src_core_battle_state_ts --> src_core_battle_map_ts
   src_core_battle_state_ts --> src_core_combat_ts
   src_core_battle_state_ts --> src_core_faction_ts
@@ -143,9 +149,11 @@ flowchart TB
   src_render_UnitSprite_ts --> src_render_layout_ts
   src_render_UnitSprite_ts --> src_render_textures_ts
   src_scenes_BattleScene_ts --> ext_phaser
+  src_scenes_BattleScene_ts --> src_core_ai_ts
   src_scenes_BattleScene_ts --> src_core_battle_state_ts
   src_scenes_BattleScene_ts --> src_core_combat_ts
   src_scenes_BattleScene_ts --> src_core_grid_ts
+  src_scenes_BattleScene_ts --> src_core_objectives_ts
   src_scenes_BattleScene_ts --> src_core_pathfinding_ts
   src_scenes_BattleScene_ts --> src_data_index_ts
   src_scenes_BattleScene_ts --> src_render_ActionMenu_ts
