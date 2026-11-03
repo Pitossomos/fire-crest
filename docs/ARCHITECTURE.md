@@ -34,7 +34,7 @@ Os diagramas abaixo são **gerados a partir do código** e refletem sempre o est
 
 - **No GitHub:** abra os arquivos `.md` acima — o GitHub renderiza Mermaid nativamente.
 - **Localmente:** abra [`diagrams/index.html`](diagrams/index.html) no navegador (com abas, tamanho real e botão "Ajustar à largura").
-- **Online:** depois do deploy no Pages, o visualizador fica em `https://<usuário>.github.io/fire-crest/diagrams/`.
+- **Online:** depois do deploy no Pages, o visualizador fica em https://pitossomos.github.io/fire-crest/diagrams/ (o jogo fica em https://pitossomos.github.io/fire-crest/, publicado pelo workflow `pages.yml` a cada push em `main`).
 - **No VS Code:** use a extensão *Markdown Preview Mermaid Support*.
 - **SVG:** `npm run diagrams:svg` exporta para `docs/diagrams/svg/` (requer Chromium; também é gerado como artefato da CI).
 
