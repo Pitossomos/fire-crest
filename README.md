@@ -5,6 +5,8 @@ RPG tático por turnos no estilo Fire Emblem / Battle for Wesnoth, feito em **Ty
 > Ano 300 do Longo Crepúsculo. O sol enfraquece, e a Ordem do Ocaso caça quem ainda carrega a Crista de Fogo.
 > Aren, um vigia de vila, descobre a marca em chamas na própria mão na noite em que bandidos atacam Brasalva.
 
+🎮 **Jogar online:** https://pitossomos.github.io/fire-crest/
+
 - 📜 [Lore e roteiro do Capítulo 1](docs/LORE.md)
 - 🎲 [Design de jogo e roadmap](docs/DESIGN.md)
 - 🏗️ [Arquitetura e diagramas (gerados automaticamente)](docs/ARCHITECTURE.md)
