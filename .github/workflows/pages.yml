@@ -32,7 +32,7 @@ jobs:
       - run: npm run build
       - name: Inclui o visualizador de diagramas em /diagrams/
         run: mkdir -p dist/diagrams && cp docs/diagrams/index.html dist/diagrams/index.html
-      - name: Confere se o Pages está habilitado (Settings → Pages → Source: GitHub Actions)
+      - name: "Confere se o Pages está habilitado (Settings → Pages → Source: GitHub Actions)"
         uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
