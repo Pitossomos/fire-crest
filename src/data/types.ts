@@ -97,6 +97,8 @@ export interface CharacterDef {
   bio: string;
   /** Antagonista (retrato com as cores inimigas). */
   villain?: boolean;
+  /** Cor do cabelo (hex); sem valor, usa o castanho padrão do sprite. */
+  hair?: string;
 }
 
 /** @entity Mapa de uma fase em texto: cada caractere é um terreno. */

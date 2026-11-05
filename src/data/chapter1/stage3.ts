@@ -31,6 +31,7 @@ export const STAGE_3: StageDef = {
     { characterId: 'aren', faction: 'player', x: 4, y: 4 },
     { characterId: 'mira', faction: 'player', x: 4, y: 5 },
     { characterId: 'hadric', faction: 'player', x: 5, y: 4 },
+    { characterId: 'kaira', faction: 'player', x: 5, y: 5 },
     { characterId: 'wren', faction: 'ally', x: 9, y: 4, ai: 'guard' },
     { characterId: 'vela', faction: 'enemy', x: 13, y: 4, ai: 'guard', boss: true },
     hollow(12, 2, 2),
@@ -52,6 +53,7 @@ export const STAGE_3: StageDef = {
     { speakerId: 'wren', side: 'right', text: 'Aquela mão sua... ela queimou a névoa. Nunca vi nada assim. Minha família não teve essa sorte.' },
     { speakerId: 'wren', side: 'right', text: 'Os monges do Ocaso levaram gente daqui para Cinzaforte, a fortaleza ao norte. Se vocês vão atrás deles, eu vou junto.' },
     { speakerId: 'aren', side: 'left', text: 'Bem-vinda, Wren.' },
+    { speakerId: 'kaira', side: 'left', text: 'Se precisar de pontas de flecha novas, Wren, a minha forja é sua.' },
   ],
   events: [
     {

@@ -27,6 +27,7 @@ export const STAGE_5: StageDef = {
     { characterId: 'aren', faction: 'player', x: 1, y: 4 },
     { characterId: 'mira', faction: 'player', x: 1, y: 3 },
     { characterId: 'hadric', faction: 'player', x: 2, y: 4 },
+    { characterId: 'kaira', faction: 'player', x: 2, y: 3 },
     { characterId: 'wren', faction: 'player', x: 0, y: 4 },
     { characterId: 'lys', faction: 'player', x: 0, y: 5 },
     { characterId: 'corvin', faction: 'player', x: 1, y: 5 },
@@ -56,6 +57,7 @@ export const STAGE_5: StageDef = {
     { speakerId: 'hadric', side: 'right', text: 'Eu prometi protegê-lo até que você estivesse pronto. Não tenho certeza de que está. Mas o mundo não vai esperar.' },
     { speakerId: 'corvin', side: 'left', text: 'Más notícias: pelos meus cálculos, a Ordem já apagou três dos Sete Faróis. E não vai parar no quarto.' },
     { speakerId: 'mira', side: 'left', text: 'Então a gente acende de volta. Um de cada vez. Como sempre.' },
+    { speakerId: 'kaira', side: 'left', text: 'Rei ou não, você ainda é o garoto que eu ensinei a segurar um martelo. E eu fico do seu lado.' },
     { speakerId: 'narrator', side: 'left', text: 'Fim do Capítulo 1 — Brasas no Vale. A jornada continua...' },
   ],
   events: [

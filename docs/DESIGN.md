@@ -1,6 +1,6 @@
 # Design de jogo
 
-RPG tático por turnos em **grade quadrada** (4 direções), no estilo Fire Emblem / Battle for Wesnoth. Escopo pequeno: **6 classes jogáveis**, **5 fases** no Capítulo 1.
+RPG tático por turnos em **grade quadrada** (4 direções), no estilo Fire Emblem / Battle for Wesnoth. Escopo pequeno: **7 classes jogáveis**, **5 fases** no Capítulo 1.
 
 ## Modos
 
@@ -15,6 +15,7 @@ RPG tático por turnos em **grade quadrada** (4 direções), no estilo Fire Embl
 | Portador (Aren) | 5 | Espada | Lorde equilibrado |
 | Espadachim | 5 | Espada | Alta velocidade e evasão |
 | Lanceiro | 4 | Lança | Alta defesa, baixa resistência |
+| Guerreira (Kaira) | 5 | Machado | Muito HP e FOR, pouca HAB/VEL; vence os lanceiros inimigos |
 | Arqueiro | 5 | Arco (alcance 2) | Dano à distância, fraco no corpo a corpo |
 | Clérigo | 5 | Cajado | Cura aliados adjacentes; não ataca |
 | Piromante | 5 | Tomo de fogo (alcance 1–2) | Dano mágico (usa MAG contra RES) |
@@ -78,6 +79,7 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 
 - `tests/stages.test.ts` valida cada fase (mapa 15×10, posições, alcançabilidade do objetivo, referências de eventos e falas) e simula o capítulo inteiro com a IA jogando dos dois lados, com o roster passando de fase em fase.
 - `SIM_REPORT=1 npx vitest run tests/sim-report.test.ts --silent=false` imprime um relatório por fase (resultado, turno, quem caiu, níveis). O "jogador" simulado é bem mais ingênuo que um humano, então serve como piso, não como meta.
+- **Kaira** (Guerreira, desde a Fase 1) entrou para aliviar a dificuldade. Na simulação, a Fase 2 passou de 2 para 6 vitórias em 8, e a Fase 3 é vencida em todas as tentativas.
 - Ajustes feitos com base na simulação: dano dos inimigos reduzido (Bandido FOR 5, Machado de Ferro 7, Lanceiro FOR 6, Esvaído FOR 6, Salmo do Sono 5), Aren com HP 22 e DEF 6, Mira com HP 20 e DEF 4, bandido da ponte da Fase 2 parado, e alas da Fase 4 em `guard`.
 
 ## Roadmap

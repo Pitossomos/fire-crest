@@ -22,7 +22,7 @@ function afterStage1(mode: GameMode, kill: string[] = []): SaveData {
 describe('campanha', () => {
   it('primeira fase usa os heróis da fase', () => {
     const units = buildStageUnits(STAGE_1, newCampaign('classic'), DB);
-    expect(units.filter((u) => u.faction === 'player').map((u) => u.characterId)).toEqual(['aren', 'mira', 'hadric']);
+    expect(units.filter((u) => u.faction === 'player').map((u) => u.characterId)).toEqual(['aren', 'mira', 'hadric', 'kaira']);
   });
 
   it('vitória grava nível, EXP, atributos e itens e avança a fase', () => {

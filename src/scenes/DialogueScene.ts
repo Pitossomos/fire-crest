@@ -3,7 +3,7 @@ import { DB } from '../data';
 import { NARRATOR_ID } from '../data/characters';
 import type { DialogueLine } from '../data/types';
 import { COLORS, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH } from '../render/layout';
-import { unitTextureKey } from '../render/textures';
+import { resolveUnitTexture } from '../render/textures';
 
 interface DialogueData {
   lines: DialogueLine[];
@@ -84,7 +84,7 @@ export class DialogueScene extends Phaser.Scene {
       const weapon = DB.weapons[ch.weaponId];
       const px = left ? BOX.x + 16 : BOX.x + BOX.w - PORTRAIT - 16;
       this.portraitFrame.setX(px);
-      this.portrait.setTexture(unitTextureKey(cls.sprite, weapon.type, ch.villain ? 'enemy' : 'player'));
+      this.portrait.setTexture(resolveUnitTexture(this, cls.sprite, weapon.type, ch.villain ? 'enemy' : 'player', ch.id));
       this.portrait.setPosition(px + PORTRAIT / 2, BOX.y - PORTRAIT / 2 - 8).setFlipX(!left);
       const nx = left ? BOX.x + 16 : BOX.x + BOX.w - 236;
       this.namePlate.setX(nx);

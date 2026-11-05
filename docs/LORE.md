@@ -19,9 +19,12 @@ Os primeiros portadores fundaram o **Reino de Solmarch** e acenderam os **Sete F
 | **Aren Valdris** | Portador (lorde) | Jovem vigia da vila fronteiriça de Brasalva. A Crista desperta em sua mão quando a vila é atacada. Não sabe que é filho bastardo do último rei. |
 | **Mira Tolven** | Espadachim | Amiga de infância, mercenária endividada, sarcástica e leal. |
 | **Sir Hadric Moor** | Lanceiro | O último cavaleiro do Farol de Brasalva. Sabe quem Aren é e esconde isso. |
+| **Kaira Forjaluz** | Guerreira (machado) | Ferreira de Brasalva, braços largos e pavio curto. Protege Aren como a um irmão mais novo e jura que foi ela quem amolou a Lâmina de Brasa. Está no time desde a Fase 1. |
 | **Wren** | Arqueira | Caçadora órfã do Bosque dos Sussurros; perdeu a família para os Esvaídos. Entra na Fase 3. |
 | **Irmã Lys** | Clériga | Noviça que desertou da Ordem do Ocaso ao ver o que fazem com os portadores. Entra na Fase 4 (conversa com Aren). |
 | **Corvin Ash** | Piromante | Estudioso excêntrico que tenta replicar a Crista com alquimia. Entra na Fase 4. |
+
+**Cabelos:** cada herói tem uma cor que o identifica no mapa e nos retratos. Aren tem cabelo azul, Mira roxo, Hadric branco e Kaira verde. Wren tem verde-musgo, Lys azul-claro e Corvin roxo-escuro.
 
 ## Antagonistas (Capítulo 1)
 
@@ -47,7 +50,7 @@ O hábito da Ordem, e em especial o de Seraphine, se inspira no hábito dos mong
 
 | # | Fase | Objetivo | Novidade | Recrutamento |
 |---|---|---|---|---|
-| 1 | **A Vila em Chamas** | Derrotar todos os inimigos | Tutorial: mover, atacar, terreno, fim de turno | Aren, Mira, Hadric |
+| 1 | **A Vila em Chamas** | Derrotar todos os inimigos | Tutorial: mover, atacar, terreno, fim de turno | Aren, Mira, Hadric, Kaira |
 | 2 | **A Ponte de Thornmere** | Tomar o portão do outro lado da ponte | Triângulo de armas, gargalo, chefe Grull | — |
 | 3 | **O Bosque dos Sussurros** | Sobreviver 8 turnos | Floresta, reforços, Esvaídos | Wren (aliada NPC; entra no time se sobreviver) |
 | 4 | **A Fortaleza de Cinzaforte** | Derrotar o chefe | Conversar, curar, portas | Lys (conversa com Aren), Corvin (libertado da cela) |

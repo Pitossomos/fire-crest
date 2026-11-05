@@ -27,6 +27,7 @@ export const STAGE_2: StageDef = {
     { characterId: 'aren', faction: 'player', x: 1, y: 4, weaponId: 'ember_blade' },
     { characterId: 'mira', faction: 'player', x: 1, y: 5 },
     { characterId: 'hadric', faction: 'player', x: 2, y: 3 },
+    { characterId: 'kaira', faction: 'player', x: 2, y: 5 },
     { characterId: 'grull', faction: 'enemy', x: 12, y: 4, ai: 'stationary', boss: true },
     { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 7, y: 4, level: 2, ai: 'stationary' },
     { classId: 'lancer', weaponId: 'iron_lance', faction: 'enemy', x: 7, y: 5, level: 2, ai: 'guard' },
@@ -45,6 +46,7 @@ export const STAGE_2: StageDef = {
   ],
   postDialogue: [
     { speakerId: 'mira', side: 'left', text: 'O portão é nosso. E o Grull... nem tão rasga-cercas assim, no fim das contas.' },
+    { speakerId: 'kaira', side: 'left', text: 'E aquele portão era carvalho de lei. Quase dá pena de ter rachado.' },
     { speakerId: 'aren', side: 'left', text: 'Ele disse "a Ordem". Que Ordem, Hadric?' },
     { speakerId: 'hadric', side: 'right', text: 'A Ordem do Ocaso. Monges que pregam que o sol deve morrer. Eles caçam gente como você, Aren.' },
     { speakerId: 'hadric', side: 'right', text: 'Precisamos atravessar o Bosque dos Sussurros antes que eles nos achem. E rezar para que o bosque ainda tenha guardiã.' },

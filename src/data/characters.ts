@@ -4,37 +4,43 @@ import { stats } from './stats';
 export const CHARACTERS: Record<string, CharacterDef> = {
   // --- Heróis ---
   aren: {
-    id: 'aren', name: 'Aren Valdris', title: 'Vigia de Brasalva', classId: 'bearer', level: 1,
+    id: 'aren', hair: '#5fb4ff', name: 'Aren Valdris', title: 'Vigia de Brasalva', classId: 'bearer', level: 1,
     stats: stats(22, 6, 2, 6, 7, 6, 6, 2), growths: stats(75, 50, 15, 50, 50, 55, 35, 25),
     weaponId: 'iron_sword', items: ['potion'],
     bio: 'Jovem vigia da vila fronteiriça de Brasalva. A Crista de Fogo despertou em sua mão na noite do ataque.',
   },
   mira: {
-    id: 'mira', name: 'Mira Tolven', title: 'Mercenária', classId: 'swordfighter', level: 2,
+    id: 'mira', hair: '#a05ad8', name: 'Mira Tolven', title: 'Mercenária', classId: 'swordfighter', level: 2,
     stats: stats(20, 5, 0, 10, 11, 5, 4, 1), growths: stats(60, 40, 5, 60, 65, 45, 20, 25),
     weaponId: 'iron_sword', items: ['potion'],
     bio: 'Amiga de infância de Aren. Endividada até o pescoço, sarcástica e leal até o fim.',
   },
   hadric: {
-    id: 'hadric', name: 'Sir Hadric Moor', title: 'Guardião do Farol', classId: 'lancer', level: 5,
+    id: 'hadric', hair: '#ecebf2', name: 'Sir Hadric Moor', title: 'Guardião do Farol', classId: 'lancer', level: 5,
     stats: stats(28, 9, 0, 6, 4, 4, 12, 2), growths: stats(60, 30, 0, 25, 15, 20, 35, 10),
     weaponId: 'iron_lance', items: ['potion'],
     bio: 'O último cavaleiro do Farol de Brasalva. Sabe mais sobre a origem de Aren do que admite.',
   },
+  kaira: {
+    id: 'kaira', hair: '#4fc96a', name: 'Kaira Forjaluz', title: 'Ferreira de Brasalva', classId: 'axefighter', level: 2,
+    stats: stats(27, 8, 0, 6, 6, 4, 6, 1), growths: stats(85, 55, 0, 40, 35, 35, 30, 15),
+    weaponId: 'iron_axe', items: ['potion'],
+    bio: 'Ferreira de Brasalva, braços largos e pavio curto. Protege Aren como a um irmão mais novo — e jura que foi ela quem amolou a Lâmina de Brasa.',
+  },
   wren: {
-    id: 'wren', name: 'Wren', title: 'Caçadora do Bosque', classId: 'archer', level: 3,
+    id: 'wren', hair: '#6f8f3a', name: 'Wren', title: 'Caçadora do Bosque', classId: 'archer', level: 3,
     stats: stats(19, 6, 0, 9, 8, 5, 4, 2), growths: stats(60, 45, 0, 60, 50, 40, 20, 15),
     weaponId: 'iron_bow', items: ['potion'],
     bio: 'Órfã do Bosque dos Sussurros. Perdeu a família para os Esvaídos e não erra uma flecha por raiva.',
   },
   lys: {
-    id: 'lys', name: 'Irmã Lys', title: 'Desertora do Ocaso', classId: 'cleric', level: 2,
+    id: 'lys', hair: '#a8dcff', name: 'Irmã Lys', title: 'Desertora do Ocaso', classId: 'cleric', level: 2,
     stats: stats(17, 0, 6, 5, 7, 9, 1, 8), growths: stats(50, 5, 55, 40, 45, 65, 15, 60),
     weaponId: 'heal_staff', items: ['potion'],
     bio: 'Noviça que fugiu da Ordem do Ocaso depois de ver o que fazem com os portadores da Crista.',
   },
   corvin: {
-    id: 'corvin', name: 'Corvin Ash', title: 'Alquimista', classId: 'pyromancer', level: 4,
+    id: 'corvin', hair: '#5a2d8c', name: 'Corvin Ash', title: 'Alquimista', classId: 'pyromancer', level: 4,
     stats: stats(19, 0, 8, 7, 6, 4, 3, 7), growths: stats(55, 5, 60, 45, 40, 30, 15, 45),
     weaponId: 'fire_tome', items: ['elixir'],
     bio: 'Estudioso excêntrico que tenta replicar a Crista com alquimia. Já explodiu três laboratórios.',

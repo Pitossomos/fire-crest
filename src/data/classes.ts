@@ -15,6 +15,10 @@ export const CLASSES: Record<string, ClassDef> = {
     id: 'lancer', name: 'Lanceiro', move: 4, weaponTypes: ['lance'], sprite: 'unit_lancer',
     baseStats: stats(24, 6, 0, 4, 2, 2, 10, 0), growths: stats(85, 50, 0, 35, 20, 25, 60, 10),
   },
+  axefighter: {
+    id: 'axefighter', name: 'Guerreira', move: 5, weaponTypes: ['axe'], sprite: 'unit_axefighter',
+    baseStats: stats(26, 8, 0, 5, 5, 4, 5, 1), growths: stats(85, 55, 0, 40, 35, 35, 30, 15),
+  },
   archer: {
     id: 'archer', name: 'Arqueiro', move: 5, weaponTypes: ['bow'], sprite: 'unit_archer',
     baseStats: stats(17, 5, 0, 7, 6, 3, 3, 1), growths: stats(65, 45, 0, 55, 45, 35, 20, 15),

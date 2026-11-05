@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Point } from '../core/grid';
 import type { Unit } from '../core/unit';
 import { COLORS, SCALE, TILE } from './layout';
-import { unitTextureKey } from './textures';
+import { resolveUnitTexture } from './textures';
 
 const HP_COLOR = { player: COLORS.hpPlayer, enemy: COLORS.hpEnemy, ally: COLORS.hpAlly } as const;
 
@@ -33,7 +33,7 @@ export class UnitSprite {
   /** Textura conforme classe, arma e facção (muda quando a unidade é recrutada). */
   applyTexture(): void {
     const u = this.unit;
-    this.sprite.setTexture(unitTextureKey(u.classDef.sprite, u.weapon.type, u.faction));
+    this.sprite.setTexture(resolveUnitTexture(this.scene, u.classDef.sprite, u.weapon.type, u.faction, u.characterId));
     this.sprite.setFlipX(u.faction === 'enemy');
   }
 

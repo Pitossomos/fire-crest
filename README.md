@@ -38,7 +38,7 @@ Abra http://localhost:5173.
 O **Capítulo 1 — Brasas no Vale** está completo e jogável do início ao fim:
 
 - 5 fases com objetivos diferentes: derrotar todos, tomar o portão, sobreviver, derrotar o chefe;
-- 6 personagens jogáveis, com recrutamento por conversa, por evento e por sobrevivência;
+- 7 personagens jogáveis (cada um com uma cor de cabelo), com recrutamento por conversa, por evento e por sobrevivência;
 - combate com previsão, triângulo de armas, críticos, ataque duplo e contra-ataque;
 - EXP e level-up, cura com cajado, poções, reforços e IA inimiga com três comportamentos;
 - diálogos com retratos;
