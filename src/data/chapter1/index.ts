@@ -10,6 +10,7 @@ export const CHAPTER_1: ChapterDef = {
   order: 1,
   name: 'Brasas no Vale',
   stageIds: [STAGE_1.id, STAGE_2.id, STAGE_3.id, STAGE_4.id, STAGE_5.id],
+  nextChapterId: 'c2',
 };
 
 export const CHAPTER_1_STAGES: StageDef[] = [STAGE_1, STAGE_2, STAGE_3, STAGE_4, STAGE_5];

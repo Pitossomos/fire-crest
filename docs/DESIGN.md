@@ -1,6 +1,6 @@
 # Design de jogo
 
-RPG tático por turnos em **grade quadrada** (4 direções), no estilo Fire Emblem / Battle for Wesnoth. Escopo pequeno: **8 classes jogáveis**, **5 fases** no Capítulo 1.
+RPG tático por turnos em **grade quadrada** (4 direções), no estilo Fire Emblem / Battle for Wesnoth. São **2 capítulos de 5 fases**, com **10 heróis** e **10 classes jogáveis**, cada uma com uma versão avançada.
 
 ## Modos
 
@@ -24,6 +24,27 @@ RPG tático por turnos em **grade quadrada** (4 direções), no estilo Fire Embl
 
 Os valores ficam em `src/data/classes.ts`, `src/data/weapons.ts` e `src/data/characters.ts`.
 
+## Capítulo 2: promoção, montaria e mapas grandes
+
+- **Selos da Brasa:** são ganhos no início do Capítulo 2 (1) e ao vencer as Fases 2, 3 e 4 (1 cada). Na tela de resultado, um herói de **nível 5+** pode gastar um selo para **promover**: muda para a classe avançada, soma um bônus de atributos (e geralmente +1 de movimento) e volta ao nível 1 da classe nova. Classes avançadas contam como 10 níveis acima no cálculo de EXP.
+
+| Classe | Promove para |
+|---|---|
+| Portador | Lorde Solar |
+| Espadachim | Mestre de Lâminas |
+| Lanceiro | Baluarte |
+| Guerreira | Berserker |
+| Arqueiro | Atiradora |
+| Clérigo | Sacerdotisa |
+| Piromante | Arquimago |
+| Mago de Luz | Arauto da Aurora |
+| Cavaleira | Paladina |
+| Batedora | Lâmina Sombria |
+
+- **Tipos de movimento:** *a pé*, *montado* (Cavaleira, Cavaleiro do Ocaso) e *blindado* (Sentinela Cinzenta). Cada terreno pode ter custos próprios por tipo. O painel lateral mostra esses custos.
+- **Mapas maiores** (até 24×16): a câmera rola para acompanhar o cursor, as unidades da IA, os reforços e os alvos. Painel, menus e previsão ficam fixos na tela.
+- **Continuidade:** o save do Capítulo 1 segue para o Capítulo 2 com níveis, itens e mortos (no Clássico). O título também oferece começar direto no Capítulo 2 com um time pronto.
+
 ## Terreno
 
 | Terreno | Custo | DEF | EVA | Especial |
@@ -34,6 +55,10 @@ Os valores ficam em `src/data/classes.ts`, `src/data/weapons.ts` e `src/data/cha
 | Fortaleza | 2 | +2 | +20 | Cura 10%/turno |
 | Portão | 1 | +3 | +30 | Cura 10%/turno |
 | Rio / Muralha | — | — | — | Intransponível |
+| Pântano | 2 | 0 | −10 | Montados e blindados: 4 |
+| Pilar | 2 | +1 | +20 | Cobertura em interiores |
+
+Na floresta, montados e blindados pagam 3; na colina, 5.
 
 Os mapas são texto em `src/data/chapter1/stageN.ts`, com a legenda definida em `src/data/terrain.ts`.
 
@@ -96,12 +121,13 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 | M5 | Conversar, curar, itens (Poção/Elixir), tomar, fase aliada | ✅ |
 | M6 | Fases 2–5 (mapas, eventos, diálogos), validação automática das fases e simulação de balanceamento | ✅ |
 | M7 | Campanha com save, título (Clássico/Casual/Continuar), tela de resultado, efeitos sonoros sintetizados, transições | ✅ |
+| C2 | Capítulo 2: 5 fases em mapas grandes com câmera, Cavaleira e Batedora, Cavaleiros do Ocaso e Sentinelas, promoção com Selos da Brasa, movimento montado/blindado, continuidade do save | ✅ |
 
 ### Desvios do plano original
 
 - **Arte:** pixel-art procedural feita para o projeto (`src/render/art.ts`), porque o download dos pacotes CC0 da Kenney estava bloqueado no ambiente de desenvolvimento. Os sprites podem ser trocados por assets sem mudar a lógica.
 - **Mapas:** texto (um caractere por terreno) em vez de Tiled. São mais simples de revisar em diffs e de validar em testes.
-- **Mapas 15×10:** todas as fases cabem na tela sem rolagem de câmera. O "mapa maior" da Fase 5 virou um mapa mais denso.
+- **Mapas 15×10 no Capítulo 1:** todas as fases cabem na tela. O Capítulo 2 trouxe a câmera e mapas de até 24×16.
 - **Sons:** sintetizados com WebAudio (`src/render/sfx.ts`), sem arquivos externos. A tecla M liga e desliga o som.
 - **Tela de preparação:** cortada (era opcional). Os itens iniciais vêm dos personagens e o roster passa de fase em fase.
 - **UIScene:** dividida em componentes de `render/` (painel, menus, previsão, efeitos) usados pela `BattleScene`.

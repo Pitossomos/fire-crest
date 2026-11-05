@@ -282,6 +282,93 @@ await until(idle, null, 20000, 'fase reiniciada');
 const retry = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').battle.stage.id);
 if (retry !== 'c1s4') fail(`"Tentar de novo" deveria reabrir a Fase 4, veio ${retry}`);
 
+// --- Capítulo 2: câmera, recrutamento, promoção e transição de capítulo ---
+await page.goto(`${url}/?stage=c2s1&seed=3`);
+await until(idle, null, 20000, 'Cap. 2, Fase 1 pronta');
+const camScroll = () => page.evaluate(() => {
+  const c = window.__FIRE_CREST__.scene.getScene('Battle').cameras.main;
+  return { x: Math.round(c.scrollX), y: Math.round(c.scrollY) };
+});
+for (let i = 0; i < 21; i++) await press('ArrowRight', 20);
+await page.waitForTimeout(300);
+const cam = await camScroll();
+if (cam.x <= 0) fail(`a câmera deveria rolar no mapa grande (scrollX=${cam.x})`);
+await shot('18-c2-camera');
+
+// Hadric conversa com Brielle (12,7) e a recruta
+await page.evaluate(() => {
+  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+  const hadric = sc.battle.units.find((u) => u.characterId === 'hadric');
+  hadric.moveTo({ x: 11, y: 7 });
+  sc.sprites.get(hadric.id).snap();
+  sc.setCursor(hadric.position);
+});
+await press('KeyZ');
+await press('KeyZ', 300);
+await pick('talk:0');
+await until(idle, null, 20000, 'conversa com Brielle');
+const brielle = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').battle.units.find((u) => u.characterId === 'brielle').faction);
+if (brielle !== 'player') fail(`Brielle deveria ter sido recrutada, facção ${brielle}`);
+await shot('19-c2-brielle');
+
+// Vitória → resultado → promover (time pronto tem 1 Selo da Brasa)
+await page.evaluate(() => {
+  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+  for (const u of sc.battle.units) if (u.faction === 'enemy') u.hp = 0;
+  sc.checkOutcome();
+});
+await page.waitForTimeout(900);
+await press('Enter', 600);
+await until(() => window.__FIRE_CREST__.scene.isActive('Result'), null, 20000, 'resultado do Cap. 2');
+await page.waitForTimeout(400);
+const resultOptions = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Result').menu.options.map((o) => `${o.id}:${o.enabled !== false}`));
+if (!resultOptions.includes('promote:true')) fail(`esperava a opção de promover habilitada: ${resultOptions}`);
+await shot('20-c2-result');
+const pickResult = async (optionId) => {
+  const idx = await page.evaluate((id) => window.__FIRE_CREST__.scene.getScene('Result').menu.options.findIndex((o) => o.id === id), optionId);
+  if (idx < 0) { fail(`opção ausente na tela de resultado: ${optionId}`); return; }
+  for (let i = 0; i < idx; i++) await press('ArrowDown', 60);
+  await press('Enter', 500);
+};
+await pickResult('promote');
+await shot('21-c2-promote-list');
+await pickResult('aren');
+const promotedSave = await page.evaluate(() => JSON.parse(localStorage.getItem('fire-crest-save-v1')));
+const arenEntry = promotedSave.roster.find((r) => r.characterId === 'aren');
+if (arenEntry.classId !== 'sunlord') fail(`Aren deveria ser Lorde Solar, veio ${arenEntry.classId}`);
+if (promotedSave.seals !== 0) fail(`o selo deveria ter sido gasto (selos=${promotedSave.seals})`);
+await shot('22-c2-promoted');
+await pickResult('next');
+await until(idle, null, 20000, 'Cap. 2, Fase 2 pronta');
+const s22 = await page.evaluate(() => {
+  const b = window.__FIRE_CREST__.scene.getScene('Battle').battle;
+  return { stage: b.stage.id, aren: b.units.find((u) => u.characterId === 'aren').classDef.id, brielle: b.units.find((u) => u.characterId === 'brielle')?.faction };
+});
+if (s22.stage !== 'c2s2' || s22.aren !== 'sunlord' || s22.brielle !== 'player') fail(`Fase 2 do Cap. 2 inesperada: ${JSON.stringify(s22)}`);
+await shot('23-c2s2');
+
+// Save que terminou o Cap. 1 → "Continuar" leva ao Cap. 2 com o mesmo time
+await page.evaluate(() => {
+  const roster = ['aren', 'mira', 'hadric', 'kaira'].map((id) => ({
+    characterId: id, level: 7, exp: 0, weaponId: id === 'hadric' ? 'iron_lance' : id === 'kaira' ? 'iron_axe' : 'iron_sword',
+    stats: { hp: 30, str: 9, mag: 1, skl: 9, spd: 9, lck: 6, def: 7, res: 3 }, items: [], alive: true,
+  }));
+  localStorage.setItem('fire-crest-save-v1', JSON.stringify({ version: 2, mode: 'classic', chapterId: 'c1', nextStageIndex: 5, roster, seals: 0 }));
+});
+await page.goto(url);
+await page.waitForFunction(() => window.__FIRE_CREST__?.scene.isActive('Title'));
+await page.waitForTimeout(500);
+const contLabel = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Title').menu.options[0].label);
+if (!/Cap\. 2, Fase 1/.test(contLabel)) fail(`"Continuar" deveria levar ao Cap. 2: ${contLabel}`);
+await shot('24-title-c2');
+await press('Enter', 300);
+await until(idle, null, 20000, 'Cap. 2 pelo Continuar');
+const fromSave = await page.evaluate(() => {
+  const b = window.__FIRE_CREST__.scene.getScene('Battle').battle;
+  return { stage: b.stage.id, heroes: b.units.filter((u) => u.faction === 'player').map((u) => u.characterId).sort().join(',') };
+});
+if (fromSave.stage !== 'c2s1' || fromSave.heroes !== 'aren,hadric,kaira,mira') fail(`Continuar do Cap. 1 inesperado: ${JSON.stringify(fromSave)}`);
+
 if (errors.length) fail(`erros no console:\n${errors.join('\n')}`);
 await browser.close();
 console.log(process.exitCode ? 'Smoke test com falhas.' : `Smoke test OK. Screenshots em ${shots}/`);

@@ -16,13 +16,12 @@ import { evaluate } from '../core/objectives';
 import { type EventEffects, EventEngine } from '../core/events';
 import { runDialogue } from './DialogueScene';
 import type { ResultData } from './ResultScene';
-import { applyVictory, buildStageUnits, newCampaign } from '../core/campaign';
-import { CHAPTER_1 } from '../data/chapter1';
+import { applyVictory, buildStageUnits, currentStageId, devSaveForStage } from '../core/campaign';
 import type { SaveData } from '../data/types';
 import { writeSave } from '../save/save';
 import { playSfx, toggleMute } from '../render/sfx';
 import { forecast } from '../core/combat';
-import { TILE } from '../render/layout';
+import { MAP_AREA, TILE } from '../render/layout';
 
 /** Modos de interação do jogador. */
 type Mode = 'idle' | 'selected' | 'moving' | 'menu' | 'inspect' | 'targeting' | 'busy';
@@ -84,9 +83,8 @@ export class BattleScene extends Phaser.Scene {
 
   create(data: { save?: SaveData; stageId?: string; seed?: number }): void {
     // Sem save (atalho de desenvolvimento): campanha Casual começando na fase pedida.
-    const stageId = data.save ? CHAPTER_1.stageIds[data.save.nextStageIndex] : (data.stageId ?? 'c1s1');
-    const stage = lookup(DB.stages, stageId, 'Fase');
-    this.save = data.save ?? { ...newCampaign('casual'), nextStageIndex: Math.max(0, CHAPTER_1.stageIds.indexOf(stageId)) };
+    this.save = data.save ?? devSaveForStage(data.stageId ?? 'c1s1', DB);
+    const stage = lookup(DB.stages, currentStageId(this.save, DB) ?? data.stageId ?? 'c1s1', 'Fase');
     this.state = new BattleState(stage, DB, { seed: data.seed, units: buildStageUnits(stage, this.save, DB) });
     this.cameras.main.fadeIn(350);
     this.eventEngine = new EventEngine(this.state);
@@ -104,6 +102,7 @@ export class BattleScene extends Phaser.Scene {
     this.outcome = undefined;
 
     const lord = this.state.unitsOf('player').find((u) => u.isLord) ?? this.state.unitsOf('player')[0];
+    if (lord) this.mapView.centerOn(lord.position);
     this.setCursor(lord ? lord.position : { x: 0, y: 0 });
     this.bindInput();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.mapView.destroy());
@@ -126,6 +125,7 @@ export class BattleScene extends Phaser.Scene {
       for (const u of fx.spawned) {
         const sprite = new UnitSprite(this, u);
         this.sprites.set(u.id, sprite);
+        this.mapView.ensureVisible(u.position, 2, false);
         await sprite.fadeIn();
       }
       for (const u of fx.recruited) {
@@ -329,7 +329,7 @@ export class BattleScene extends Phaser.Scene {
     options.push({ id: 'wait', label: 'Esperar' });
     this.menuCancel = () => this.undoMove(sel);
     this.setMode('menu');
-    const { x, y } = MapView.toPixel(u.position);
+    const { x, y } = this.mapView.toScreen(u.position);
     this.menu.open(x + TILE + 6, y - 6, options, (id) => {
       this.menuCancel = undefined;
       if (id === 'wait') void this.finishAction(u);
@@ -353,7 +353,7 @@ export class BattleScene extends Phaser.Scene {
     this.menuCancel = () => this.openUnitMenu(sel);
     this.setMode('menu');
     this.panel.setHelp(u.hp < u.maxHp ? 'Escolha o item para usar.' : `${u.name} está com o HP cheio.`);
-    const { x, y } = MapView.toPixel(u.position);
+    const { x, y } = this.mapView.toScreen(u.position);
     this.menu.open(x + TILE + 6, y - 6, options, (id) => {
       this.menuCancel = undefined;
       if (id === 'back') {
@@ -413,10 +413,11 @@ export class BattleScene extends Phaser.Scene {
     const target = t.targets[i];
     this.cursor = target.position;
     this.mapView.moveCursor(target.position);
+    this.mapView.ensureVisible(target.position);
     this.panel.setTerrain(this.state.map.terrainAt(target.position));
     this.panel.setUnit(target);
     if (t.kind === 'attack') {
-      this.forecastPanel.show(forecast(this.state.map, t.sel.unit, target));
+      this.showForecast(t.sel.unit, target);
     } else {
       const amount = Math.min(target.maxHp - target.hp, (t.sel.unit.weapon.heal ?? 0) + Math.floor(t.sel.unit.stats.mag / 2));
       this.panel.setHelp(`Curar ${target.name}: +${amount} HP (${target.hp} → ${target.hp + amount}) · Z/Enter: confirmar · X/Esc: voltar`);
@@ -507,7 +508,7 @@ export class BattleScene extends Phaser.Scene {
   private openMapMenu(): void {
     this.setMode('menu');
     this.menuCancel = () => this.setMode('idle');
-    const { x, y } = MapView.toPixel(this.cursor);
+    const { x, y } = this.mapView.toScreen(this.cursor);
     this.menu.open(x + TILE + 6, y, [
       { id: 'end', label: 'Encerrar turno' },
       { id: 'cancel', label: 'Cancelar' },
@@ -545,12 +546,14 @@ export class BattleScene extends Phaser.Scene {
       const plan = planAction(this.state, unit);
       const sprite = this.sprites.get(unit.id)!;
       if (!samePoint(plan.moveTo, unit.position)) {
+        this.mapView.ensureVisible(unit.position, 2, false);
         const path = this.state.moveUnit(unit, plan.moveTo);
         await sprite.walk(path, 70);
       }
       if (plan.target) {
         this.mapView.moveCursor(plan.target.position);
-        this.forecastPanel.show(forecast(this.state.map, unit, plan.target));
+        this.mapView.ensureVisible(plan.target.position, 2, false);
+        this.showForecast(unit, plan.target);
         await this.wait(550);
         this.forecastPanel.hide();
         const outcome = this.state.attack(unit, plan.target);
@@ -642,12 +645,20 @@ export class BattleScene extends Phaser.Scene {
   private setCursor(p: Point): void {
     this.cursor = p;
     this.mapView.moveCursor(p);
+    this.mapView.ensureVisible(p);
     this.panel.setTerrain(this.state.map.terrainAt(p));
     this.refreshPanel();
     if (this.mode === 'selected' && this.selection) {
       if (this.selection.moveKeys.has(pointKey(p))) this.mapView.showPath(buildPath(this.selection.range.reach, p));
       else this.mapView.clearPath();
     }
+  }
+
+  /** Previsão de combate, posicionada para não cobrir os combatentes. */
+  private showForecast(attacker: Unit, defender: Unit): void {
+    const half = MAP_AREA.height / 2;
+    const onTop = this.mapView.toScreen(attacker.position).y < half && this.mapView.toScreen(defender.position).y < half;
+    this.forecastPanel.show(forecast(this.state.map, attacker, defender), onTop);
   }
 
   private refreshPanel(): void {

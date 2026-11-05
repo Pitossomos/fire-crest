@@ -1,19 +1,26 @@
 import Phaser from 'phaser';
+import {
+  canPromote, currentChapter, currentStageId, isChapterDone, promote, rosterClassId, startNextChapter,
+} from '../core/campaign';
 import { DB } from '../data';
-import { CHAPTER_1 } from '../data/chapter1';
 import type { SaveData } from '../data/types';
 import { COLORS, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH } from '../render/layout';
-import { TextMenu } from '../render/TextMenu';
+import { TextMenu, type TextMenuOption } from '../render/TextMenu';
 import { playSfx } from '../render/sfx';
+import { writeSave } from '../save/save';
 
 export interface ResultData {
   result: 'victory' | 'defeat';
   stageName: string;
   /** Save já atualizado (vitória) ou o save do início da fase (derrota). */
   save: SaveData;
+  /** Mensagem de destaque (ex.: após uma promoção). */
+  message?: string;
+  /** Mostra a lista de heróis promovíveis em vez do menu principal. */
+  promoting?: boolean;
 }
 
-/** Tela entre fases: resumo do time após a vitória, ou opções após a derrota. */
+/** Tela entre fases: resumo do time, promoções com Selos da Brasa e próxima fase/capítulo. */
 export class ResultScene extends Phaser.Scene {
   /** Menu atual (lido por testes de ponta a ponta). */
   menu?: TextMenu;
@@ -23,58 +30,133 @@ export class ResultScene extends Phaser.Scene {
   }
 
   create(data: ResultData): void {
-    this.cameras.main.fadeIn(300);
+    this.cameras.main.fadeIn(250);
+    const save = data.save;
     const victory = data.result === 'victory';
-    const chapterDone = victory && data.save.nextStageIndex >= CHAPTER_1.stageIds.length;
+    const chapter = currentChapter(save, DB);
+    const chapterDone = victory && isChapterDone(save, DB);
     const cx = GAME_WIDTH / 2;
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, victory ? 0x1d1410 : 0x120f18).setOrigin(0);
-    playSfx(this, victory ? 'victory' : 'defeat');
+    if (!data.message && !data.promoting) playSfx(this, victory ? 'victory' : 'defeat');
 
-    const title = chapterDone ? 'Fim do Capítulo 1' : victory ? 'Vitória!' : 'Derrota...';
-    this.add.text(cx, 44, title, {
-      fontFamily: FONT_TITLE, fontSize: '42px', color: victory ? '#ffb347' : '#c8a2a2', fontStyle: 'bold',
+    const title = chapterDone ? `Fim do Capítulo ${chapter.order}` : victory ? 'Vitória!' : 'Derrota...';
+    this.add.text(cx, 34, title, {
+      fontFamily: FONT_TITLE, fontSize: '38px', color: victory ? '#ffb347' : '#c8a2a2', fontStyle: 'bold',
     }).setOrigin(0.5);
-    this.add.text(cx, 88, chapterDone ? 'Brasas no Vale — o Farol de Brasalva voltou a arder.' : data.stageName, {
-      fontFamily: FONT_UI, fontSize: '16px', color: COLORS.textDim,
+    const subtitle = chapterDone ? `${chapter.name} — mais um Farol voltou a arder.` : data.stageName;
+    this.add.text(cx, 72, `${subtitle}${victory ? `   ·   Selos da Brasa: ${save.seals}` : ''}`, {
+      fontFamily: FONT_UI, fontSize: '15px', color: COLORS.textDim,
     }).setOrigin(0.5);
+    if (data.message) {
+      this.add.text(cx, 96, data.message, { fontFamily: FONT_UI, fontSize: '15px', color: '#7CFC9A' }).setOrigin(0.5);
+    }
 
-    if (victory) this.drawRoster(data.save);
-    else {
+    if (victory) {
+      if (!data.promoting) this.drawRoster(save);
+    } else {
       this.add.text(cx, 200, 'Aren caiu, e a Crista se apagou.\nMas toda brasa pode ser reacesa.', {
         fontFamily: FONT_UI, fontSize: '18px', color: COLORS.text, align: 'center', lineSpacing: 10,
       }).setOrigin(0.5);
     }
 
-    const next = DB.stages[CHAPTER_1.stageIds[data.save.nextStageIndex]];
-    const options = chapterDone
-      ? [{ id: 'title', label: 'Voltar ao título' }]
-      : victory
-        ? [{ id: 'next', label: `Próxima fase: ${next?.name ?? '—'}` }, { id: 'title', label: 'Salvar e voltar ao título' }]
-        : [{ id: 'retry', label: 'Tentar de novo' }, { id: 'title', label: 'Voltar ao título' }];
-    this.menu = new TextMenu(this, cx, GAME_HEIGHT - 96, options, (id) => {
-      this.cameras.main.fadeOut(250);
-      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-        if (id === 'title') this.scene.start('Title');
-        else this.scene.start('Battle', { save: data.save });
-      });
+    if (data.promoting) this.promotionMenu(data);
+    else this.mainMenu(data, chapterDone);
+  }
+
+  private go(target: () => void): void {
+    this.cameras.main.fadeOut(220);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, target);
+  }
+
+  private mainMenu(data: ResultData, chapterDone: boolean): void {
+    const save = data.save;
+    const victory = data.result === 'victory';
+    const options: TextMenuOption[] = [];
+    const nextChapter = chapterDone ? startNextChapter(save, DB) : undefined;
+    if (victory && !chapterDone) {
+      options.push({ id: 'next', label: `Próxima fase: ${DB.stages[currentStageId(save, DB)!]?.name ?? '—'}` });
+    } else if (nextChapter) {
+      options.push({ id: 'chapter', label: `Próximo capítulo: ${DB.chapters[nextChapter.chapterId].name}` });
+    }
+    if (!victory) options.push({ id: 'retry', label: 'Tentar de novo' });
+    const promotable = save.roster.filter((r) => canPromote(r, DB));
+    if (victory && promotable.length > 0) {
+      options.push({ id: 'promote', label: `Promover heróis (${save.seals} selo${save.seals === 1 ? '' : 's'})`, enabled: save.seals > 0 });
+    }
+    options.push({ id: 'title', label: victory && !(chapterDone && !nextChapter) ? 'Salvar e voltar ao título' : 'Voltar ao título' });
+
+    this.menu = new TextMenu(this, GAME_WIDTH / 2, GAME_HEIGHT - 22 - options.length * 32, options, (id) => {
+      if (id === 'promote') {
+        this.scene.restart({ ...data, promoting: true, message: undefined });
+        return;
+      }
+      if (id === 'chapter' && nextChapter) {
+        writeSave(nextChapter);
+        this.go(() => this.scene.start('Battle', { save: nextChapter }));
+        return;
+      }
+      if (id === 'title') {
+        this.go(() => this.scene.start('Title'));
+        return;
+      }
+      this.go(() => this.scene.start('Battle', { save }));
+    }, 32);
+  }
+
+  private promotionMenu(data: ResultData): void {
+    const save = data.save;
+    const candidates = save.roster.filter((r) => canPromote(r, DB));
+    const options: TextMenuOption[] = candidates.map((r) => {
+      const from = DB.classes[rosterClassId(r, DB)];
+      const to = DB.classes[from.promotesTo!];
+      return { id: r.characterId, label: `${DB.characters[r.characterId].name}: ${from.name} → ${to.name}` };
     });
+    options.push({ id: 'back', label: 'Voltar' });
+    this.add.text(GAME_WIDTH / 2, 120, 'Escolha quem recebe o Selo da Brasa. A classe avançada ganha atributos,\nmais movimento e volta ao nível 1 (com mais espaço para crescer).', {
+      fontFamily: FONT_UI, fontSize: '13px', color: COLORS.textDim, align: 'center', lineSpacing: 4,
+    }).setOrigin(0.5, 0);
+    this.menu = new TextMenu(this, GAME_WIDTH / 2, 180, options, (id) => {
+      if (id === 'back') {
+        this.scene.restart({ ...data, promoting: false, message: undefined });
+        return;
+      }
+      const promoted = promote(save, id, DB);
+      writeSave(promoted);
+      playSfx(this, 'levelup');
+      const entry = promoted.roster.find((r) => r.characterId === id)!;
+      const cls = DB.classes[rosterClassId(entry, DB)];
+      this.scene.restart({
+        ...data, save: promoted, promoting: false,
+        message: `${DB.characters[id].name} agora é ${cls.name}!`,
+      });
+    }, 30);
   }
 
   private drawRoster(save: SaveData): void {
-    const cardW = 290;
-    const cardH = 92;
+    const cols = 4;
+    const rows = Math.ceil(save.roster.length / cols);
+    if (save.roster.some((r) => canPromote(r, DB))) {
+      this.add.text(GAME_WIDTH - 16, 112 + rows * 78, 'Borda verde: pode ser promovido (nível 5+) · ★ classe avançada', {
+        fontFamily: FONT_UI, fontSize: '11px', color: '#7CFC9A',
+      }).setOrigin(1, 0);
+    }
+    const cardW = 222;
+    const cardH = 70;
     save.roster.forEach((r, i) => {
       const ch = DB.characters[r.characterId];
-      const cls = DB.classes[ch.classId];
-      const x = 30 + (i % 3) * (cardW + 15);
-      const y = 120 + Math.floor(i / 3) * (cardH + 12);
-      this.add.rectangle(x, y, cardW, cardH, COLORS.panel, 1).setOrigin(0).setStrokeStyle(2, r.alive ? COLORS.panelBorder : 0x4a2a2a);
-      this.add.text(x + 12, y + 8, `${ch.name}`, { fontFamily: FONT_UI, fontSize: '15px', color: r.alive ? COLORS.accent : '#8a6a6a' });
+      const cls = DB.classes[rosterClassId(r, DB)];
+      const x = 16 + (i % cols) * (cardW + 10);
+      const y = 112 + Math.floor(i / cols) * (cardH + 8);
+      const ready = canPromote(r, DB);
+      this.add.rectangle(x, y, cardW, cardH, COLORS.panel, 1).setOrigin(0)
+        .setStrokeStyle(2, !r.alive ? 0x4a2a2a : ready ? 0x7cfc9a : COLORS.panelBorder);
+      const star = (cls.tier ?? 1) > 1 ? ' ★' : '';
+      this.add.text(x + 8, y + 6, `${ch.name}${star}`, { fontFamily: FONT_UI, fontSize: '13px', color: r.alive ? COLORS.accent : '#8a6a6a' });
       const s = r.stats;
       const lines = r.alive
-        ? [`${cls.name}  Nv ${r.level}  EXP ${r.exp}`, `HP ${s.hp}  FOR ${s.str}  MAG ${s.mag}  HAB ${s.skl}`, `VEL ${s.spd}  SOR ${s.lck}  DEF ${s.def}  RES ${s.res}`]
+        ? [`${cls.name}  Nv ${r.level}`, `HP ${s.hp} FOR ${s.str} MAG ${s.mag} HAB ${s.skl}`, `VEL ${s.spd} SOR ${s.lck} DEF ${s.def} RES ${s.res}`]
         : ['Caiu em batalha.', 'Sua chama não será esquecida.'];
-      this.add.text(x + 12, y + 30, lines.join('\n'), { fontFamily: FONT_UI, fontSize: '12px', color: COLORS.text, lineSpacing: 4 });
+      this.add.text(x + 8, y + 24, lines.join('\n'), { fontFamily: FONT_UI, fontSize: '11px', color: COLORS.text, lineSpacing: 3 });
     });
   }
 }

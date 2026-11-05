@@ -40,7 +40,7 @@ export function levelUpPopup(scene: Phaser.Scene, unit: Unit, up: LevelUp): Prom
       fontFamily: FONT_UI, fontSize: '16px', color: gained ? '#7CFC9A' : COLORS.textDim,
     });
   });
-  const box = scene.add.container(x, y, [bg, title, ...cells]).setDepth(90).setAlpha(0);
+  const box = scene.add.container(x, y, [bg, title, ...cells]).setDepth(90).setAlpha(0).setScrollFactor(0, 0, true);
   return new Promise((resolve) => {
     let done = false;
     const close = () => {
@@ -65,5 +65,5 @@ export function outcomeBanner(scene: Phaser.Scene, text: string, color: number):
   const label = scene.add.text(MAP_AREA.width / 2, 0, text, {
     fontFamily: FONT_TITLE, fontSize: '44px', color: '#f2e6d0', fontStyle: 'bold',
   }).setOrigin(0.5);
-  return scene.add.container(0, MAP_AREA.height / 2, [band, label]).setDepth(95);
+  return scene.add.container(0, MAP_AREA.height / 2, [band, label]).setDepth(95).setScrollFactor(0, 0, true);
 }

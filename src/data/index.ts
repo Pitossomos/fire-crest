@@ -5,10 +5,12 @@ import { TERRAIN } from './terrain';
 import { CHARACTERS } from './characters';
 import { ITEMS } from './items';
 import { CHAPTER_1, CHAPTER_1_STAGES } from './chapter1';
+import { CHAPTER_2, CHAPTER_2_STAGES } from './chapter2';
 
 /** Capítulos em ordem de jogo, com as respectivas fases. */
 const CHAPTERS: { chapter: ChapterDef; stages: StageDef[] }[] = [
   { chapter: CHAPTER_1, stages: CHAPTER_1_STAGES },
+  { chapter: CHAPTER_2, stages: CHAPTER_2_STAGES },
 ];
 
 /** Acesso somente-leitura a todas as definições estáticas do jogo. */

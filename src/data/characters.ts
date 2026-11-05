@@ -51,6 +51,18 @@ export const CHARACTERS: Record<string, CharacterDef> = {
     weaponId: 'fire_tome', items: ['elixir'],
     bio: 'Estudioso excêntrico que tenta replicar a Crista com alquimia. Já explodiu três laboratórios.',
   },
+  brielle: {
+    id: 'brielle', hair: '#e8443a', name: 'Ser Brielle Ventor', title: 'Cavaleira de Solmarch', classId: 'cavalier', level: 5,
+    stats: stats(26, 8, 0, 8, 9, 5, 8, 2), growths: stats(75, 45, 0, 45, 45, 35, 30, 15),
+    weaponId: 'iron_lance', items: ['potion'],
+    bio: 'Última cavaleira de uma patrulha de Solmarch. Filha de Gerold Ventor, velho companheiro de armas de Hadric. Teimosa, honrada e rápida demais para o próprio bem.',
+  },
+  sorrel: {
+    id: 'sorrel', hair: '#ff7ac8', name: 'Sorrel', title: 'Contrabandista do Pântano', classId: 'scout', level: 5,
+    stats: stats(21, 6, 0, 10, 14, 10, 3, 3), growths: stats(60, 35, 5, 55, 70, 60, 15, 25),
+    weaponId: 'iron_sword', items: ['potion'],
+    bio: 'Conhece cada trilha seca do Pântano de Vessa. Deve dinheiro a metade do vale — inclusive à Mira, com quem dividiu muitas dívidas e algumas fugas.',
+  },
   // --- Antagonistas ---
   grull: {
     id: 'grull', villain: true, name: 'Grull', title: 'o Rasga-Cercas', classId: 'bandit', level: 5,
@@ -75,6 +87,24 @@ export const CHARACTERS: Record<string, CharacterDef> = {
     stats: stats(30, 0, 10, 7, 5, 3, 5, 8), growths: stats(55, 0, 50, 35, 30, 15, 20, 40),
     weaponId: 'sleep_psalm',
     bio: 'Abade da Ordem do Ocaso. Transformou a velha fortaleza de Cinzaforte em prisão para os "impuros".',
+  },
+  draven: {
+    id: 'draven', villain: true, name: 'Comandante Draven', title: 'Lança do Ocaso', classId: 'dusk_knight', level: 9,
+    stats: stats(38, 13, 0, 9, 9, 4, 12, 4), growths: stats(75, 45, 0, 35, 35, 15, 30, 15),
+    weaponId: 'steel_lance',
+    bio: 'Comandante dos Cavaleiros do Ocaso. Já foi cavaleiro de Solmarch; trocou de lado quando o último rei caiu.',
+  },
+  warden: {
+    id: 'warden', villain: true, name: 'Guardião Afogado', title: 'Sentinela de Brasa Morta', classId: 'ash_sentinel', level: 8,
+    stats: stats(42, 13, 0, 6, 3, 0, 15, 1), growths: stats(85, 50, 0, 25, 10, 5, 45, 5),
+    weaponId: 'steel_axe',
+    bio: 'Uma armadura antiga do Farol de Vessa, animada pelo Cinzento. Guarda a ponte de pedra do pântano há décadas.',
+  },
+  malachar: {
+    id: 'malachar', villain: true, name: 'Arquidiácono Malachar', title: 'Senhor de Vessaria', classId: 'inquisitor', level: 10,
+    stats: stats(44, 6, 14, 12, 9, 8, 9, 13), growths: stats(70, 20, 60, 50, 45, 40, 30, 50),
+    weaponId: 'eclipse_tome',
+    bio: 'Governa Vessaria em nome do Grão-Hierofante. Foi ele quem apagou o Farol de Vessa e transformou a catedral do sol em templo do Ocaso.',
   },
   seraphine: {
     id: 'seraphine', villain: true, name: 'Seraphine Vael', title: 'Inquisidora do Ocaso', classId: 'inquisitor', level: 10,

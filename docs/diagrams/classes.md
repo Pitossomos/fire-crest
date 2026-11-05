@@ -450,6 +450,7 @@ classDiagram
       +canPromote(entry: RosterEntry, db: GameDatabase) boolean
       +promote(save: SaveData, characterId: string, db: GameDatabase) SaveData
       +livingRoster(save: SaveData) RosterEntry[]
+      +devSaveForStage(stageId: string, db: GameDatabase) SaveData
     }
     class StrikeStats {
       <<interface>>
@@ -943,7 +944,7 @@ classDiagram
     class ForecastPanel {
       -scene: Phaser.Scene
       -container: Phaser.GameObjects.Container
-      +show(f: Forecast) void
+      +show(f: Forecast, unitsOnTop: any) void
       +hide() void
       -column(u: Unit, s: StrikeStats, foe: Unit, x: number) Phaser.GameObjects.Text[]
     }
@@ -954,8 +955,13 @@ classDiagram
       -pathLayer: Phaser.GameObjects.Graphics
       -cursor: Phaser.GameObjects.Graphics
       -cursorTween: Phaser.Tweens.Tween
+      -scrollTween: Phaser.Tweens.Tween
+      +scrolls: boolean
+      +toScreen(p: Point) object
+      +ensureVisible(p: Point, margin: any, animate: any) void
+      +centerOn(p: Point) void
       +toPixel(p: Point) object$
-      +toTile(px: number, py: number) Point | null
+      +toTile(screenX: number, screenY: number) Point | null
       +showRanges(move: Point[], attack: Point[], attackKind: HighlightKind) void
       +clearRanges() void
       +showPath(path: Point[]) void
@@ -1143,6 +1149,7 @@ classDiagram
       -announcePhase() Promise~void~
       -setMode(mode: Mode) void
       -setCursor(p: Point) void
+      -showForecast(attacker: Unit, defender: Unit) void
       -refreshPanel() void
       -refreshSprites() void
     }
@@ -1193,6 +1200,9 @@ classDiagram
     class ResultScene {
       +menu: TextMenu
       +create(data: ResultData) void
+      -go(target: Function) void
+      -mainMenu(data: ResultData, chapterDone: boolean) void
+      -promotionMenu(data: ResultData) void
       -drawRoster(save: SaveData) void
     }
     class ResultData {
@@ -1200,11 +1210,13 @@ classDiagram
       +result: victory | defeat
       +stageName: string
       +save: SaveData
+      +message?: string
+      +promoting?: boolean
     }
     class TitleScene {
       +menu: TextMenu
       +create() void
-      -newGame(mode: GameMode) SaveData
+      -newGame(mode: GameMode, chapterId: any) SaveData
       -startBattle(save: SaveData) void
       -spawnEmber(anywhere: boolean) void
     }

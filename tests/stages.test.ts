@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyVictory, buildStageUnits, newCampaign } from '../src/core/campaign';
+import { applyVictory, buildStageUnits, newCampaign, newCampaignAt } from '../src/core/campaign';
 import { simulate } from './simulate';
 import { BattleState } from '../src/core/battle-state';
 import { pointKey } from '../src/core/grid';
@@ -7,6 +7,7 @@ import { distanceField } from '../src/core/pathfinding';
 import { DB } from '../src/data';
 import { NARRATOR_ID } from '../src/data/characters';
 import { CHAPTER_1, CHAPTER_1_STAGES } from '../src/data/chapter1';
+import { CHAPTER_2_STAGES } from '../src/data/chapter2';
 import type { StageDef } from '../src/data/types';
 
 describe('Capítulo 1', () => {
@@ -16,12 +17,30 @@ describe('Capítulo 1', () => {
   });
 });
 
-describe.each(CHAPTER_1_STAGES.map((s) => [s.name, s] as [string, StageDef]))('%s', (_name, stage) => {
+describe('capítulos', () => {
+  it('estão em ordem, encadeados e com fases existentes', () => {
+    expect(DB.chapterOrder).toEqual(['c1', 'c2']);
+    expect(DB.chapters.c1.nextChapterId).toBe('c2');
+    for (const id of DB.chapterOrder) {
+      const ch = DB.chapters[id];
+      expect(ch.stageIds).toHaveLength(5);
+      for (const sid of ch.stageIds) expect(DB.stages[sid]?.chapterId, sid).toBe(id);
+      for (const m of ch.premade ?? []) expect(DB.characters[m.characterId], m.characterId).toBeDefined();
+    }
+  });
+});
+
+const ALL_STAGES = Object.values(DB.stages);
+
+describe.each(ALL_STAGES.map((s) => [`${s.id} ${s.name}`, s] as [string, StageDef]))('%s', (_name, stage) => {
   const state = new BattleState(stage, DB, { seed: 1 });
 
-  it('mapa 15×10 e unidades em tiles distintos e transponíveis', () => {
-    expect(state.map.width).toBe(15);
-    expect(state.map.height).toBe(10);
+  it('mapa entre 15×10 e 30×20, Cap. 1 sem rolagem; unidades em tiles distintos e transponíveis', () => {
+    expect(state.map.width).toBeGreaterThanOrEqual(15);
+    expect(state.map.height).toBeGreaterThanOrEqual(10);
+    expect(state.map.width).toBeLessThanOrEqual(30);
+    expect(state.map.height).toBeLessThanOrEqual(20);
+    if (stage.chapterId === 'c1') expect([state.map.width, state.map.height]).toEqual([15, 10]);
     const keys = state.units.map((u) => pointKey(u.position));
     expect(new Set(keys).size).toBe(keys.length);
   });
@@ -96,5 +115,27 @@ describe('simulação do capítulo (sanidade e balanceamento)', () => {
     }
     console.log(`[balanceamento]\n${report.join('\n')}`);
     expect(farthest).toBeGreaterThanOrEqual(1);
+  });
+
+  it('o Capítulo 2 simulado com o time pré-montado roda sem erros', () => {
+    const report: string[] = [];
+    for (const seed of [1, 2, 3, 4]) {
+      let save = newCampaignAt('casual', 'c2', DB);
+      for (const stage of CHAPTER_2_STAGES) {
+        let won = false;
+        for (let tryNo = 0; tryNo < 3 && !won; tryNo++) {
+          const state = new BattleState(stage, DB, { seed: seed * 100 + tryNo, units: buildStageUnits(stage, save, DB) });
+          const r = simulate(state);
+          if (r.result === 'victory') {
+            save = applyVictory(save, r.state);
+            won = true;
+          }
+        }
+        if (!won) break;
+      }
+      report.push(`seed ${seed}: ${save.nextStageIndex}/5 fases, selos ${save.seals}`);
+    }
+    console.log(`[balanceamento Cap. 2]\n${report.join('\n')}`);
+    expect(report).toHaveLength(4);
   });
 });

@@ -178,3 +178,14 @@ export function promote(save: SaveData, characterId: string, db: GameDatabase): 
 export function livingRoster(save: SaveData): RosterEntry[] {
   return save.roster.filter((r) => r.alive);
 }
+
+/**
+ * Save de desenvolvimento para abrir uma fase direto (`?stage=`): Casual,
+ * com o time pré-montado do capítulo (ou o time da própria fase no Cap. 1).
+ */
+export function devSaveForStage(stageId: string, db: GameDatabase): SaveData {
+  const stage = lookup(db.stages, stageId, 'Fase');
+  const chapter = lookup(db.chapters, stage.chapterId, 'Capítulo');
+  const base = chapter.premade ? newCampaignAt('casual', chapter.id, db) : newCampaign('casual', chapter.id);
+  return { ...base, nextStageIndex: Math.max(0, chapter.stageIds.indexOf(stageId)) };
+}

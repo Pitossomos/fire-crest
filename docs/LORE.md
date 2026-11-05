@@ -58,3 +58,37 @@ O hábito da Ordem, e em especial o de Seraphine, se inspira no hábito dos mong
 | 5 | **O Farol Apagado** | Derrotar a Inquisidora Seraphine | Mapa maior, chefe em terreno fortificado | — |
 
 **Final do capítulo:** Seraphine foge. Aren reacende o Farol de Brasalva com sua Crista — o primeiro Farol reaceso em 20 anos. Hadric revela a verdadeira origem de Aren. Gancho: a Ordem já apagou três dos Sete Faróis.
+
+---
+
+# Capítulo 2 — O Caminho dos Faróis
+
+Com o Farol de Brasalva aceso de novo, o grupo descobre que a Ordem do Ocaso já apagou três dos Sete Faróis. O mais próximo é o **Farol de Vessa**, ao sul. A cidade de **Vessaria** é governada pelo **Arquidiácono Malachar**, que transformou a antiga Catedral do Sol em templo do Ocaso. Corvin destila uma brasa da pira de Brasalva e cria o primeiro **Selo da Brasa**, capaz de fazer um herói evoluir para uma classe avançada.
+
+## Novos aliados
+
+| Personagem | Classe | Gancho |
+|---|---|---|
+| **Ser Brielle Ventor** | Cavaleira (montada, lança) | Última cavaleira de uma patrulha de Solmarch e filha de Gerold Ventor, velho camarada de Hadric. Cabelo vermelho. Entra na Fase 1 quando **Hadric** conversa com ela. |
+| **Sorrel** | Batedora (espada, muito rápida) | Contrabandista do Pântano de Vessa e velha amiga (e credora) da Mira. Cabelo rosa. Entra na Fase 2 quando **Mira** conversa com ela. |
+
+## Novos inimigos
+
+- **Cavaleiros do Ocaso** — montados, de armadura negra e lança. Correm longe na estrada, mas sofrem na floresta, nas colinas e no pântano.
+- **Sentinelas Cinzentas** — antigas armaduras da guarda dos Faróis, animadas pelo Cinzento. Lentas e com muita defesa, mas quase sem resistência à magia.
+- **Comandante Draven** — ex-cavaleiro de Solmarch e líder dos Cavaleiros do Ocaso.
+- **Guardião Afogado** — a armadura do antigo guardião do Farol de Vessa, presa no pântano.
+- **Arquidiácono Malachar** — senhor de Vessaria, com o Tomo do Eclipse.
+- **Seraphine** volta na Fase 4. Ao ser derrotada, foge mais uma vez, agora em dúvida.
+
+## Fases
+
+| # | Fase | Objetivo | Novidade | Recrutamento |
+|---|---|---|---|---|
+| 1 | **A Estrada do Rei** | Derrotar todos | Cavaleiros montados, reforços pelo leste | Brielle (conversa com Hadric) |
+| 2 | **O Pântano de Vessa** | Derrotar o Guardião Afogado | Pântano (movimento lento), Sentinelas | Sorrel (conversa com Mira) |
+| 3 | **As Muralhas de Vessaria** | Tomar o portão | Pontes guardadas, Comandante Draven | — |
+| 4 | **Os Becos Apagados** | Chegar ao Farol de Vessa | Cidade em quarteirões, Seraphine na praça (opcional) | — |
+| 5 | **A Catedral do Ocaso** | Derrotar Malachar | Nave com pilares, capelas laterais | — |
+
+**Final do capítulo:** Aren reacende o Farol de Vessa, e dois dos Sete Faróis voltam a brilhar. Nas cartas de Malachar, o grupo descobre que o **Grão-Hierofante** reúne as brasas roubadas na Capital de Solmarch para fundi-las e devorar o sol (o "Eclipse Eterno"). Gancho: a estrada leva à Capital, ao trono do pai de Aren.

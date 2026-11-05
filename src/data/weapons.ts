@@ -11,6 +11,9 @@ export const WEAPONS: Record<string, WeaponDef> = {
   sun_tome:    { id: 'sun_tome',    name: 'Tomo da Aurora',    type: 'light', might: 4, hit: 95, crit: 5,  minRange: 1, maxRange: 2, magic: true, effective: ['hollow', 'dusk_monk', 'inquisitor'] },
   sleep_psalm: { id: 'sleep_psalm', name: 'Salmo do Sono',     type: 'dark',  might: 5, hit: 80, crit: 0,  minRange: 1, maxRange: 2, magic: true },
   ash_rosary:  { id: 'ash_rosary',  name: 'Rosário de Cinzas', type: 'dark',  might: 7, hit: 80, crit: 5, minRange: 1, maxRange: 2, magic: true },
+  steel_lance: { id: 'steel_lance', name: 'Lança de Aço',      type: 'lance', might: 9, hit: 75, crit: 0,  minRange: 1, maxRange: 1, magic: false },
+  steel_axe:   { id: 'steel_axe',   name: 'Machado de Aço',    type: 'axe',   might: 10, hit: 65, crit: 0, minRange: 1, maxRange: 1, magic: false },
+  eclipse_tome: { id: 'eclipse_tome', name: 'Tomo do Eclipse', type: 'dark',  might: 9, hit: 80, crit: 5,  minRange: 1, maxRange: 2, magic: true },
   heal_staff:  { id: 'heal_staff',  name: 'Cajado de Cura',    type: 'staff', might: 0, hit: 100, crit: 0, minRange: 1, maxRange: 1, magic: true, heal: 10 },
   claws:       { id: 'claws',       name: 'Garras Cinzentas',  type: 'claw',  might: 6, hit: 75, crit: 0,  minRange: 1, maxRange: 1, magic: false },
 };

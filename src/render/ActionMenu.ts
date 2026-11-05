@@ -28,7 +28,7 @@ export class ActionMenu {
     return this.container !== undefined;
   }
 
-  /** Abre o menu perto de (x, y), sem sair da área do mapa. */
+  /** Abre o menu perto de (x, y) em coordenadas de tela, sem sair da área do mapa. */
   open(x: number, y: number, options: MenuOption[], onPick: (id: string) => void): void {
     this.close();
     this.options = options;
@@ -54,7 +54,7 @@ export class ActionMenu {
       });
       return t;
     });
-    this.container = this.scene.add.container(left, top, [bg, this.highlight, ...this.items]).setDepth(60);
+    this.container = this.scene.add.container(left, top, [bg, this.highlight, ...this.items]).setDepth(60).setScrollFactor(0, 0, true);
     this.select(this.index);
   }
 

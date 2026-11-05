@@ -15,10 +15,10 @@ export class ForecastPanel {
     this.scene = scene;
   }
 
-  /** Mostra a previsão; fica no topo, ou embaixo se o alvo estiver na metade de cima. */
-  show(f: Forecast): void {
+  /** Mostra a previsão; fica no topo, ou embaixo se os combatentes estiverem na metade de cima da tela. */
+  show(f: Forecast, unitsOnTop = false): void {
     this.hide();
-    const top = f.defender.y < 5 && f.attacker.y < 5 ? MAP_AREA.height - H - 8 : 8;
+    const top = unitsOnTop ? MAP_AREA.height - H - 8 : 8;
     const left = (MAP_AREA.width - W) / 2;
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x24418a, 0.94).fillRect(0, 0, W / 2, H);
@@ -27,7 +27,7 @@ export class ForecastPanel {
     const parts: Phaser.GameObjects.GameObject[] = [bg];
     parts.push(...this.column(f.attacker, f.attackerStats, f.defender, 10));
     parts.push(...this.column(f.defender, f.defenderStats, f.attacker, W / 2 + 10));
-    this.container = this.scene.add.container(left, top, parts).setDepth(70);
+    this.container = this.scene.add.container(left, top, parts).setDepth(70).setScrollFactor(0, 0, true);
   }
 
   hide(): void {

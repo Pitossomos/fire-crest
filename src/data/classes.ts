@@ -66,7 +66,7 @@ export const CLASSES: Record<string, ClassDef> = {
   // --- Capítulo 2: novos inimigos ---
   dusk_knight: {
     id: 'dusk_knight', name: 'Cavaleiro do Ocaso', move: 7, weaponTypes: ['lance'], sprite: 'unit_dusk_knight', movement: 'mounted',
-    baseStats: stats(24, 7, 0, 5, 6, 2, 7, 2), growths: stats(75, 45, 0, 35, 35, 15, 30, 15),
+    baseStats: stats(24, 6, 0, 5, 6, 2, 6, 2), growths: stats(75, 45, 0, 35, 35, 15, 30, 15),
   },
   ash_sentinel: {
     id: 'ash_sentinel', name: 'Sentinela Cinzenta', move: 4, weaponTypes: ['axe'], sprite: 'unit_ash_sentinel', movement: 'armored',

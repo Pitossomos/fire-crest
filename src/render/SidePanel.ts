@@ -12,7 +12,7 @@ const STAT_LABELS: [keyof Unit['stats'], string][] = [
 ];
 
 function text(scene: Phaser.Scene, x: number, y: number, size = 14, color: string = COLORS.text): Phaser.GameObjects.Text {
-  return scene.add.text(x, y, '', { fontFamily: FONT_UI, fontSize: `${size}px`, color, lineSpacing: 4 }).setDepth(51);
+  return scene.add.text(x, y, '', { fontFamily: FONT_UI, fontSize: `${size}px`, color, lineSpacing: 4 }).setDepth(51).setScrollFactor(0);
 }
 
 /** Painel lateral (turno, objetivo, terreno, unidade) e barra de ajuda inferior. */
@@ -26,7 +26,7 @@ export class SidePanel {
 
   constructor(scene: Phaser.Scene, stageName: string, objective: string) {
     const { x, y, width, height } = SIDE_PANEL;
-    const bg = scene.add.graphics().setDepth(50);
+    const bg = scene.add.graphics().setDepth(50).setScrollFactor(0);
     bg.fillStyle(COLORS.panel, 1).fillRect(x, y, width, height);
     bg.lineStyle(2, COLORS.panelBorder, 1).strokeRect(x + 1, y + 1, width - 2, height - 2);
     bg.fillStyle(COLORS.panel, 1).fillRect(BOTTOM_BAR.x, BOTTOM_BAR.y, BOTTOM_BAR.width, BOTTOM_BAR.height);
@@ -43,7 +43,7 @@ export class SidePanel {
     this.terrainText = text(scene, px, 106, 13);
     this.unitTitle = text(scene, px, 206, 15, COLORS.accent);
     this.unitText = text(scene, px, 254, 13).setWordWrapWidth(width - 28);
-    this.hpBar = scene.add.graphics().setDepth(51);
+    this.hpBar = scene.add.graphics().setDepth(51).setScrollFactor(0);
     this.helpText = text(scene, 14, BOTTOM_BAR.y + 10, 13, COLORS.textDim).setWordWrapWidth(BOTTOM_BAR.width - 28);
   }
 
@@ -53,7 +53,12 @@ export class SidePanel {
 
   setTerrain(t: TerrainDef): void {
     const cost = t.moveCost === null ? '—' : String(t.moveCost);
-    const lines = [`Terreno: ${t.name}`, `DEF +${t.def}   EVA +${t.avoid}`, `Custo de mov.: ${cost}`];
+    const signed = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
+    const lines = [`Terreno: ${t.name}`, `DEF ${signed(t.def)}   EVA ${signed(t.avoid)}`, `Custo de mov.: ${cost}`];
+    if (t.costs) {
+      const c = (v: number | null | undefined) => (v === undefined ? cost : v === null ? '—' : String(v));
+      lines.push(`Montados ${c(t.costs.mounted)} · Blindados ${c(t.costs.armored)}`);
+    }
     if (t.heal > 0) lines.push(`Cura ${t.heal}% por turno`);
     this.terrainText.setText(lines.join('\n'));
   }

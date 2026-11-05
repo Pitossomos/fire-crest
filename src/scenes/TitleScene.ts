@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
-import { newCampaign } from '../core/campaign';
-import { CHAPTER_1 } from '../data/chapter1';
+import {
+  currentChapter, devSaveForStage, isChapterDone, newCampaign, newCampaignAt, startNextChapter,
+} from '../core/campaign';
+import { DB } from '../data';
 import type { GameMode, SaveData } from '../data/types';
 import { COLORS, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH } from '../render/layout';
 import { TextMenu, type TextMenuOption } from '../render/TextMenu';
@@ -44,28 +46,43 @@ export class TitleScene extends Phaser.Scene {
     this.add.text(cx, 184, 'A Crista de Fogo', {
       fontFamily: FONT_TITLE, fontSize: '26px', color: COLORS.text, fontStyle: 'italic',
     }).setOrigin(0.5);
-    this.add.text(cx, 226, 'Capítulo 1 — Brasas no Vale', {
+    this.add.text(cx, 226, 'Cap. 1 — Brasas no Vale · Cap. 2 — O Caminho dos Faróis', {
       fontFamily: FONT_UI, fontSize: '16px', color: COLORS.textDim,
     }).setOrigin(0.5);
 
     // Atalho de desenvolvimento: ?stage=c1s4 abre a fase direto (roster novo, modo Casual).
     const params = urlParams();
-    if (params.stage && CHAPTER_1.stageIds.includes(params.stage)) {
-      const save: SaveData = { ...newCampaign('casual'), nextStageIndex: CHAPTER_1.stageIds.indexOf(params.stage) };
+    if (params.stage && DB.stages[params.stage]) {
+      const save = devSaveForStage(params.stage, DB);
       this.time.delayedCall(50, () => this.scene.start('Battle', { save, seed: params.seed }));
       return;
     }
 
-    const save = loadSave();
-    const canContinue = !!save && save.nextStageIndex < CHAPTER_1.stageIds.length;
+    // Save com o capítulo concluído segue direto para o próximo capítulo.
+    const loaded = loadSave();
+    const save = loaded && DB.chapters[loaded.chapterId]
+      ? (isChapterDone(loaded, DB) ? startNextChapter(loaded, DB) : loaded)
+      : undefined;
+    const mode = (m: GameMode) => (m === 'classic' ? 'Clássico' : 'Casual');
     const options: TextMenuOption[] = [];
-    if (canContinue) options.push({ id: 'continue', label: `Continuar (Fase ${save!.nextStageIndex + 1} · ${save!.mode === 'classic' ? 'Clássico' : 'Casual'})` });
+    if (save) {
+      const ch = currentChapter(save, DB);
+      options.push({ id: 'continue', label: `Continuar (Cap. ${ch.order}, Fase ${save.nextStageIndex + 1} · ${mode(save.mode)})` });
+    }
     options.push({ id: 'classic', label: 'Novo jogo — Clássico (permadeath)' });
     options.push({ id: 'casual', label: 'Novo jogo — Casual (caídos voltam)' });
+    options.push({ id: 'c2-classic', label: 'Capítulo 2 com time pronto — Clássico' });
+    options.push({ id: 'c2-casual', label: 'Capítulo 2 com time pronto — Casual' });
 
-    this.menu = new TextMenu(this, cx, 300, options, (id) => {
-      if (id === 'continue' && save) this.startBattle(save);
-      else this.startBattle(this.newGame(id as GameMode));
+    this.menu = new TextMenu(this, cx, 280, options, (id) => {
+      if (id === 'continue' && save) {
+        writeSave(save);
+        this.startBattle(save);
+      } else if (id.startsWith('c2-')) {
+        this.startBattle(this.newGame(id.slice(3) as GameMode, 'c2'));
+      } else {
+        this.startBattle(this.newGame(id as GameMode));
+      }
     });
 
     const help = this.add.text(cx, GAME_HEIGHT - 28,
@@ -75,9 +92,9 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-M', () => help.setText(`↑/↓ e Enter, ou clique · M: som ${toggleMute() ? 'desligado' : 'ligado'}`));
   }
 
-  private newGame(mode: GameMode): SaveData {
+  private newGame(mode: GameMode, chapterId = 'c1'): SaveData {
     clearSave();
-    const save = newCampaign(mode);
+    const save = chapterId === 'c1' ? newCampaign(mode) : newCampaignAt(mode, chapterId, DB);
     writeSave(save);
     return save;
   }
