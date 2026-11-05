@@ -59,11 +59,11 @@ const BODY: readonly string[] = [
 
 /** Camadas sobrepostas ao corpo ('.' mantém o pixel de baixo). */
 const LAYERS: Record<string, readonly string[]> = {
-  // Aren: cabelo ruivo e a Crista de Fogo brilhando na mão esquerda.
+  // Aren: cabelo espetado e a Crista de Fogo brilhando na mão esquerda.
   bearer: [
     '................',
     '................',
-    '......o..o......',
+    '......h..h......',
     '.....ohhhho.....',
     '.....hsssso.....',
     '................',
@@ -83,51 +83,64 @@ const LAYERS: Record<string, readonly string[]> = {
     '..........hh....',
     '...........h....',
   ],
-  // Hadric: elmo e armadura pesada.
+  // Hadric: elmo, armadura pesada, costeletas e barba.
   lancer: [
     '................',
     '................',
     '......mmmm......',
     '.....mnnnnm.....',
-    '.....mssssm.....',
-    '.....mssssm.....',
-    '......mmmm......',
+    '.....mhsshm.....',
+    '.....mhsshm.....',
+    '......hhhh......',
     '....mmddddmm....',
     '...omdmmmmdmo...',
     '...omdmmmmdmo...',
     '....mdmmmmdm....',
   ],
-  // Arqueiro: capuz na cor da facção.
+  // Arqueiro: capuz na cor da facção, franja e mechas por baixo.
   archer: [
     '................',
     '................',
     '......dddd......',
     '.....dddddd.....',
+    '.....dhhhhd.....',
     '.....dssssd.....',
-    '.....dssssd.....',
-    '.....dd..dd.....',
+    '.....dh..hd.....',
   ],
-  // Clérigo: capuz branco com faixa dourada.
+  // Clérigo: capuz branco com faixa dourada, franja e mechas por baixo.
   cleric: [
     '................',
     '................',
     '......bbbb......',
     '.....bbbbbb.....',
+    '.....bhhhhb.....',
     '.....bssssb.....',
-    '.....bssssb.....',
-    '.....bb..bb.....',
+    '.....bh..hb.....',
     '................',
     '.......yy.......',
     '.......yy.......',
     '.......yy.......',
   ],
-  // Piromante: chapéu pontudo.
+  // Piromante: chapéu pontudo com o cabelo escapando por baixo.
   pyromancer: [
     '........o.......',
     '.......odo......',
     '......occco.....',
     '....oddddddo....',
-    '.....osssso.....',
+    '....hhsssshh....',
+    '....h......h....',
+  ],
+  // Guerreira (Kaira): cabelo longo solto, faixa na testa na cor da facção.
+  axefighter: [
+    '................',
+    '................',
+    '.....hhhhhh.....',
+    '....hddddddh....',
+    '....hhsssshh....',
+    '....hhsssshh....',
+    '....hh....hh....',
+    '...hh......hh...',
+    '...h........h...',
   ],
   // Bandido: bandana e barba.
   bandit: [
@@ -326,18 +339,21 @@ export interface UnitArtSpec {
   classId: string;
   weaponType: string;
   faction: Faction;
+  /** Cor do cabelo do personagem (sobrescreve o castanho padrão). */
+  hair?: string;
 }
 
 /** Monta o sprite 16×16 de uma unidade. */
 export function drawUnit(spec: UnitArtSpec): PixelCanvas {
   const canvas = new PixelCanvas(N, N);
-  const palette = { ...BASE_PALETTE, ...FACTION_COLORS[spec.faction] };
+  const palette: Record<string, string> = { ...BASE_PALETTE, ...FACTION_COLORS[spec.faction] };
   if (spec.classId === 'hollow') {
     Object.assign(palette, { s: '#a7b0b8', c: '#5d6670', d: '#3e454d' });
   }
   if (spec.classId === 'dusk_monk' || spec.classId === 'inquisitor') {
     Object.assign(palette, { c: BASE_PALETTE.k, d: BASE_PALETTE.k });
   }
+  if (spec.hair) palette.h = spec.hair;
   canvas.stamp(BODY, palette);
   const layer = LAYERS[spec.classId];
   if (layer) canvas.stamp(layer, palette);

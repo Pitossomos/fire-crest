@@ -717,6 +717,7 @@ classDiagram
       +items?: Ref~ItemDef~[]
       +bio: string
       +villain?: boolean
+      +hair?: string
     }
     class MapDef {
       <<interface>>
@@ -878,6 +879,7 @@ classDiagram
       +classId: string
       +weaponType: string
       +faction: Faction
+      +hair?: string
     }
     class mod_render_art["art.ts"] {
       <<module>>
@@ -975,7 +977,8 @@ classDiagram
     class mod_render_textures["textures.ts"] {
       <<module>>
       +terrainTextureKey(terrainId: string, variant: number) string
-      +unitTextureKey(sprite: string, weaponType: string, faction: Faction) string
+      +unitTextureKey(sprite: string, weaponType: string, faction: Faction, characterId: string) string
+      +resolveUnitTexture(scene: Phaser.Scene, sprite: string, weaponType: string, faction: Faction, characterId: string) string
       +generateTextures(scene: Phaser.Scene, db: GameDatabase) void
     }
     class UnitSprite {

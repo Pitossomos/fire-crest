@@ -6,11 +6,11 @@ import { STAGE_1 } from '../src/data/chapter1/stage1';
 import { makeStage } from './helpers';
 
 describe('BattleState', () => {
-  it('carrega a Fase 1 com 3 heróis e 5 inimigos', () => {
+  it('carrega a Fase 1 com 4 heróis e 5 inimigos', () => {
     const s = new BattleState(STAGE_1, DB);
     expect(s.map.width).toBe(15);
     expect(s.map.height).toBe(10);
-    expect(s.unitsOf('player')).toHaveLength(3);
+    expect(s.unitsOf('player')).toHaveLength(4);
     expect(s.unitsOf('enemy')).toHaveLength(5);
     expect(s.unitsOf('player').some((u) => u.isLord)).toBe(true);
   });

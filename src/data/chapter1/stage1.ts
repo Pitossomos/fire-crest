@@ -27,6 +27,7 @@ export const STAGE_1: StageDef = {
     { characterId: 'aren', faction: 'player', x: 6, y: 7 },
     { characterId: 'mira', faction: 'player', x: 8, y: 7 },
     { characterId: 'hadric', faction: 'player', x: 7, y: 6 },
+    { characterId: 'kaira', faction: 'player', x: 7, y: 8 },
     { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 2, y: 4, level: 1, ai: 'aggressive' },
     { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 12, y: 4, level: 1, ai: 'aggressive' },
     { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 7, y: 2, level: 2, ai: 'aggressive' },
@@ -36,13 +37,16 @@ export const STAGE_1: StageDef = {
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'Ano 300 do Longo Crepúsculo. O sol nasce cada vez mais pálido sobre o vale de Brasalva.' },
     { speakerId: 'mira', side: 'left', text: 'Aren! Bandidos cruzaram as pontes. Estão incendiando as casas do lado norte!' },
+    { speakerId: 'kaira', side: 'left', text: 'Ouvi os gritos lá da forja. Ninguém põe fogo na minha vila e vai embora inteiro.' },
     { speakerId: 'hadric', side: 'right', text: 'São homens de Grull. Alguém pagou bem para que viessem esta noite... justo esta noite.' },
     { speakerId: 'aren', side: 'left', text: 'Minha mão... está queimando. Hadric, o que é isto?' },
     { speakerId: 'hadric', side: 'right', text: 'Depois, rapaz. Primeiro, defendemos o Farol. Se ele cair, Brasalva cai junto.' },
     { speakerId: 'brom', side: 'right', text: 'Ali! O garoto com a mão em chamas! Grull paga o dobro por ele vivo... ou o mesmo por ele morto!' },
+    { speakerId: 'kaira', side: 'left', text: 'Vem buscar, então. Meu machado anda com saudade de lenha teimosa.' },
   ],
   postDialogue: [
     { speakerId: 'mira', side: 'left', text: 'Esses eram só os batedores. Grull ainda está do outro lado da ponte de Thornmere.' },
+    { speakerId: 'kaira', side: 'left', text: 'Eu vou junto. Alguém precisa manter essa lâmina afiada — e esse garoto vivo.' },
     { speakerId: 'hadric', side: 'right', text: 'A marca na sua mão, Aren... é a Crista de Fogo. E agora toda a Ordem do Ocaso vai sentir o cheiro dela.' },
   ],
   events: [

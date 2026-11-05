@@ -16,8 +16,17 @@ export function terrainTextureKey(terrainId: string, variant: number): string {
   return `terrain_${terrainId}_${variant % TERRAIN_VARIANTS}`;
 }
 
-export function unitTextureKey(sprite: string, weaponType: string, faction: Faction): string {
-  return `${sprite}_${weaponType}_${faction}`;
+/** Chave da textura; com `characterId`, a versão com o cabelo próprio do personagem. */
+export function unitTextureKey(sprite: string, weaponType: string, faction: Faction, characterId?: string): string {
+  return `${sprite}_${weaponType}_${faction}${characterId ? `_${characterId}` : ''}`;
+}
+
+/** Usa a textura do personagem (cabelo colorido) se existir; senão, a genérica da classe. */
+export function resolveUnitTexture(
+  scene: Phaser.Scene, sprite: string, weaponType: string, faction: Faction, characterId?: string,
+): string {
+  const own = characterId ? unitTextureKey(sprite, weaponType, faction, characterId) : undefined;
+  return own && scene.textures.exists(own) ? own : unitTextureKey(sprite, weaponType, faction);
 }
 
 /** Gera todas as texturas procedurais (terrenos + unidades por classe/arma/facção). */
@@ -29,6 +38,17 @@ export function generateTextures(scene: Phaser.Scene, db: GameDatabase): void {
     for (const weaponType of cls.weaponTypes) {
       for (const faction of ['player', 'enemy', 'ally'] as const) {
         register(scene, unitTextureKey(cls.sprite, weaponType, faction), drawUnit({ classId: cls.id, weaponType, faction }));
+      }
+    }
+  }
+  // Personagens com cabelo colorido ganham texturas próprias.
+  for (const ch of Object.values(db.characters)) {
+    if (!ch.hair) continue;
+    const cls = db.classes[ch.classId];
+    for (const weaponType of cls.weaponTypes) {
+      for (const faction of ['player', 'enemy', 'ally'] as const) {
+        register(scene, unitTextureKey(cls.sprite, weaponType, faction, ch.id),
+          drawUnit({ classId: cls.id, weaponType, faction, hair: ch.hair }));
       }
     }
   }

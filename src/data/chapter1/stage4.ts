@@ -27,6 +27,7 @@ export const STAGE_4: StageDef = {
     { characterId: 'aren', faction: 'player', x: 7, y: 8 },
     { characterId: 'mira', faction: 'player', x: 6, y: 8 },
     { characterId: 'hadric', faction: 'player', x: 8, y: 8 },
+    { characterId: 'kaira', faction: 'player', x: 6, y: 7 },
     { characterId: 'wren', faction: 'player', x: 7, y: 7 },
     { characterId: 'lys', faction: 'ally', x: 1, y: 8, ai: 'stationary' },
     { characterId: 'morvane', faction: 'enemy', x: 7, y: 2, ai: 'stationary', boss: true },
@@ -49,6 +50,7 @@ export const STAGE_4: StageDef = {
     { speakerId: 'lys', side: 'right', text: 'O Abade era só um carcereiro. Quem dá as ordens é a Inquisidora Seraphine. Ela está indo para o Farol de Brasalva.' },
     { speakerId: 'hadric', side: 'right', text: 'O nosso Farol. Se ela o apagar, o Cinzento atravessa o vale inteiro.' },
     { speakerId: 'corvin', side: 'left', text: 'Então corramos! Eu explico no caminho por que a sua Crista é a coisa mais fascinante que já vi. Prometo ser breve. Relativamente breve.' },
+    { speakerId: 'kaira', side: 'left', text: 'Cada prisioneiro daquelas celas volta pra casa. Eu mesma quebro as correntes.' },
   ],
   events: [
     {

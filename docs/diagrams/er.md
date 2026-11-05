@@ -30,6 +30,7 @@ erDiagram
     list items FK "-> ItemDef; opcional"
     string bio
     boolean villain "opcional"
+    string hair "opcional"
   }
   ClassDef_["ClassDef"] {
     string id PK
