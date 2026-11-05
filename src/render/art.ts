@@ -156,6 +156,51 @@ const LAYERS: Record<string, readonly string[]> = {
     '......yyyy......',
     '.......yy.......',
   ],
+  // Cap. 2 — Cavaleira (Brielle): rabo de cavalo ao vento.
+  cavalier: [
+    '................',
+    '......hhhh......',
+    '.....hsssshh....',
+    '...........hh...',
+    '............h...',
+  ],
+  // Cap. 2 — Batedora (Sorrel): cabelo curto bagunçado e cachecol.
+  scout: [
+    '................',
+    '................',
+    '................',
+    '.....ohhhhoh....',
+    '.....hsssshh....',
+    '................',
+    '.....dddddd.....',
+    '......dddd......',
+  ],
+  // Cap. 2 — Cavaleiro do Ocaso: elmo negro com pluma vermelha.
+  dusk_knight: [
+    '.......r........',
+    '......kkkk......',
+    '.....kkkkkk.....',
+    '.....kssssk.....',
+    '......kkkk......',
+    '....okkkkkko....',
+    '...oskkrrkkso...',
+    '....okkkkkko....',
+  ],
+  // Cap. 2 — Sentinela Cinzenta: armadura de pedra-cinza, olhos em brasa.
+  ash_sentinel: [
+    '................',
+    '................',
+    '......nnnn......',
+    '.....nnnnnn.....',
+    '.....nrnnrn.....',
+    '.....nnnnnn.....',
+    '......nnnn......',
+    '....nnggggnn....',
+    '...ongnnnngno...',
+    '...ongnnnngno...',
+    '....ngnnnngn....',
+    '....nnnnnnnn....',
+  ],
   // Bandido: bandana e barba.
   bandit: [
     '................',
@@ -220,6 +265,39 @@ const LAYERS: Record<string, readonly string[]> = {
     '....rrrrrrrr....',
   ],
 };
+
+/** Corpo montado: cavaleiro sobre o cavalo (Cavaleira, Paladina, Cavaleiro do Ocaso). */
+const MOUNTED_BODY: readonly string[] = [
+  '................',
+  '......oooo......',
+  '.....osssso.....',
+  '.....osssso.....',
+  '......osso......',
+  '....oddccddo....',
+  '...osdccccdso...',
+  '.oo.odccccdo....',
+  'oqqo.oddddo.....',
+  'oqqqoqqqqqqqqo..',
+  '.oqqqqqqqqqqqqo.',
+  '..oqqqqqqqqqqqo.',
+  '...oqQqqqqqQqo..',
+  '...oq.o...oq.o..',
+  '...oq.o...oq.o..',
+  '...oo.o...oo.o..',
+];
+
+/** Ombreiras douradas das classes promovidas. */
+const PROMOTED_OVERLAY: readonly string[] = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '...yy......yy...',
+  '...y........y...',
+];
 
 /** Armas desenhadas na mão direita (lado direito do sprite). */
 const WEAPON_LAYERS: Record<string, readonly string[]> = {
@@ -369,6 +447,12 @@ export interface UnitArtSpec {
   faction: Faction;
   /** Cor do cabelo do personagem (sobrescreve o castanho padrão). */
   hair?: string;
+  /** Desenha sobre um cavalo. */
+  mounted?: boolean;
+  /** Classe promovida: ombreiras douradas. */
+  promoted?: boolean;
+  /** Camada de outra classe a usar (classes promovidas usam a da classe base). */
+  layerOf?: string;
 }
 
 /** Monta o sprite 16×16 de uma unidade. */
@@ -381,10 +465,14 @@ export function drawUnit(spec: UnitArtSpec): PixelCanvas {
   if (spec.classId === 'dusk_monk' || spec.classId === 'inquisitor') {
     Object.assign(palette, { c: BASE_PALETTE.k, d: BASE_PALETTE.k });
   }
+  if (spec.classId === 'ash_sentinel') Object.assign(palette, { c: '#5d6670', d: '#3e454d' });
+  palette.q = spec.classId === 'dusk_knight' ? '#2a2230' : '#8a5a32';
+  palette.Q = spec.classId === 'dusk_knight' ? '#140f18' : '#5b3a1e';
   if (spec.hair) palette.h = spec.hair;
-  canvas.stamp(BODY, palette);
-  const layer = LAYERS[spec.classId];
+  canvas.stamp(spec.mounted ? MOUNTED_BODY : BODY, palette);
+  const layer = LAYERS[spec.layerOf ?? spec.classId];
   if (layer) canvas.stamp(layer, palette);
+  if (spec.promoted) canvas.stamp(PROMOTED_OVERLAY, palette);
   const weapon = spec.classId === 'inquisitor' ? ROSARY : WEAPON_LAYERS[spec.weaponType];
   if (weapon) canvas.stamp(weapon, palette);
   return canvas;
@@ -393,6 +481,8 @@ export function drawUnit(spec: UnitArtSpec): PixelCanvas {
 /** Todas as camadas (para validação em testes). */
 export const ALL_TEMPLATES: Record<string, readonly string[]> = {
   body: BODY,
+  mounted: MOUNTED_BODY,
+  promoted: PROMOTED_OVERLAY,
   rosary: ROSARY,
   ...Object.fromEntries(Object.entries(LAYERS).map(([k, v]) => [`layer:${k}`, v])),
   ...Object.fromEntries(Object.entries(WEAPON_LAYERS).map(([k, v]) => [`weapon:${k}`, v])),
@@ -568,6 +658,23 @@ export function drawTerrain(terrainId: string, variant: number): PixelCanvas {
       break;
     case 'water':
       water(c, variant);
+      break;
+    case 'swamp':
+      c.fill('#4a5a3a');
+      for (let i = 0; i < 6; i++) {
+        const sx = Math.floor(hash2(i, variant, 5) * 12);
+        const sy = Math.floor(hash2(variant, i, 9) * 14);
+        c.rect(sx, sy, 4, 2, '#3a4a5a');
+        c.set(sx + 1, sy, '#5a7a8a');
+      }
+      for (let i = 0; i < 5; i++) c.set(Math.floor(hash2(i + 3, variant) * N), Math.floor(hash2(variant, i + 7) * N), '#6a8a3a');
+      break;
+    case 'pillar':
+      c.fill('#6e6670');
+      c.rect(4, 1, 8, 14, '#9a94a0');
+      c.rect(4, 1, 8, 2, '#b8b2be');
+      c.rect(4, 13, 8, 2, '#5a525c');
+      c.rect(6, 3, 1, 10, '#b0aab6');
       break;
     case 'floor':
       c.fill('#6e6670');

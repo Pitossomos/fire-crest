@@ -23,7 +23,7 @@ flowchart TB
   app -->|"1 import(s)"| ext_phaser
   app -->|"1 import(s)"| render
   app -->|"5 import(s)"| scenes
-  core -->|"2 import(s), 11 só tipos"| data
+  core -->|"2 import(s), 12 só tipos"| data
   render -.->|"9 só tipos"| core
   render -->|"1 import(s), 4 só tipos"| data
   render -->|"10 import(s)"| ext_phaser

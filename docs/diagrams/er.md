@@ -15,8 +15,12 @@ title: Modelo de dados (entidades @entity)
 erDiagram
   ChapterDef {
     string id PK
+    number order
     string name
     list stageIds FK "-> StageDef"
+    string nextChapterId FK "-> ChapterDef; opcional"
+    number startSeals "opcional"
+    list premade "opcional; PremadeMember[]"
   }
   CharacterDef {
     string id PK
@@ -41,6 +45,11 @@ erDiagram
     Stats growths
     string sprite
     boolean isLord "opcional"
+    MoveType movement "opcional"
+    number tier "opcional"
+    string promotesTo FK "-> ClassDef; opcional"
+    Stats promotionBonus "opcional"
+    string artBase FK "-> ClassDef; opcional"
   }
   DialogueLine {
     string speakerId FK "-> CharacterDef"
@@ -81,8 +90,13 @@ erDiagram
     number turns "opcional"
     string targetId FK "-> CharacterDef; opcional"
   }
+  PremadeMember {
+    string characterId FK "-> CharacterDef"
+    number level
+  }
   RosterEntry {
     string characterId FK "-> CharacterDef"
+    string classId FK "-> ClassDef; opcional"
     number level
     number exp
     Stats stats
@@ -96,6 +110,7 @@ erDiagram
     string chapterId FK "-> ChapterDef"
     number nextStageIndex
     list roster "RosterEntry[]"
+    number seals
   }
   StageDef {
     string id PK
@@ -109,6 +124,7 @@ erDiagram
     list postDialogue "DialogueLine[]"
     list events "EventTrigger[]"
     list recruitOnClear FK "-> CharacterDef; opcional"
+    number rewardSeals "opcional"
   }
   TerrainDef {
     string id PK
@@ -117,6 +133,7 @@ erDiagram
     number def
     number avoid
     number heal
+    object costs "opcional; Partial<Record<MoveType, number | null>>"
   }
   UnitPlacement {
     string characterId FK "-> CharacterDef; opcional"
@@ -144,10 +161,14 @@ erDiagram
     number heal "opcional"
     list effective FK "-> ClassDef; opcional"
   }
+  ChapterDef ||--o{ PremadeMember : "premade"
   ChapterDef }o--o{ StageDef : "stageIds"
+  ChapterDef }o--o| ChapterDef : "nextChapterId"
   CharacterDef }o--o{ ItemDef : "items"
   CharacterDef }o--|| ClassDef_ : "classId"
   CharacterDef }o--|| WeaponDef : "weaponId"
+  ClassDef_ }o--o| ClassDef_ : "artBase"
+  ClassDef_ }o--o| ClassDef_ : "promotesTo"
   DialogueLine }o--|| CharacterDef : "speakerId"
   EventTrigger ||--o{ DialogueLine : "dialogue"
   EventTrigger ||--o{ UnitPlacement : "spawns"
@@ -157,7 +178,9 @@ erDiagram
   InventorySlot }o--|| ItemDef : "itemId"
   MapDef }o--o{ TerrainDef : "legend"
   ObjectiveDef }o--o| CharacterDef : "targetId"
+  PremadeMember }o--|| CharacterDef : "characterId"
   RosterEntry ||--o{ InventorySlot : "items"
+  RosterEntry }o--o| ClassDef_ : "classId"
   RosterEntry }o--|| CharacterDef : "characterId"
   RosterEntry }o--|| WeaponDef : "weaponId"
   SaveData ||--o{ RosterEntry : "roster"
@@ -189,6 +212,7 @@ erDiagram
 | `ItemDef` | Item consumível (ex.: Poção). | `src/data/types.ts` |
 | `MapDef` | Mapa de uma fase em texto: cada caractere é um terreno. | `src/data/types.ts` |
 | `ObjectiveDef` | Condição de vitória de uma fase. | `src/data/types.ts` |
+| `PremadeMember` | Herói de um time pré-montado (começar um capítulo sem save anterior). | `src/data/types.ts` |
 | `RosterEntry` | Estado salvo de um personagem entre fases. | `src/data/types.ts` |
 | `SaveData` | Save do jogo (localStorage). | `src/data/types.ts` |
 | `StageDef` | Fase (batalha) de um capítulo. | `src/data/types.ts` |

@@ -1,4 +1,5 @@
 import { type Point, neighbors, parseKey, pointKey, tilesInRange } from './grid';
+import type { MoveType } from '../data/types';
 import type { BattleMap } from './battle-map';
 import type { Unit } from './unit';
 import { areHostile } from './faction';
@@ -31,7 +32,7 @@ export function computeReach(map: BattleMap, unit: Unit, occupancy: Occupancy): 
     if (current.cost > (reach.get(pointKey(current.point))?.cost ?? Infinity)) continue;
 
     for (const next of neighbors(current.point)) {
-      const step = map.moveCost(next);
+      const step = map.moveCost(next, unit.classDef.movement);
       if (step === null) continue;
       const occupant = occupancy(next);
       if (occupant && occupant !== unit && areHostile(occupant.faction, unit.faction)) continue;
@@ -89,7 +90,7 @@ export function buildPath(reach: Map<string, ReachNode>, target: Point): Point[]
  * via Dijkstra com várias origens. Usado pela IA para se aproximar contornando
  * rios e muralhas. Ignora unidades no caminho.
  */
-export function distanceField(map: BattleMap, targets: Point[]): Map<string, number> {
+export function distanceField(map: BattleMap, targets: Point[], moveType: MoveType = 'foot'): Map<string, number> {
   const dist = new Map<string, number>();
   const open: { p: Point; d: number }[] = [];
   for (const t of targets) {
@@ -102,10 +103,10 @@ export function distanceField(map: BattleMap, targets: Point[]): Map<string, num
     const cur = open.shift()!;
     if (cur.d > (dist.get(pointKey(cur.p)) ?? Infinity)) continue;
     // Custo para entrar em `cur` vindo de um vizinho.
-    const enter = targetKeys.has(pointKey(cur.p)) ? 1 : map.moveCost(cur.p);
+    const enter = targetKeys.has(pointKey(cur.p)) ? 1 : map.moveCost(cur.p, moveType);
     if (enter === null) continue;
     for (const n of neighbors(cur.p)) {
-      if (map.moveCost(n) === null) continue;
+      if (map.moveCost(n, moveType) === null) continue;
       const d = cur.d + enter;
       const key = pointKey(n);
       if (d < (dist.get(key) ?? Infinity)) {

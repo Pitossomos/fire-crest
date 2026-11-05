@@ -145,6 +145,9 @@ classDiagram
     class StageDef {
       <<interface>>
     }
+    class PremadeMember {
+      <<interface>>
+    }
     class ChapterDef {
       <<interface>>
     }
@@ -253,6 +256,7 @@ classDiagram
   BattleState --> Rng : rng
   BattleState --> StageDef : stage
   CarriedItem --> ItemDef : def
+  ChapterDef "1" *-- "*" PremadeMember : premade
   ChapterDef "1" *-- "*" StageDef : stageIds
   CharacterDef "1" *-- "*" ItemDef : items
   CharacterDef --> ClassDef : classId
@@ -277,6 +281,7 @@ classDiagram
   Forecast --> StrikeStats : defenderStats
   Forecast --> Unit : attacker
   Forecast --> Unit : defender
+  GameDatabase "1" *-- "*" ChapterDef : chapters
   GameDatabase "1" *-- "*" CharacterDef : characters
   GameDatabase "1" *-- "*" ClassDef : classes
   GameDatabase "1" *-- "*" ItemDef : items
@@ -293,6 +298,7 @@ classDiagram
   Phaser_Scene <|-- DialogueScene
   Phaser_Scene <|-- ResultScene
   Phaser_Scene <|-- TitleScene
+  PremadeMember --> CharacterDef : characterId
   RangeInfo "1" *-- "*" Point : attack
   RangeInfo "1" *-- "*" Point : move
   RangeInfo "1" *-- "*" ReachNode : reach
@@ -301,6 +307,7 @@ classDiagram
   ResultScene --> TextMenu : menu
   RosterEntry "1" *-- "*" InventorySlot : items
   RosterEntry --> CharacterDef : characterId
+  RosterEntry --> ClassDef : classId
   RosterEntry --> WeaponDef : weaponId
   SaveData "1" *-- "*" RosterEntry : roster
   SaveData --> ChapterDef : chapterId
@@ -364,7 +371,7 @@ classDiagram
       -tiles: TerrainDef[][]
       +inBounds(p: Point) boolean
       +terrainAt(p: Point) TerrainDef
-      +moveCost(p: Point) number | null
+      +moveCost(p: Point, moveType: MoveType) number | null
     }
     class BattleState {
       +stage: StageDef
@@ -431,8 +438,17 @@ classDiagram
     class mod_core_campaign["campaign.ts"] {
       <<module>>
       +newCampaign(mode: GameMode, chapterId: any) SaveData
+      +newCampaignAt(mode: GameMode, chapterId: string, db: GameDatabase) SaveData
+      +premadeEntry(characterId: string, level: number, db: GameDatabase) RosterEntry
+      +currentChapter(save: SaveData, db: GameDatabase) ChapterDef
+      +currentStageId(save: SaveData, db: GameDatabase) string | undefined
+      +isChapterDone(save: SaveData, db: GameDatabase) boolean
+      +startNextChapter(save: SaveData, db: GameDatabase) SaveData | undefined
       +buildStageUnits(stage: StageDef, save: SaveData, db: GameDatabase) Unit[]
       +applyVictory(save: SaveData, state: BattleState) SaveData
+      +rosterClassId(entry: RosterEntry, db: GameDatabase) string
+      +canPromote(entry: RosterEntry, db: GameDatabase) boolean
+      +promote(save: SaveData, characterId: string, db: GameDatabase) SaveData
       +livingRoster(save: SaveData) RosterEntry[]
     }
     class StrikeStats {
@@ -518,6 +534,7 @@ classDiagram
     }
     class mod_core_leveling["leveling.ts"] {
       <<module>>
+      +effectiveLevel(u: Unit) number
       +combatExp(unit: Unit, enemy: Unit, dealtDamage: boolean, killed: boolean) number
       +gainExp(unit: Unit, amount: number, rng: Rng) LevelUp[]
     }
@@ -537,7 +554,7 @@ classDiagram
       +movementTiles(reach: Map~string, ReachNode~, unit: Unit, occupancy: Occupancy) Point[]
       +attackTiles(map: BattleMap, destinations: Point[], minRange: number, maxRange: number) Point[]
       +buildPath(reach: Map~string, ReachNode~, target: Point) Point[]
-      +distanceField(map: BattleMap, targets: Point[]) Map~string, number~
+      +distanceField(map: BattleMap, targets: Point[], moveType: MoveType) Map~string, number~
     }
     class Rng {
       -state: number
@@ -652,6 +669,8 @@ classDiagram
       +characters: Record~string, CharacterDef~
       +items: Record~string, ItemDef~
       +stages: Record~string, StageDef~
+      +chapters: Record~string, ChapterDef~
+      +chapterOrder: string[]
     }
     class mod_data_index["index.ts"] {
       <<module>>
@@ -669,6 +688,7 @@ classDiagram
       +def: number
       +avoid: number
       +heal: number
+      +costs?: Partial~Record~MoveType, number | null~~
     }
     class WeaponDef {
       <<interface>>
@@ -706,6 +726,11 @@ classDiagram
       +growths: Stats
       +sprite: string
       +isLord?: boolean
+      +movement?: MoveType
+      +tier?: number
+      +promotesTo?: Ref~ClassDef~
+      +promotionBonus?: Stats
+      +artBase?: Ref~ClassDef~
     }
     class CharacterDef {
       <<interface>>
@@ -782,16 +807,27 @@ classDiagram
       +postDialogue: DialogueLine[]
       +events: EventTrigger[]
       +recruitOnClear?: Ref~CharacterDef~[]
+      +rewardSeals?: number
+    }
+    class PremadeMember {
+      <<interface>>
+      +characterId: Ref~CharacterDef~
+      +level: number
     }
     class ChapterDef {
       <<interface>>
       +id: string
+      +order: number
       +name: string
       +stageIds: Ref~StageDef~[]
+      +nextChapterId?: Ref~ChapterDef~
+      +startSeals?: number
+      +premade?: PremadeMember[]
     }
     class RosterEntry {
       <<interface>>
       +characterId: Ref~CharacterDef~
+      +classId?: Ref~ClassDef~
       +level: number
       +exp: number
       +stats: Stats
@@ -806,8 +842,10 @@ classDiagram
       +chapterId: Ref~ChapterDef~
       +nextStageIndex: number
       +roster: RosterEntry[]
+      +seals: number
     }
   }
+  ChapterDef "1" *-- "*" PremadeMember : premade
   ChapterDef "1" *-- "*" StageDef : stageIds
   CharacterDef "1" *-- "*" ItemDef : items
   CharacterDef --> ClassDef : classId
@@ -818,6 +856,7 @@ classDiagram
   EventTrigger --> CharacterDef : otherUnitId
   EventTrigger --> CharacterDef : recruitId
   EventTrigger --> CharacterDef : unitId
+  GameDatabase "1" *-- "*" ChapterDef : chapters
   GameDatabase "1" *-- "*" CharacterDef : characters
   GameDatabase "1" *-- "*" ClassDef : classes
   GameDatabase "1" *-- "*" ItemDef : items
@@ -827,8 +866,10 @@ classDiagram
   InventorySlot --> ItemDef : itemId
   MapDef "1" *-- "*" TerrainDef : legend
   ObjectiveDef --> CharacterDef : targetId
+  PremadeMember --> CharacterDef : characterId
   RosterEntry "1" *-- "*" InventorySlot : items
   RosterEntry --> CharacterDef : characterId
+  RosterEntry --> ClassDef : classId
   RosterEntry --> WeaponDef : weaponId
   SaveData "1" *-- "*" RosterEntry : roster
   SaveData --> ChapterDef : chapterId
@@ -884,6 +925,9 @@ classDiagram
       +weaponType: string
       +faction: Faction
       +hair?: string
+      +mounted?: boolean
+      +promoted?: boolean
+      +layerOf?: string
     }
     class mod_render_art["art.ts"] {
       <<module>>
@@ -983,6 +1027,7 @@ classDiagram
       +terrainTextureKey(terrainId: string, variant: number) string
       +unitTextureKey(sprite: string, weaponType: string, faction: Faction, characterId: string) string
       +resolveUnitTexture(scene: Phaser.Scene, sprite: string, weaponType: string, faction: Faction, characterId: string) string
+      +artSpecFor(cls: ClassDef, weaponType: string, faction: Faction, hair: string) UnitArtSpec
       +generateTextures(scene: Phaser.Scene, db: GameDatabase) void
     }
     class UnitSprite {

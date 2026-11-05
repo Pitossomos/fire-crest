@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_TEMPLATES, drawTerrain, drawUnit } from '../src/render/art';
+import { artSpecFor } from '../src/render/textures';
 import { DB } from '../src/data';
 
 describe('pixel-art procedural', () => {
@@ -19,7 +20,7 @@ describe('pixel-art procedural', () => {
   it('gera sprite para toda combinação classe × arma × facção', () => {
     for (const cls of Object.values(DB.classes)) {
       for (const faction of ['player', 'enemy', 'ally'] as const) {
-        const art = drawUnit({ classId: cls.id, weaponType: cls.weaponTypes[0], faction });
+        const art = drawUnit(artSpecFor(cls, cls.weaponTypes[0], faction));
         expect(art.get(7, 4), cls.id).not.toBeNull(); // rosto
       }
     }

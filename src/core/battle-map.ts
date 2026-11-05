@@ -1,4 +1,4 @@
-import type { MapDef, TerrainDef } from '../data/types';
+import type { MapDef, MoveType, TerrainDef } from '../data/types';
 import type { Point } from './grid';
 
 /** Grade de terrenos de uma fase, construída a partir de um MapDef em texto. */
@@ -34,7 +34,10 @@ export class BattleMap {
   }
 
   /** Custo para entrar no tile; `null` se intransponível ou fora do mapa. */
-  moveCost(p: Point): number | null {
-    return this.inBounds(p) ? this.terrainAt(p).moveCost : null;
+  moveCost(p: Point, moveType: MoveType = 'foot'): number | null {
+    if (!this.inBounds(p)) return null;
+    const t = this.terrainAt(p);
+    const special = t.costs?.[moveType];
+    return special !== undefined ? special : t.moveCost;
   }
 }

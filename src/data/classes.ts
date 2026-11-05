@@ -52,4 +52,63 @@ export const CLASSES: Record<string, ClassDef> = {
     id: 'inquisitor', name: 'Inquisidor', move: 5, weaponTypes: ['dark', 'staff'], sprite: 'unit_inquisitor',
     baseStats: stats(30, 4, 9, 8, 8, 6, 5, 8), growths: stats(70, 20, 60, 50, 45, 40, 30, 50),
   },
+  // --- Capítulo 2: novos aliados ---
+  cavalier: {
+    id: 'cavalier', name: 'Cavaleira', move: 7, weaponTypes: ['lance'], sprite: 'unit_cavalier', movement: 'mounted',
+    baseStats: stats(22, 6, 0, 6, 7, 4, 6, 1), growths: stats(75, 45, 0, 45, 45, 35, 30, 15),
+    promotesTo: 'paladin',
+  },
+  scout: {
+    id: 'scout', name: 'Batedora', move: 6, weaponTypes: ['sword'], sprite: 'unit_scout',
+    baseStats: stats(17, 4, 0, 8, 11, 8, 2, 2), growths: stats(60, 35, 5, 55, 70, 60, 15, 25),
+    promotesTo: 'shadowblade',
+  },
+  // --- Capítulo 2: novos inimigos ---
+  dusk_knight: {
+    id: 'dusk_knight', name: 'Cavaleiro do Ocaso', move: 7, weaponTypes: ['lance'], sprite: 'unit_dusk_knight', movement: 'mounted',
+    baseStats: stats(24, 7, 0, 5, 6, 2, 7, 2), growths: stats(75, 45, 0, 35, 35, 15, 30, 15),
+  },
+  ash_sentinel: {
+    id: 'ash_sentinel', name: 'Sentinela Cinzenta', move: 4, weaponTypes: ['axe'], sprite: 'unit_ash_sentinel', movement: 'armored',
+    baseStats: stats(30, 8, 0, 3, 1, 0, 12, 0), growths: stats(85, 50, 0, 25, 10, 5, 45, 5),
+  },
 };
+
+/**
+ * Classes promovidas (tier 2): reaproveitam o desenho da classe base com
+ * ombreiras douradas. O bônus é somado aos atributos do herói ao promover.
+ */
+function promoted(baseId: string, id: string, name: string, move: number, bonus: ClassDef['baseStats']): ClassDef {
+  const base = CLASSES[baseId];
+  const baseStats = { ...base.baseStats };
+  for (const k of Object.keys(baseStats) as (keyof typeof baseStats)[]) baseStats[k] += bonus[k];
+  return {
+    ...base, id, name, move, tier: 2, sprite: `unit_${id}`, artBase: baseId,
+    promotesTo: undefined, promotionBonus: bonus, baseStats,
+  };
+}
+
+for (const c of [
+  promoted('bearer', 'sunlord', 'Lorde Solar', 6, stats(4, 2, 1, 2, 2, 1, 2, 2)),
+  promoted('swordfighter', 'blademaster', 'Mestre de Lâminas', 6, stats(3, 2, 0, 2, 2, 0, 1, 1)),
+  promoted('lancer', 'bastion', 'Baluarte', 5, stats(4, 2, 0, 1, 1, 0, 3, 2)),
+  promoted('axefighter', 'berserker', 'Berserker', 6, stats(5, 3, 0, 1, 2, 0, 1, 1)),
+  promoted('archer', 'sniper', 'Atiradora', 6, stats(3, 2, 0, 3, 2, 0, 1, 1)),
+  promoted('cleric', 'bishop', 'Sacerdotisa', 6, stats(3, 0, 2, 1, 1, 0, 1, 3)),
+  promoted('pyromancer', 'archmage', 'Arquimago', 6, stats(3, 0, 3, 1, 1, 0, 1, 2)),
+  promoted('lightmage', 'dawnherald', 'Arauto da Aurora', 6, stats(3, 0, 2, 2, 1, 0, 1, 2)),
+  promoted('cavalier', 'paladin', 'Paladina', 8, stats(3, 2, 0, 1, 1, 0, 2, 2)),
+  promoted('scout', 'shadowblade', 'Lâmina Sombria', 7, stats(2, 2, 0, 2, 2, 1, 1, 1)),
+]) {
+  CLASSES[c.id] = c;
+}
+
+// Cada classe básica de herói promove para a sua versão avançada.
+Object.assign(CLASSES.bearer, { promotesTo: 'sunlord' });
+Object.assign(CLASSES.swordfighter, { promotesTo: 'blademaster' });
+Object.assign(CLASSES.lancer, { promotesTo: 'bastion' });
+Object.assign(CLASSES.axefighter, { promotesTo: 'berserker' });
+Object.assign(CLASSES.archer, { promotesTo: 'sniper' });
+Object.assign(CLASSES.cleric, { promotesTo: 'bishop' });
+Object.assign(CLASSES.pyromancer, { promotesTo: 'archmage' });
+Object.assign(CLASSES.lightmage, { promotesTo: 'dawnherald' });

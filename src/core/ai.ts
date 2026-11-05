@@ -63,7 +63,7 @@ export function planAction(state: BattleState, unit: Unit): AiPlan {
   if (best) return best;
   if (unit.ai !== 'aggressive') return stay;
 
-  const field = distanceField(state.map, hostiles.map((h) => h.position));
+  const field = distanceField(state.map, hostiles.map((h) => h.position), unit.classDef.movement);
   let moveTo = unit.position;
   let bestDist = field.get(pointKey(unit.position)) ?? Infinity;
   for (const p of destinations) {

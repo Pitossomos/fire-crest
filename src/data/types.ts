@@ -22,6 +22,8 @@ export type GameMode = 'classic' | 'casual';
 export type ObjectiveKind = 'rout' | 'seize' | 'survive' | 'boss';
 export type EventKind = 'turnStart' | 'unitDefeated' | 'tileReached' | 'talk';
 export type PortraitSide = 'left' | 'right';
+/** Tipo de movimento: define custos especiais de terreno (ex.: cavalos sofrem na floresta). */
+export type MoveType = 'foot' | 'mounted' | 'armored';
 
 /** @entity Tipo de terreno do mapa e seus modificadores. */
 export interface TerrainDef {
@@ -33,6 +35,8 @@ export interface TerrainDef {
   avoid: number;
   /** Cura em % do HP máximo no início do turno. */
   heal: number;
+  /** Custos diferentes por tipo de movimento (`null` = intransponível para esse tipo). */
+  costs?: Partial<Record<MoveType, number | null>>;
 }
 
 /** @entity Arma, tomo ou cajado. */
@@ -81,6 +85,16 @@ export interface ClassDef {
   /** Chave da textura do sprite. */
   sprite: string;
   isLord?: boolean;
+  /** Tipo de movimento (padrão: a pé). */
+  movement?: MoveType;
+  /** 1 = classe básica (padrão), 2 = classe promovida. */
+  tier?: number;
+  /** Classe avançada para a qual promove com um Selo da Brasa. */
+  promotesTo?: Ref<ClassDef>;
+  /** Bônus de atributos ao promover para esta classe. */
+  promotionBonus?: Stats;
+  /** Classe cujo desenho serve de base (classes promovidas). */
+  artBase?: Ref<ClassDef>;
 }
 
 /** @entity Personagem nomeado (jogável ou chefe). */
@@ -172,18 +186,35 @@ export interface StageDef {
   events: EventTrigger[];
   /** Aliados NPC que entram no time se sobreviverem até o fim da fase. */
   recruitOnClear?: Ref<CharacterDef>[];
+  /** Selos da Brasa ganhos ao vencer a fase. */
+  rewardSeals?: number;
+}
+
+/** @entity Herói de um time pré-montado (começar um capítulo sem save anterior). */
+export interface PremadeMember {
+  characterId: Ref<CharacterDef>;
+  level: number;
 }
 
 /** @entity Capítulo da campanha. */
 export interface ChapterDef {
   id: string;
+  order: number;
   name: string;
   stageIds: Ref<StageDef>[];
+  /** Capítulo seguinte (ausente = fim do jogo por enquanto). */
+  nextChapterId?: Ref<ChapterDef>;
+  /** Selos da Brasa recebidos ao começar o capítulo. */
+  startSeals?: number;
+  /** Time usado ao começar o capítulo direto do título. */
+  premade?: PremadeMember[];
 }
 
 /** @entity Estado salvo de um personagem entre fases. */
 export interface RosterEntry {
   characterId: Ref<CharacterDef>;
+  /** Classe atual (muda ao promover); ausente = classe original do personagem. */
+  classId?: Ref<ClassDef>;
   level: number;
   exp: number;
   stats: Stats;
@@ -199,4 +230,6 @@ export interface SaveData {
   chapterId: Ref<ChapterDef>;
   nextStageIndex: number;
   roster: RosterEntry[];
+  /** Selos da Brasa disponíveis para promover heróis. */
+  seals: number;
 }

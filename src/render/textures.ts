@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import type { Faction } from '../data/types';
+import type { ClassDef, Faction } from '../data/types';
 import type { GameDatabase } from '../data';
-import { TERRAIN_VARIANTS, drawTerrain, drawUnit } from './art';
+import { TERRAIN_VARIANTS, type UnitArtSpec, drawTerrain, drawUnit } from './art';
 import type { PixelCanvas } from './pixel-canvas';
 
 function register(scene: Phaser.Scene, key: string, art: PixelCanvas): void {
@@ -29,6 +29,19 @@ export function resolveUnitTexture(
   return own && scene.textures.exists(own) ? own : unitTextureKey(sprite, weaponType, faction);
 }
 
+/** Especificação do desenho de uma classe (montada, promovida, camada herdada). */
+export function artSpecFor(cls: ClassDef, weaponType: string, faction: Faction, hair?: string): UnitArtSpec {
+  return {
+    classId: cls.id,
+    weaponType,
+    faction,
+    hair,
+    mounted: cls.movement === 'mounted',
+    promoted: (cls.tier ?? 1) > 1,
+    layerOf: cls.artBase,
+  };
+}
+
 /** Gera todas as texturas procedurais (terrenos + unidades por classe/arma/facção). */
 export function generateTextures(scene: Phaser.Scene, db: GameDatabase): void {
   for (const id of Object.keys(db.terrain)) {
@@ -37,18 +50,21 @@ export function generateTextures(scene: Phaser.Scene, db: GameDatabase): void {
   for (const cls of Object.values(db.classes)) {
     for (const weaponType of cls.weaponTypes) {
       for (const faction of ['player', 'enemy', 'ally'] as const) {
-        register(scene, unitTextureKey(cls.sprite, weaponType, faction), drawUnit({ classId: cls.id, weaponType, faction }));
+        register(scene, unitTextureKey(cls.sprite, weaponType, faction), drawUnit(artSpecFor(cls, weaponType, faction)));
       }
     }
   }
   // Personagens com cabelo colorido ganham texturas próprias.
   for (const ch of Object.values(db.characters)) {
     if (!ch.hair) continue;
-    const cls = db.classes[ch.classId];
-    for (const weaponType of cls.weaponTypes) {
-      for (const faction of ['player', 'enemy', 'ally'] as const) {
-        register(scene, unitTextureKey(cls.sprite, weaponType, faction, ch.id),
-          drawUnit({ classId: cls.id, weaponType, faction, hair: ch.hair }));
+    const base = db.classes[ch.classId];
+    // Classe original e a promovida (o cabelo acompanha a promoção).
+    const classes = [base, ...(base.promotesTo ? [db.classes[base.promotesTo]] : [])];
+    for (const cls of classes) {
+      for (const weaponType of cls.weaponTypes) {
+        for (const faction of ['player', 'enemy', 'ally'] as const) {
+          register(scene, unitTextureKey(cls.sprite, weaponType, faction, ch.id), drawUnit(artSpecFor(cls, weaponType, faction, ch.hair)));
+        }
       }
     }
   }

@@ -10,8 +10,13 @@ export const BOSS_KILL_BONUS = 40;
 const STAT_KEYS: StatKey[] = ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'res'];
 
 /** EXP ganha por uma unidade após um combate. */
+/** Nível "absoluto": classes promovidas contam como 10 níveis acima. */
+export function effectiveLevel(u: Unit): number {
+  return u.level + ((u.classDef.tier ?? 1) - 1) * MAX_LEVEL;
+}
+
 export function combatExp(unit: Unit, enemy: Unit, dealtDamage: boolean, killed: boolean): number {
-  const diff = enemy.level - unit.level;
+  const diff = effectiveLevel(enemy) - effectiveLevel(unit);
   if (killed) return Math.max(10, 30 + diff * 3) + (enemy.boss ? BOSS_KILL_BONUS : 0);
   if (dealtDamage) return Math.max(3, 10 + diff);
   return 1;

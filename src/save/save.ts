@@ -24,6 +24,8 @@ export function loadSave(store: KeyValueStore | undefined = defaultStore()): Sav
     const raw = store?.getItem(SAVE_KEY);
     if (!raw) return undefined;
     const data = JSON.parse(raw) as SaveData;
+    // v1 → v2: o save ganhou os Selos da Brasa; o resto é compatível.
+    if (data.version === 1) return { ...data, version: SAVE_VERSION, seals: 0 };
     return data.version === SAVE_VERSION ? data : undefined;
   } catch {
     return undefined;

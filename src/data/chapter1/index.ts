@@ -7,6 +7,7 @@ import { STAGE_5 } from './stage5';
 
 export const CHAPTER_1: ChapterDef = {
   id: 'c1',
+  order: 1,
   name: 'Brasas no Vale',
   stageIds: [STAGE_1.id, STAGE_2.id, STAGE_3.id, STAGE_4.id, STAGE_5.id],
 };

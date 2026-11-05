@@ -75,7 +75,7 @@ export class BattleState {
     this.nextIndex = this.units.length;
     for (const u of this.units) {
       if (!this.map.inBounds(u.position)) throw new Error(`${u.name} fora do mapa`);
-      if (this.map.moveCost(u.position) === null) throw new Error(`${u.name} em terreno intransponível`);
+      if (this.map.moveCost(u.position, u.classDef.movement) === null) throw new Error(`${u.name} em terreno intransponível`);
     }
   }
 

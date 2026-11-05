@@ -1,10 +1,15 @@
-import type { CharacterDef, ClassDef, ItemDef, StageDef, TerrainDef, WeaponDef } from './types';
+import type { ChapterDef, CharacterDef, ClassDef, ItemDef, StageDef, TerrainDef, WeaponDef } from './types';
 import { CLASSES } from './classes';
 import { WEAPONS } from './weapons';
 import { TERRAIN } from './terrain';
 import { CHARACTERS } from './characters';
 import { ITEMS } from './items';
-import { CHAPTER_1_STAGES } from './chapter1';
+import { CHAPTER_1, CHAPTER_1_STAGES } from './chapter1';
+
+/** Capítulos em ordem de jogo, com as respectivas fases. */
+const CHAPTERS: { chapter: ChapterDef; stages: StageDef[] }[] = [
+  { chapter: CHAPTER_1, stages: CHAPTER_1_STAGES },
+];
 
 /** Acesso somente-leitura a todas as definições estáticas do jogo. */
 export interface GameDatabase {
@@ -14,6 +19,9 @@ export interface GameDatabase {
   characters: Record<string, CharacterDef>;
   items: Record<string, ItemDef>;
   stages: Record<string, StageDef>;
+  chapters: Record<string, ChapterDef>;
+  /** Ids dos capítulos em ordem. */
+  chapterOrder: string[];
 }
 
 export const DB: GameDatabase = {
@@ -22,7 +30,9 @@ export const DB: GameDatabase = {
   terrain: TERRAIN,
   characters: CHARACTERS,
   items: ITEMS,
-  stages: Object.fromEntries(CHAPTER_1_STAGES.map((s) => [s.id, s])),
+  stages: Object.fromEntries(CHAPTERS.flatMap((c) => c.stages).map((s) => [s.id, s])),
+  chapters: Object.fromEntries(CHAPTERS.map((c) => [c.chapter.id, c.chapter])),
+  chapterOrder: CHAPTERS.map((c) => c.chapter.id),
 };
 
 /** Busca por id lançando erro se não existir (falha cedo em dados inválidos). */
