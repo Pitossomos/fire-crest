@@ -203,6 +203,23 @@ if (!s.outcome) {
   if (s2.weapon !== 'ember_blade') fail('Aren deveria receber a Lâmina de Brasa na Fase 2');
   await shot('13-stage2');
 
+  // Ilian (Fase 2): Aren conversa com ele e o recruta
+  await until(idle, null, 20000, 'Fase 2 ociosa');
+  await page.evaluate(() => {
+    const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+    const aren = sc.battle.units.find((u) => u.characterId === 'aren');
+    aren.moveTo({ x: 4, y: 2 }); // ao lado de Ilian (4,1)
+    sc.sprites.get(aren.id).snap();
+    sc.setCursor(aren.position);
+  });
+  await press('KeyZ');
+  await press('KeyZ', 300);
+  await pick('talk:0');
+  await until(idle, null, 20000, 'conversa com Ilian');
+  const ilian = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').battle.units.find((u) => u.characterId === 'ilian')?.faction);
+  if (ilian !== 'player') fail(`Ilian deveria ter sido recrutado, facção ${ilian}`);
+  await shot('13b-ilian');
+
   // Título com "Continuar"
   await page.goto(url);
   await page.waitForFunction(() => window.__FIRE_CREST__?.scene.isActive('Title'));

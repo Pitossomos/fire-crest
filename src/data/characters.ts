@@ -27,6 +27,12 @@ export const CHARACTERS: Record<string, CharacterDef> = {
     weaponId: 'iron_axe', items: ['potion'],
     bio: 'Ferreira de Brasalva, braços largos e pavio curto. Protege Aren como a um irmão mais novo — e jura que foi ela quem amolou a Lâmina de Brasa.',
   },
+  ilian: {
+    id: 'ilian', hair: '#ffb02e', name: 'Ilian Solvarr', title: 'Guardião do Santuário', classId: 'lightmage', level: 2,
+    stats: stats(18, 0, 7, 7, 7, 7, 2, 7), growths: stats(50, 0, 55, 50, 45, 50, 15, 50),
+    weaponId: 'sun_tome', items: ['potion'],
+    bio: 'Último guardião de um santuário do sol à beira da ponte de Thornmere. Guarda as orações de luz que a Ordem do Ocaso tenta apagar.',
+  },
   wren: {
     id: 'wren', hair: '#6f8f3a', name: 'Wren', title: 'Caçadora do Bosque', classId: 'archer', level: 3,
     stats: stats(19, 6, 0, 9, 8, 5, 4, 2), growths: stats(60, 45, 0, 60, 50, 40, 20, 15),

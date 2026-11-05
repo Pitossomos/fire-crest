@@ -142,6 +142,7 @@ erDiagram
     number maxRange
     boolean magic
     number heal "opcional"
+    list effective FK "-> ClassDef; opcional"
   }
   ChapterDef }o--o{ StageDef : "stageIds"
   CharacterDef }o--o{ ItemDef : "items"
@@ -172,6 +173,7 @@ erDiagram
   UnitPlacement }o--o| CharacterDef : "characterId"
   UnitPlacement }o--o| ClassDef_ : "classId"
   UnitPlacement }o--o| WeaponDef : "weaponId"
+  WeaponDef }o--o{ ClassDef_ : "effective"
 ```
 
 ## Entidades

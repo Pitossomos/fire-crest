@@ -32,6 +32,7 @@ export const STAGE_3: StageDef = {
     { characterId: 'mira', faction: 'player', x: 4, y: 5 },
     { characterId: 'hadric', faction: 'player', x: 5, y: 4 },
     { characterId: 'kaira', faction: 'player', x: 5, y: 5 },
+    { characterId: 'ilian', faction: 'player', x: 3, y: 4 },
     { characterId: 'wren', faction: 'ally', x: 9, y: 4, ai: 'guard' },
     { characterId: 'vela', faction: 'enemy', x: 13, y: 4, ai: 'guard', boss: true },
     hollow(12, 2, 2),

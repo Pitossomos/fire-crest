@@ -28,6 +28,7 @@ export const STAGE_5: StageDef = {
     { characterId: 'mira', faction: 'player', x: 1, y: 3 },
     { characterId: 'hadric', faction: 'player', x: 2, y: 4 },
     { characterId: 'kaira', faction: 'player', x: 2, y: 3 },
+    { characterId: 'ilian', faction: 'player', x: 2, y: 5 },
     { characterId: 'wren', faction: 'player', x: 0, y: 4 },
     { characterId: 'lys', faction: 'player', x: 0, y: 5 },
     { characterId: 'corvin', faction: 'player', x: 1, y: 5 },

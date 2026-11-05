@@ -1,6 +1,6 @@
 # Design de jogo
 
-RPG tático por turnos em **grade quadrada** (4 direções), no estilo Fire Emblem / Battle for Wesnoth. Escopo pequeno: **7 classes jogáveis**, **5 fases** no Capítulo 1.
+RPG tático por turnos em **grade quadrada** (4 direções), no estilo Fire Emblem / Battle for Wesnoth. Escopo pequeno: **8 classes jogáveis**, **5 fases** no Capítulo 1.
 
 ## Modos
 
@@ -19,6 +19,7 @@ RPG tático por turnos em **grade quadrada** (4 direções), no estilo Fire Embl
 | Arqueiro | 5 | Arco (alcance 2) | Dano à distância, fraco no corpo a corpo |
 | Clérigo | 5 | Cajado | Cura aliados adjacentes; não ataca |
 | Piromante | 5 | Tomo de fogo (alcance 1–2) | Dano mágico (usa MAG contra RES) |
+| Mago de Luz (Ilian) | 5 | Tomo da Aurora (alcance 1–2) | Magia **eficaz** contra Esvaídos, Monges do Ocaso e Inquisidores |
 | *Inimigos:* Bandido (machado), Esvaído (garras, muito HP), Monge do Ocaso (tomo sombrio, 1–2), Inquisidor (chefe) | | | |
 
 Os valores ficam em `src/data/classes.ts`, `src/data/weapons.ts` e `src/data/characters.ts`.
@@ -45,6 +46,7 @@ Os mapas são texto em `src/data/chapter1/stageN.ts`, com a legenda definida em 
 - **Ataque duplo** se VEL ≥ VEL do alvo + 4.
 - **Triângulo de armas:** Espada > Machado > Lança > Espada (+15 de acerto e +1 de dano para quem leva vantagem).
 - **Contra-ataque** se o alvo alcançar o atacante.
+- **Eficácia:** armas com `effective` dobram o poder contra as classes listadas (ex.: Tomo da Aurora contra Esvaídos e servos do Ocaso). O painel lateral mostra a lista.
 - **EXP:** 100 = +1 nível; crescimento por taxas (%) por personagem; nível máximo 10 no capítulo.
 - RNG com seed (`src/core/rng.ts`) para os testes serem reproduzíveis.
 

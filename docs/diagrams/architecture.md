@@ -25,7 +25,7 @@ flowchart TB
   app -->|"5 import(s)"| scenes
   core -->|"2 import(s), 11 só tipos"| data
   render -.->|"9 só tipos"| core
-  render -.->|"4 só tipos"| data
+  render -->|"1 import(s), 4 só tipos"| data
   render -->|"10 import(s)"| ext_phaser
   save -->|"1 import(s)"| core
   save -.->|"1 só tipos"| data
@@ -176,6 +176,7 @@ flowchart TB
   src_render_PhaseBanner_ts --> src_render_layout_ts
   src_render_sfx_ts --> ext_phaser
   src_render_SidePanel_ts --> ext_phaser
+  src_render_SidePanel_ts --> src_data_index_ts
   src_render_SidePanel_ts --> src_render_layout_ts
   src_render_TextMenu_ts --> ext_phaser
   src_render_TextMenu_ts --> src_render_layout_ts

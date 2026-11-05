@@ -192,3 +192,21 @@ describe('EXP e níveis', () => {
     expect(run()).toEqual(run());
   });
 });
+
+describe('eficácia', () => {
+  it('Tomo da Aurora dobra o poder contra Esvaídos e servos do Ocaso, mas não contra bandidos', () => {
+    const s = new BattleState(makeStage(['....'], [
+      { characterId: 'ilian', faction: 'player', x: 0, y: 0 },
+      { classId: 'hollow', weaponId: 'claws', faction: 'enemy', x: 1, y: 0 },
+      { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 2, y: 0 },
+      { classId: 'dusk_monk', weaponId: 'sleep_psalm', faction: 'enemy', x: 3, y: 0 },
+    ]), DB);
+    const [ilian, hollow, bandit, monk] = s.units;
+    const t = s.map.terrainAt({ x: 1, y: 0 });
+    // MAG 7 + 4×2 − RES 0 = 15 contra o Esvaído; 7 + 4 − 0 = 11 contra o bandido
+    expect(strikeStats(ilian, hollow, t).damage).toBe(15);
+    expect(strikeStats(ilian, bandit, t).damage).toBe(11);
+    expect(strikeStats(ilian, monk, t).damage).toBe(7 + 8 - monk.stats.res);
+  });
+});
+

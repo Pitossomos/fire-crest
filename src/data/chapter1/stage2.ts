@@ -28,6 +28,7 @@ export const STAGE_2: StageDef = {
     { characterId: 'mira', faction: 'player', x: 1, y: 5 },
     { characterId: 'hadric', faction: 'player', x: 2, y: 3 },
     { characterId: 'kaira', faction: 'player', x: 2, y: 5 },
+    { characterId: 'ilian', faction: 'ally', x: 4, y: 1, ai: 'stationary' },
     { characterId: 'grull', faction: 'enemy', x: 12, y: 4, ai: 'stationary', boss: true },
     { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 7, y: 4, level: 2, ai: 'stationary' },
     { classId: 'lancer', weaponId: 'iron_lance', faction: 'enemy', x: 7, y: 5, level: 2, ai: 'guard' },
@@ -42,6 +43,7 @@ export const STAGE_2: StageDef = {
     { speakerId: 'aren', side: 'left', text: 'Do rei? Hadric, por que você guardaria a espada de um rei numa vila de pescadores?' },
     { speakerId: 'hadric', side: 'right', text: 'Porque um rei me pediu. E porque ela só arde na mão de quem carrega a Crista. Veja.' },
     { speakerId: 'mira', side: 'left', text: 'Ótimo, ela brilha. Agora: Grull está naquele portão com metade do vale de capangas. Algum plano?' },
+    { speakerId: 'narrator', side: 'left', text: 'Ao norte da trilha, um velho santuário do sol resiste entre as árvores. Alguém ainda acende velas ali.' },
     { speakerId: 'hadric', side: 'right', text: 'A ponte é estreita. Espadas vencem machados; minha lança cuida das lanças deles. Não deixem os arqueiros pegarem vocês em campo aberto.' },
   ],
   postDialogue: [
@@ -52,6 +54,21 @@ export const STAGE_2: StageDef = {
     { speakerId: 'hadric', side: 'right', text: 'Precisamos atravessar o Bosque dos Sussurros antes que eles nos achem. E rezar para que o bosque ainda tenha guardiã.' },
   ],
   events: [
+    {
+      id: 'c1s2-ilian',
+      on: 'talk',
+      unitId: 'aren',
+      otherUnitId: 'ilian',
+      recruitId: 'ilian',
+      spawns: [],
+      dialogue: [
+        { speakerId: 'ilian', side: 'right', text: 'Essa luz na sua mão... Então a Chuva de Brasas não foi só uma lenda que meu mestre contava.' },
+        { speakerId: 'aren', side: 'left', text: 'Quem é você? Os bandidos não te atacaram?' },
+        { speakerId: 'ilian', side: 'right', text: 'Ilian Solvarr, guardião do santuário do sol aqui da ponte. Eles têm medo de quem ainda reza para a luz. A Ordem, não.' },
+        { speakerId: 'ilian', side: 'right', text: 'Meu Tomo da Aurora queima os Esvaídos e quem serve ao Ocaso. Se você vai enfrentá-los, deixe-me ir junto.' },
+        { speakerId: 'kaira', side: 'left', text: 'Um sacerdote magricela? Tudo bem. Só fica atrás de mim.' },
+      ],
+    },
     {
       id: 'c1s2-reinforcements',
       on: 'turnStart',

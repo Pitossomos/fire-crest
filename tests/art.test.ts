@@ -35,7 +35,7 @@ describe('pixel-art procedural', () => {
   });
 
   it('todos os heróis têm cor de cabelo e ela aparece no sprite', () => {
-    for (const id of ['aren', 'mira', 'hadric', 'kaira', 'wren', 'lys', 'corvin']) {
+    for (const id of ['aren', 'mira', 'hadric', 'kaira', 'ilian', 'wren', 'lys', 'corvin']) {
       const ch = DB.characters[id];
       expect(ch.hair, id).toMatch(/^#[0-9a-f]{6}$/i);
       const cls = DB.classes[ch.classId];
