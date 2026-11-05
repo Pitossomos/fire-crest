@@ -3,6 +3,7 @@ import { BattleState } from '../src/core/battle-state';
 import { applyVictory, buildStageUnits, newCampaign } from '../src/core/campaign';
 import { DB } from '../src/data';
 import { STAGE_1 } from '../src/data/chapter1/stage1';
+import { STAGE_2 } from '../src/data/chapter1/stage2';
 import { STAGE_3 } from '../src/data/chapter1/stage3';
 import { STAGE_4 } from '../src/data/chapter1/stage4';
 import { STAGE_5 } from '../src/data/chapter1/stage5';
@@ -77,6 +78,18 @@ describe('campanha', () => {
     state.spawnUnit({ characterId: 'corvin', faction: 'player', x: 12, y: 2, joins: true });
     const ids = applyVictory(save, state).roster.map((r) => r.characterId);
     expect(ids).toEqual(expect.arrayContaining(['lys', 'corvin']));
+  });
+});
+
+describe('Ilian (Fase 2)', () => {
+  it('só segue para as próximas fases se for recrutado na conversa', () => {
+    const base = { ...afterStage1('classic'), nextStageIndex: 1 };
+    const notTalked = new BattleState(STAGE_2, DB, { units: buildStageUnits(STAGE_2, base, DB) });
+    expect(applyVictory(base, notTalked).roster.some((r) => r.characterId === 'ilian')).toBe(false);
+    const talked = new BattleState(STAGE_2, DB, { units: buildStageUnits(STAGE_2, base, DB) });
+    talked.units.find((u) => u.characterId === 'ilian')!.faction = 'player';
+    const save = applyVictory(base, talked);
+    expect(buildStageUnits(STAGE_3, save, DB).some((u) => u.characterId === 'ilian' && u.faction === 'player')).toBe(true);
   });
 });
 

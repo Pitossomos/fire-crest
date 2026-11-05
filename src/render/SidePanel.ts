@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { TerrainDef } from '../data/types';
+import { DB } from '../data';
 import type { Unit } from '../core/unit';
 import { BOTTOM_BAR, COLORS, FONT_UI, SIDE_PANEL } from './layout';
 
@@ -41,7 +42,7 @@ export class SidePanel {
     text(scene, px, 58, 12, COLORS.textDim).setText(`Objetivo: ${objective}`).setWordWrapWidth(width - 28);
     this.terrainText = text(scene, px, 106, 13);
     this.unitTitle = text(scene, px, 206, 15, COLORS.accent);
-    this.unitText = text(scene, px, 254, 13);
+    this.unitText = text(scene, px, 254, 13).setWordWrapWidth(width - 28);
     this.hpBar = scene.add.graphics().setDepth(51);
     this.helpText = text(scene, 14, BOTTOM_BAR.y + 10, 13, COLORS.textDim).setWordWrapWidth(BOTTOM_BAR.width - 28);
   }
@@ -80,7 +81,8 @@ export class SidePanel {
       `${w.name}`,
       w.heal ? `Cura ${w.heal}  Alc ${range}` : `Pod ${w.might}  Pre ${w.hit}  Crit ${w.crit}`,
       w.heal ? '' : `Alcance ${range}`,
-      '',
+      ...(w.effective?.length ? [`Eficaz: ${w.effective.map((id) => DB.classes[id]?.name ?? id).join(', ')}`] : []),
+      ...(w.effective?.length ? [] : ['']),
       `${FACTION_LABEL[u.faction]}${u.hasActed ? ' (já agiu)' : ''}`,
     ].join('\n'));
     const bx = SIDE_PANEL.x + 110;

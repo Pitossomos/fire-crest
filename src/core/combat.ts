@@ -10,6 +10,13 @@ export const DOUBLE_ATTACK_SPEED = 4;
 export const TRIANGLE_HIT = 15;
 export const TRIANGLE_DAMAGE = 1;
 export const CRIT_MULTIPLIER = 3;
+/** Multiplicador do poder da arma contra classes em `effective`. */
+export const EFFECTIVE_MULTIPLIER = 2;
+
+/** A arma do atacante é eficaz contra a classe do alvo? */
+export function isEffective(a: Unit, d: Unit): boolean {
+  return a.weapon.effective?.includes(d.classDef.id) ?? false;
+}
 
 const BEATS: Partial<Record<WeaponType, WeaponType>> = { sword: 'axe', axe: 'lance', lance: 'sword' };
 
@@ -53,7 +60,8 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 export function strikeStats(a: Unit, d: Unit, dTerrain: TerrainDef): Omit<StrikeStats, 'strikes'> {
   const tri = weaponTriangle(a.weapon.type, d.weapon.type);
   const w = a.weapon;
-  const power = (w.magic ? a.stats.mag : a.stats.str) + w.might + tri * TRIANGLE_DAMAGE;
+  const might = w.might * (isEffective(a, d) ? EFFECTIVE_MULTIPLIER : 1);
+  const power = (w.magic ? a.stats.mag : a.stats.str) + might + tri * TRIANGLE_DAMAGE;
   const guard = (w.magic ? d.stats.res : d.stats.def) + dTerrain.def;
   const damage = Math.max(0, power - guard);
   const accuracy = w.hit + a.stats.skl * 2 + Math.floor(a.stats.lck / 2) + tri * TRIANGLE_HIT;

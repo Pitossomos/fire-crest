@@ -31,6 +31,10 @@ export const CLASSES: Record<string, ClassDef> = {
     id: 'pyromancer', name: 'Piromante', move: 5, weaponTypes: ['tome'], sprite: 'unit_pyromancer',
     baseStats: stats(16, 0, 6, 5, 5, 3, 2, 5), growths: stats(55, 5, 60, 45, 40, 30, 15, 45),
   },
+  lightmage: {
+    id: 'lightmage', name: 'Mago de Luz', move: 5, weaponTypes: ['light'], sprite: 'unit_lightmage',
+    baseStats: stats(17, 0, 6, 6, 6, 6, 2, 6), growths: stats(50, 0, 55, 50, 45, 50, 15, 50),
+  },
   // --- Inimigos ---
   bandit: {
     id: 'bandit', name: 'Bandido', move: 5, weaponTypes: ['axe'], sprite: 'unit_bandit',

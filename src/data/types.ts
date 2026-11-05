@@ -15,7 +15,7 @@ export type Ref<T> = string & { readonly __entity?: T };
 export type StatKey = 'hp' | 'str' | 'mag' | 'skl' | 'spd' | 'lck' | 'def' | 'res';
 export type Stats = Record<StatKey, number>;
 
-export type WeaponType = 'sword' | 'lance' | 'axe' | 'bow' | 'tome' | 'dark' | 'staff' | 'claw';
+export type WeaponType = 'sword' | 'lance' | 'axe' | 'bow' | 'tome' | 'light' | 'dark' | 'staff' | 'claw';
 export type Faction = 'player' | 'enemy' | 'ally';
 export type AiBehavior = 'aggressive' | 'guard' | 'stationary';
 export type GameMode = 'classic' | 'casual';
@@ -49,6 +49,8 @@ export interface WeaponDef {
   magic: boolean;
   /** Quantidade curada (apenas cajados). */
   heal?: number;
+  /** Classes contra as quais a arma é eficaz (poder dobrado). */
+  effective?: Ref<ClassDef>[];
 }
 
 /** @entity Item consumível (ex.: Poção). */

@@ -331,6 +331,7 @@ classDiagram
   UnitPlacement --> ClassDef : classId
   UnitPlacement --> WeaponDef : weaponId
   UnitSprite --> Unit : unit
+  WeaponDef "1" *-- "*" ClassDef : effective
 ```
 
 ## Camada `core`
@@ -465,6 +466,7 @@ classDiagram
     }
     class mod_core_combat["combat.ts"] {
       <<module>>
+      +isEffective(a: Unit, d: Unit) boolean
       +weaponTriangle(a: WeaponType, b: WeaponType) -1 | 0 | 1
       +canAttackWith(unit: Unit) boolean
       +inWeaponRange(unit: Unit, from: Point, target: Point) boolean
@@ -680,6 +682,7 @@ classDiagram
       +maxRange: number
       +magic: boolean
       +heal?: number
+      +effective?: Ref~ClassDef~[]
     }
     class ItemDef {
       <<interface>>
@@ -840,6 +843,7 @@ classDiagram
   UnitPlacement --> CharacterDef : characterId
   UnitPlacement --> ClassDef : classId
   UnitPlacement --> WeaponDef : weaponId
+  WeaponDef "1" *-- "*" ClassDef : effective
 ```
 
 ## Camada `render`

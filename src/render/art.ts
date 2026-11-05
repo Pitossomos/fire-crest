@@ -142,6 +142,20 @@ const LAYERS: Record<string, readonly string[]> = {
     '...hh......hh...',
     '...h........h...',
   ],
+  // Mago de Luz (Ilian): tiara dourada, cabelo nos ombros e um sol bordado no peito.
+  lightmage: [
+    '................',
+    '................',
+    '.....hhhhhh.....',
+    '.....hyyyyh.....',
+    '....hhsssshh....',
+    '....h......h....',
+    '................',
+    '................',
+    '.......yy.......',
+    '......yyyy......',
+    '.......yy.......',
+  ],
   // Bandido: bandana e barba.
   bandit: [
     '................',
@@ -273,6 +287,20 @@ const WEAPON_LAYERS: Record<string, readonly string[]> = {
     '................',
     '............rrr.',
     '............rbr.',
+  ],
+  // Tomo da Aurora: livro claro com um brilho solar.
+  light: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.............y..',
+    '............yby.',
+    '.............y..',
+    '................',
+    '............bbb.',
+    '............byb.',
   ],
   staff: [
     '................',
