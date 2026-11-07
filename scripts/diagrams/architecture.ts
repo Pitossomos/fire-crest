@@ -19,7 +19,7 @@ export interface DependencyGraph {
   externals: string[];
 }
 
-const LAYER_ORDER = ['app', 'scenes', 'render', 'core', 'data', 'save'];
+const LAYER_ORDER = ['app', 'ui', 'scenes', 'render', 'core', 'data', 'save'];
 const LAYER_LABEL: Record<string, string> = {
   app: 'main.ts — bootstrap do Phaser',
   scenes: 'scenes/ — cenas Phaser (controladores)',
@@ -27,6 +27,7 @@ const LAYER_LABEL: Record<string, string> = {
   core: 'core/ — regras do jogo (puro)',
   data: 'data/ — definições e conteúdo',
   save: 'save/ — persistência',
+  ui: 'ui/ — controles de toque (DOM)',
 };
 
 function externalName(resolved: string): string {
@@ -103,6 +104,7 @@ export function renderLayerDiagram(g: DependencyGraph): string {
     '  classDef layer_core fill:#c9d8f6,stroke:#24418a,color:#1f1a24',
     '  classDef layer_data fill:#c8ecd2,stroke:#226b37,color:#1f1a24',
     '  classDef layer_save fill:#ddd2f2,stroke:#4b3a6b,color:#1f1a24',
+    '  classDef layer_ui fill:#f6e7a8,stroke:#8a6a1a,color:#1f1a24',
   );
   return lines.join('\n');
 }

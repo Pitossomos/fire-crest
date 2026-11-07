@@ -100,6 +100,12 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 | Ligar/desligar o som | M | — |
 | Pular diálogo | Esc | — |
 
+**Celular:** em aparelhos de toque aparecem botões virtuais flutuantes.
+- **À esquerda:** um direcional (▲◀▼▶ = W/A/S/D); segurar repete o movimento do cursor.
+- **À direita:** **✓** (Enter) e **✕** (Esc, para voltar ou cancelar).
+
+Os botões simulam as teclas, então funcionam em todas as telas: título, batalha, menus, diálogos e resultado. Tocar no mapa continua funcionando. `?touch=1` na URL força os botões no desktop; `?touch=0` esconde no celular.
+
 **Atalhos de desenvolvimento** (URL): `?stage=c1s4` abre a fase direto (roster novo, modo Casual); `?seed=42` fixa o RNG.
 
 ## Balanceamento

@@ -227,6 +227,21 @@ classDiagram
       <<module>>
     }
   }
+  namespace ui {
+    class HoldRepeater
+    class VirtualKey {
+      <<interface>>
+    }
+    class TouchEnvironment {
+      <<interface>>
+    }
+    class Timers {
+      <<interface>>
+    }
+    class mod_ui_touch_controls["touch-controls.ts"] {
+      <<module>>
+    }
+  }
   class Phaser_Scene["Phaser.Scene"] {
     <<external>>
   }
@@ -289,6 +304,7 @@ classDiagram
   GameDatabase "1" *-- "*" TerrainDef : terrain
   GameDatabase "1" *-- "*" WeaponDef : weapons
   HealOutcome --> ExpGain : exp
+  HoldRepeater --> Timers : timers
   InventorySlot --> ItemDef : itemId
   MapDef "1" *-- "*" TerrainDef : legend
   MapView --> BattleMap : map
@@ -1236,4 +1252,54 @@ classDiagram
   Phaser_Scene <|-- ResultScene
   Phaser_Scene <|-- TitleScene
   Targeting --> Selection : sel
+```
+
+## Camada `ui`
+
+Atributos e métodos dos tipos em `src/ui/`. Relações apenas internas à camada.
+
+```mermaid
+---
+title: Classes — ui
+---
+classDiagram
+  direction LR
+  namespace ui {
+    class HoldRepeater {
+      -delayId: unknown
+      -intervalId: unknown
+      +fire: Function
+      +timers: Timers
+      +repeat: boolean
+      +press() void
+      +release() void
+    }
+    class VirtualKey {
+      <<interface>>
+      +code: string
+      +key: string
+      +keyCode: number
+    }
+    class TouchEnvironment {
+      <<interface>>
+      +search: string
+      +coarsePointer: boolean
+      +canHover: boolean
+      +maxTouchPoints: number
+    }
+    class Timers {
+      <<interface>>
+      +setTimeout(fn: Function, ms: number) unknown
+      +setInterval(fn: Function, ms: number) unknown
+      +clearTimeout(id: unknown) void
+      +clearInterval(id: unknown) void
+    }
+    class mod_ui_touch_controls["touch-controls.ts"] {
+      <<module>>
+      +shouldShowTouchControls(env: TouchEnvironment) boolean
+      +makeKeyEvent(type: keydown | keyup, k: VirtualKey) KeyboardEvent
+      +installTouchControls(win: Window) boolean
+    }
+  }
+  HoldRepeater --> Timers : timers
 ```

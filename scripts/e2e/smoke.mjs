@@ -369,6 +369,45 @@ const fromSave = await page.evaluate(() => {
 });
 if (fromSave.stage !== 'c2s1' || fromSave.heroes !== 'aren,hadric,kaira,mira') fail(`Continuar do Cap. 1 inesperado: ${JSON.stringify(fromSave)}`);
 
+// --- Celular: botões virtuais (W/A/S/D, Enter, Esc) ---
+const desktopHasPad = await page.evaluate(() => !!document.getElementById('touch-controls'));
+if (desktopHasPad) fail('os botões virtuais não deveriam aparecer no desktop');
+const phone = await browser.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+const mpage = await phone.newPage();
+mpage.on('console', (m) => { if (m.type() === 'error') errors.push(`[celular] ${m.text()}`); });
+mpage.on('pageerror', (e) => errors.push(`[celular] ${String(e)}`));
+const tap = async (button, wait = 180) => { await mpage.locator(`#touch-controls [data-key="${button}"]`).tap(); await mpage.waitForTimeout(wait); };
+await mpage.goto(url);
+await mpage.waitForFunction(() => window.__FIRE_CREST__?.scene.isActive('Title'));
+await mpage.waitForTimeout(500);
+const padVisible = await mpage.locator('#touch-controls [data-key="confirm"]').isVisible();
+if (!padVisible) fail('os botões virtuais deveriam aparecer no celular');
+await mpage.screenshot({ path: join(shots, '25-mobile-title.png') });
+await tap('confirm', 600); // Novo jogo
+await mpage.waitForFunction(() => window.__FIRE_CREST__.scene.isActive('Dialogue'), null, { timeout: 8000 }).catch(() => fail('Enter virtual deveria iniciar o jogo'));
+await mpage.screenshot({ path: join(shots, '26-mobile-dialogue.png') });
+for (let i = 0; i < 20; i++) {
+  const st = await mpage.evaluate(() => ({ d: window.__FIRE_CREST__.scene.isActive('Dialogue'), m: window.__FIRE_CREST__.scene.getScene('Battle')?.mode, a: window.__FIRE_CREST__.scene.isActive('Battle') }));
+  if (st.d) await tap('cancel', 300); // Esc pula o diálogo
+  else if (st.a && st.m === 'idle') break;
+  else await mpage.waitForTimeout(250);
+}
+const cursorBefore = await mpage.evaluate(() => ({ ...window.__FIRE_CREST__.scene.getScene('Battle').cursor }));
+await tap('right'); await tap('right'); await tap('up');
+const cursorAfter = await mpage.evaluate(() => ({ ...window.__FIRE_CREST__.scene.getScene('Battle').cursor }));
+if (cursorAfter.x !== cursorBefore.x + 2 || cursorAfter.y !== cursorBefore.y - 1) {
+  fail(`o direcional virtual deveria mover o cursor: ${JSON.stringify(cursorBefore)} → ${JSON.stringify(cursorAfter)}`);
+}
+await tap('left'); await tap('left'); await tap('down'); // volta para o Aren
+await tap('confirm');
+const selMode = await mpage.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').mode);
+if (selMode !== 'selected') fail(`Enter virtual deveria selecionar o Aren (modo ${selMode})`);
+await mpage.screenshot({ path: join(shots, '27-mobile-selected.png') });
+await tap('cancel');
+const backMode = await mpage.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').mode);
+if (backMode !== 'idle') fail(`Voltar virtual deveria cancelar a seleção (modo ${backMode})`);
+await phone.close();
+
 if (errors.length) fail(`erros no console:\n${errors.join('\n')}`);
 await browser.close();
 console.log(process.exitCode ? 'Smoke test com falhas.' : `Smoke test OK. Screenshots em ${shots}/`);

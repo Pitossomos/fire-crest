@@ -14,6 +14,7 @@ title: Arquitetura — camadas
 ---
 flowchart TB
   app["<b>main.ts — bootstrap do Phaser</b><br/>1 módulo(s)"]:::layer_app
+  ui["<b>ui/ — controles de toque (DOM)</b><br/>1 módulo(s)"]:::layer_ui
   scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>5 módulo(s)"]:::layer_scenes
   render["<b>render/ — componentes visuais</b><br/>13 módulo(s)"]:::layer_render
   core["<b>core/ — regras do jogo (puro)</b><br/>14 módulo(s)"]:::layer_core
@@ -23,6 +24,7 @@ flowchart TB
   app -->|"1 import(s)"| ext_phaser
   app -->|"1 import(s)"| render
   app -->|"5 import(s)"| scenes
+  app -->|"1 import(s)"| ui
   core -->|"2 import(s), 12 só tipos"| data
   render -.->|"9 só tipos"| core
   render -->|"1 import(s), 4 só tipos"| data
@@ -41,6 +43,7 @@ flowchart TB
   classDef layer_core fill:#c9d8f6,stroke:#24418a,color:#1f1a24
   classDef layer_data fill:#c8ecd2,stroke:#226b37,color:#1f1a24
   classDef layer_save fill:#ddd2f2,stroke:#4b3a6b,color:#1f1a24
+  classDef layer_ui fill:#f6e7a8,stroke:#8a6a1a,color:#1f1a24
 ```
 
 ## Módulos
@@ -54,6 +57,9 @@ title: Arquitetura — dependências entre módulos
 flowchart TB
   subgraph layer_app["src"]
     src_main_ts["main.ts"]
+  end
+  subgraph layer_ui["src/ui"]
+    src_ui_touch_controls_ts["touch-controls.ts"]
   end
   subgraph layer_scenes["src/scenes"]
     src_scenes_BattleScene_ts["BattleScene.ts"]
@@ -177,6 +183,7 @@ flowchart TB
   src_main_ts --> src_scenes_DialogueScene_ts
   src_main_ts --> src_scenes_ResultScene_ts
   src_main_ts --> src_scenes_TitleScene_ts
+  src_main_ts --> src_ui_touch_controls_ts
   src_render_ActionMenu_ts --> ext_phaser
   src_render_ActionMenu_ts --> src_render_layout_ts
   src_render_art_ts --> src_render_layout_ts

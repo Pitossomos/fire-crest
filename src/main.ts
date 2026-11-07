@@ -5,6 +5,7 @@ import { BattleScene } from './scenes/BattleScene';
 import { DialogueScene } from './scenes/DialogueScene';
 import { ResultScene } from './scenes/ResultScene';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from './render/layout';
+import { installTouchControls } from './ui/touch-controls';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -16,6 +17,9 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: [BootScene, TitleScene, BattleScene, DialogueScene, ResultScene],
 });
+
+// Botões virtuais (W/A/S/D, Enter, Esc) só em aparelhos de toque.
+installTouchControls();
 
 // Exposto em desenvolvimento para depuração e testes automatizados (Playwright).
 if (import.meta.env.DEV) {

@@ -44,7 +44,8 @@ Os **Capítulos 1 (Brasas no Vale) e 2 (O Caminho dos Faróis)** estão completo
 - diálogos com retratos;
 - campanha com save automático entre fases e capítulos, nos modos **Clássico** (permadeath) e **Casual**;
 - promoção de classe com Selos da Brasa, unidades montadas e mapas grandes com câmera (Capítulo 2);
-- efeitos sonoros (tecla M liga e desliga).
+- efeitos sonoros (tecla M liga e desliga);
+- no celular, botões virtuais flutuantes (direcional, Confirmar e Voltar).
 
 Veja o [roadmap e os desvios do plano](docs/DESIGN.md#roadmap).
 
