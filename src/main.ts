@@ -4,6 +4,7 @@ import { TitleScene } from './scenes/TitleScene';
 import { BattleScene } from './scenes/BattleScene';
 import { DialogueScene } from './scenes/DialogueScene';
 import { ResultScene } from './scenes/ResultScene';
+import { PartyScene } from './scenes/PartyScene';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from './render/layout';
 import { installTouchControls } from './ui/touch-controls';
 
@@ -15,7 +16,7 @@ const game = new Phaser.Game({
   backgroundColor: COLORS.background,
   pixelArt: true,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, TitleScene, BattleScene, DialogueScene, ResultScene],
+  scene: [BootScene, TitleScene, BattleScene, DialogueScene, ResultScene, PartyScene],
 });
 
 // Botões virtuais (W/A/S/D, Enter, Esc) só em aparelhos de toque.

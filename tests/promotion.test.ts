@@ -100,15 +100,16 @@ describe('movimento por tipo', () => {
   });
 });
 
-describe('save v1 → v2', () => {
+describe('migração de saves antigos', () => {
   it('migra saves antigos sem perder o progresso', () => {
     const store = new Map<string, string>();
     const kv = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v), removeItem: (k: string) => void store.delete(k) };
-    const { seals: _s, ...v1 } = { ...newCampaign('casual'), nextStageIndex: 3 };
+    const { seals: _s, convoy: _c, ...v1 } = { ...newCampaign('casual'), nextStageIndex: 3 };
     kv.setItem(SAVE_KEY, JSON.stringify({ ...v1, version: 1 }));
     const loaded = loadSave(kv)!;
     expect(loaded.nextStageIndex).toBe(3);
     expect(loaded.seals).toBe(0);
-    expect(loaded.version).toBe(2);
+    expect(loaded.version).toBe(3);
+    expect(loaded.convoy).toEqual({ items: [], weapons: [] });
   });
 });

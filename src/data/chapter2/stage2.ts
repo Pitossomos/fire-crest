@@ -52,6 +52,10 @@ export const C2_STAGE_2: StageDef = {
     { classId: 'archer', weaponId: 'iron_bow', faction: 'enemy', x: 14, y: 2, level: 6, ai: 'stationary' },
   ],
   rewardSeals: 1,
+  caches: [
+    { x: 18, y: 11, seals: 1, text: 'Nas ruínas afundadas do posto do Farol, uma brasa ainda morna: um Selo da Brasa!' },
+    { x: 17, y: 11, itemId: 'elixir' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'O Pântano de Vessa cheira a ferro velho e chuva parada. O Cinzento se arrasta rente à água.' },
     { speakerId: 'brielle', side: 'left', text: 'Meu cavalo afunda até os joelhos. Isso aqui foi feito para sapos, não para cavaleiras.' },

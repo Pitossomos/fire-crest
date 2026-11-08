@@ -56,6 +56,9 @@ export const C2_STAGE_5: StageDef = {
     { classId: 'archer', weaponId: 'iron_bow', faction: 'enemy', x: 15, y: 4, level: 8, ai: 'guard' },
   ],
   rewardSeals: 0,
+  caches: [
+    { x: 9, y: 2, seals: 1, text: 'No altar da catedral, a última brasa que Malachar guardava: um Selo da Brasa!' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'A Catedral do Ocaso já foi a Catedral do Sol. Os vitrais dourados foram pintados de preto; as velas, todas apagadas.' },
     { speakerId: 'malachar', side: 'right', text: 'O filho de Aldric Valdris, na minha catedral. O Grão-Hierofante vai me agradecer por entregar sua brasa embrulhada em silêncio.' },

@@ -1,4 +1,6 @@
-import type { Faction, StageDef, UnitPlacement } from '../data/types';
+import type { CacheDef, Faction, InventorySlot, StageDef, UnitPlacement } from '../data/types';
+import { lookup } from '../data';
+import { MAX_ITEMS } from './party';
 import type { GameDatabase } from '../data';
 import { BattleMap } from './battle-map';
 import { type Point, neighbors, pointKey } from './grid';
@@ -36,6 +38,33 @@ export interface HealOutcome {
   exp?: ExpGain;
 }
 
+/** O que o grupo achou investigando nesta fase (vai para o save na vitória). */
+export interface FoundLoot {
+  seals: number;
+  /** Itens que não couberam no inventário de quem achou (vão para o baú). */
+  items: InventorySlot[];
+  /** Armas achadas (vão para o baú). */
+  weapons: string[];
+}
+
+/** Resultado de uma investigação. */
+export interface InvestigateOutcome {
+  cache?: CacheDef;
+  /** Descrições curtas do que foi achado (para texto flutuante). */
+  gained: string[];
+  /** Fala do narrador. */
+  text: string;
+}
+
+/** Falas para construções sem nada escondido (escolhidas pela posição). */
+const EMPTY_LINES = [
+  'Só poeira e teias de aranha.',
+  'Gavetas vazias e um cheiro de fumaça antiga.',
+  'Alguém já passou por aqui antes de vocês.',
+  'Nada além de cinzas frias.',
+  'Um velho diário ilegível. Nada de útil.',
+];
+
 export interface AttackOutcome {
   result: CombatResult;
   exp: ExpGain[];
@@ -65,6 +94,10 @@ export class BattleState {
   /** Curas de terreno aplicadas no início da fase atual. */
   phaseHeals: TerrainHeal[] = [];
   private nextIndex: number;
+  /** Tiles já investigados nesta fase ("x,y"). */
+  readonly searched = new Set<string>();
+  /** Achados das investigações nesta fase. */
+  readonly found: FoundLoot = { seals: 0, items: [], weapons: [] };
 
   constructor(stage: StageDef, db: GameDatabase, opts: BattleOptions = {}) {
     this.stage = stage;
@@ -196,6 +229,50 @@ export class BattleState {
     if (slot.uses <= 0) unit.items.splice(index, 1);
     unit.hasActed = true;
     return amount;
+  }
+
+  /** A unidade pode investigar a construção onde está? (uma vez por tile, só o jogador) */
+  canInvestigate(unit: Unit): boolean {
+    return unit.faction === 'player' && unit.isAlive()
+      && this.map.terrainAt(unit.position).searchable === true
+      && !this.searched.has(pointKey(unit.position));
+  }
+
+  /**
+   * Investiga a construção: aplica o esconderijo da fase (item para a unidade,
+   * ou para o baú se ela já carrega o máximo; arma e selos para os achados do
+   * grupo) e consome a ação.
+   */
+  investigate(unit: Unit): InvestigateOutcome {
+    if (!this.canInvestigate(unit)) throw new Error(`${unit.name} não pode investigar aqui`);
+    this.searched.add(pointKey(unit.position));
+    unit.hasActed = true;
+    const cache = this.stage.caches?.find((c) => c.x === unit.x && c.y === unit.y);
+    if (!cache) {
+      return { gained: [], text: EMPTY_LINES[(unit.x * 7 + unit.y * 13) % EMPTY_LINES.length] };
+    }
+    const gained: string[] = [];
+    if (cache.itemId) {
+      const def = lookup(this.db.items, cache.itemId, 'Item');
+      if (unit.items.length < MAX_ITEMS) {
+        unit.items.push({ def, uses: def.uses });
+        gained.push(def.name);
+      } else {
+        this.found.items.push({ itemId: def.id, uses: def.uses });
+        gained.push(`${def.name} (baú)`);
+      }
+    }
+    if (cache.weaponId) {
+      const w = lookup(this.db.weapons, cache.weaponId, 'Arma');
+      this.found.weapons.push(w.id);
+      gained.push(`${w.name} (baú)`);
+    }
+    if (cache.seals) {
+      this.found.seals += cache.seals;
+      gained.push(cache.seals > 1 ? `${cache.seals} Selos da Brasa` : 'Selo da Brasa');
+    }
+    const text = cache.text ?? `${unit.name} encontrou: ${gained.join(', ')}.`;
+    return { cache, gained, text };
   }
 
   /** O lorde pode tomar o objetivo estando onde está? */

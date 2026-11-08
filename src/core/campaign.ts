@@ -5,7 +5,7 @@ import type { BattleState } from './battle-state';
 import { Unit } from './unit';
 import { createUnit } from './unit-factory';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 /** Nível mínimo para promover com um Selo da Brasa. */
 export const PROMOTION_LEVEL = 5;
 
@@ -13,7 +13,7 @@ const STAT_KEYS: StatKey[] = ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'r
 
 /** Novo save no início do capítulo 1 (roster vazio: a primeira fase traz o time). */
 export function newCampaign(mode: GameMode, chapterId = 'c1'): SaveData {
-  return { version: SAVE_VERSION, mode, chapterId, nextStageIndex: 0, roster: [], seals: 0 };
+  return { version: SAVE_VERSION, mode, chapterId, nextStageIndex: 0, roster: [], seals: 0, convoy: { items: [], weapons: [] } };
 }
 
 /**
@@ -93,7 +93,10 @@ export function buildStageUnits(stage: StageDef, save: SaveData, db: GameDatabas
       name: base.name,
       faction: 'player',
       classDef: entry.classId ? lookup(db.classes, entry.classId, 'Classe') : base.classDef,
-      weapon: lookup(db.weapons, p.weaponId ?? entry.weaponId, 'Arma'),
+      // A arma da fase (ex.: presente de enredo) só substitui a arma inicial,
+      // nunca uma arma que o jogador equipou.
+      weapon: lookup(db.weapons, p.weaponId && entry.weaponId === lookup(db.characters, entry.characterId, 'Personagem').weaponId
+        ? p.weaponId : entry.weaponId, 'Arma'),
       level: entry.level,
       exp: entry.exp,
       stats: entry.stats,
@@ -134,11 +137,16 @@ export function applyVictory(save: SaveData, state: BattleState): SaveData {
     if (!isMember && !clearRecruit) continue;
     roster.set(u.characterId, toEntry(u, u.isAlive() || save.mode === 'casual'));
   }
+  // Achados das investigações: selos para o grupo; armas e excedentes para o baú.
   return {
     ...save,
     roster: [...roster.values()],
     nextStageIndex: save.nextStageIndex + 1,
-    seals: save.seals + (state.stage.rewardSeals ?? 0),
+    seals: save.seals + (state.stage.rewardSeals ?? 0) + state.found.seals,
+    convoy: {
+      items: [...save.convoy.items, ...state.found.items],
+      weapons: [...save.convoy.weapons, ...state.found.weapons],
+    },
   };
 }
 

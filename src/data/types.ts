@@ -37,6 +37,8 @@ export interface TerrainDef {
   heal: number;
   /** Custos diferentes por tipo de movimento (`null` = intransponível para esse tipo). */
   costs?: Partial<Record<MoveType, number | null>>;
+  /** Construção que pode ser investigada (casa, fortaleza). */
+  searchable?: boolean;
 }
 
 /** @entity Arma, tomo ou cajado. */
@@ -172,6 +174,17 @@ export interface EventTrigger {
   recruitId?: Ref<CharacterDef>;
 }
 
+/** @entity Esconderijo numa construção: o que se acha ao investigar o tile. */
+export interface CacheDef {
+  x: number;
+  y: number;
+  itemId?: Ref<ItemDef>;
+  weaponId?: Ref<WeaponDef>;
+  seals?: number;
+  /** Fala do narrador ao encontrar (opcional). */
+  text?: string;
+}
+
 /** @entity Fase (batalha) de um capítulo. */
 export interface StageDef {
   id: string;
@@ -188,6 +201,8 @@ export interface StageDef {
   recruitOnClear?: Ref<CharacterDef>[];
   /** Selos da Brasa ganhos ao vencer a fase. */
   rewardSeals?: number;
+  /** Esconderijos nas construções da fase. */
+  caches?: CacheDef[];
 }
 
 /** @entity Herói de um time pré-montado (começar um capítulo sem save anterior). */
@@ -223,6 +238,12 @@ export interface RosterEntry {
   alive: boolean;
 }
 
+/** @entity Baú do grupo: itens e armas guardados entre as fases. */
+export interface Convoy {
+  items: InventorySlot[];
+  weapons: Ref<WeaponDef>[];
+}
+
 /** @entity Save do jogo (localStorage). */
 export interface SaveData {
   version: number;
@@ -232,4 +253,6 @@ export interface SaveData {
   roster: RosterEntry[];
   /** Selos da Brasa disponíveis para promover heróis. */
   seals: number;
+  /** Baú do grupo. */
+  convoy: Convoy;
 }

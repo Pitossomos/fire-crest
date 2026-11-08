@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, FONT_UI, MAP_AREA } from './layout';
+import { type MenuHit, type MenuRows, menuHitTest } from './menu-geometry';
 
 export interface MenuOption {
   id: string;
@@ -7,10 +8,16 @@ export interface MenuOption {
   enabled?: boolean;
 }
 
-const ITEM_H = 26;
-const WIDTH = 140;
+const ITEM_H = 34;
+const WIDTH = 172;
+const PAD = 6;
 
-/** Menu vertical de ações (teclado: ↑/↓ + confirmar; mouse: passar e clicar). */
+/**
+ * Menu vertical de ações (teclado: ↑/↓ + confirmar; mouse/toque: passar e
+ * clicar). Não usa objetos interativos do Phaser: a cena repassa o ponteiro
+ * em coordenadas de tela para `hitTest`/`hoverAt`, com a linha inteira como
+ * área clicável — confiável mesmo com a câmera rolada.
+ */
 export class ActionMenu {
   private readonly scene: Phaser.Scene;
   private container?: Phaser.GameObjects.Container;
@@ -19,6 +26,7 @@ export class ActionMenu {
   private items: Phaser.GameObjects.Text[] = [];
   private highlight?: Phaser.GameObjects.Rectangle;
   private onPick?: (id: string) => void;
+  private rows?: MenuRows;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -34,28 +42,39 @@ export class ActionMenu {
     this.options = options;
     this.onPick = onPick;
     this.index = Math.max(0, options.findIndex((o) => o.enabled !== false));
-    const h = options.length * ITEM_H + 12;
+    const h = options.length * ITEM_H + PAD * 2;
     const left = Phaser.Math.Clamp(x, 4, MAP_AREA.width - WIDTH - 4);
     const top = Phaser.Math.Clamp(y, 4, MAP_AREA.height - h - 4);
+    this.rows = { x: left, y: top + PAD, width: WIDTH, rowHeight: ITEM_H, count: options.length, padding: PAD };
 
-    const bg = this.scene.add.rectangle(0, 0, WIDTH, h, COLORS.panel, 0.96).setOrigin(0).setStrokeStyle(2, COLORS.panelBorder);
-    this.highlight = this.scene.add.rectangle(4, 6, WIDTH - 8, ITEM_H, 0x5c4630, 0.9).setOrigin(0);
-    this.items = options.map((o, i) => {
-      const t = this.scene.add.text(14, 6 + i * ITEM_H + 5, o.label, {
-        fontFamily: FONT_UI, fontSize: '15px', color: o.enabled === false ? COLORS.textDim : COLORS.text,
-      });
-      t.setInteractive({ useHandCursor: true });
-      t.on('pointerover', () => this.select(i));
-      t.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-        if (pointer.leftButtonDown()) {
-          this.select(i);
-          this.confirm();
-        }
-      });
-      return t;
-    });
+    const bg = this.scene.add.rectangle(0, 0, WIDTH, h, COLORS.panel, 0.97).setOrigin(0).setStrokeStyle(2, COLORS.panelBorder);
+    this.highlight = this.scene.add.rectangle(4, PAD, WIDTH - 8, ITEM_H, 0x5c4630, 0.9).setOrigin(0);
+    this.items = options.map((o, i) => this.scene.add.text(16, PAD + i * ITEM_H + ITEM_H / 2, o.label, {
+      fontFamily: FONT_UI, fontSize: '16px', color: o.enabled === false ? COLORS.textDim : COLORS.text,
+    }).setOrigin(0, 0.5));
     this.container = this.scene.add.container(left, top, [bg, this.highlight, ...this.items]).setDepth(60).setScrollFactor(0, 0, true);
     this.select(this.index);
+  }
+
+  /** Onde está o ponto (tela): índice da linha, borda do menu ou fora. */
+  hitTest(screenX: number, screenY: number): MenuHit {
+    return this.rows ? menuHitTest(this.rows, screenX, screenY) : 'outside';
+  }
+
+  /** Destaca a linha sob o ponteiro. */
+  hoverAt(screenX: number, screenY: number): void {
+    const hit = this.hitTest(screenX, screenY);
+    if (typeof hit === 'number') this.select(hit);
+  }
+
+  /** Clique/toque na linha: seleciona e confirma. Retorna se havia uma linha ali. */
+  clickAt(screenX: number, screenY: number): MenuHit {
+    const hit = this.hitTest(screenX, screenY);
+    if (typeof hit === 'number' && this.options[hit]?.enabled !== false) {
+      this.select(hit);
+      this.confirm();
+    }
+    return hit;
   }
 
   moveSelection(delta: number): void {
@@ -82,11 +101,12 @@ export class ActionMenu {
     this.container = undefined;
     this.items = [];
     this.onPick = undefined;
+    this.rows = undefined;
   }
 
   private select(i: number): void {
     if (this.options[i]?.enabled === false) return;
     this.index = i;
-    this.highlight?.setY(6 + i * ITEM_H);
+    this.highlight?.setY(PAD + i * ITEM_H);
   }
 }

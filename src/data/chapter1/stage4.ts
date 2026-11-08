@@ -40,6 +40,9 @@ export const STAGE_4: StageDef = {
     { classId: 'hollow', weaponId: 'claws', faction: 'enemy', x: 13, y: 8, level: 3, ai: 'aggressive' },
     { classId: 'archer', weaponId: 'iron_bow', faction: 'enemy', x: 2, y: 1, level: 3, ai: 'stationary' },
   ],
+  caches: [
+    { x: 7, y: 2, seals: 1, text: 'Atrás do trono do Abade, uma brasa roubada da Ordem: um Selo da Brasa!' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'Cinzaforte já foi um posto dos Faróis. Agora suas torres estão negras, e de dentro vem o som de cânticos.' },
     { speakerId: 'wren', side: 'left', text: 'Ouviram? Estão cantando o Salmo do Sono. É assim que eles apagam as pessoas.' },

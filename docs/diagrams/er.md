@@ -13,6 +13,14 @@ Interfaces marcadas com `@entity`. `Ref<X>` é chave estrangeira (FK) para X; li
 title: Modelo de dados (entidades @entity)
 ---
 erDiagram
+  CacheDef {
+    number x
+    number y
+    string itemId FK "-> ItemDef; opcional"
+    string weaponId FK "-> WeaponDef; opcional"
+    number seals "opcional"
+    string text "opcional"
+  }
   ChapterDef {
     string id PK
     number order
@@ -50,6 +58,10 @@ erDiagram
     string promotesTo FK "-> ClassDef; opcional"
     Stats promotionBonus "opcional"
     string artBase FK "-> ClassDef; opcional"
+  }
+  Convoy {
+    list items "InventorySlot[]"
+    list weapons FK "-> WeaponDef"
   }
   DialogueLine {
     string speakerId FK "-> CharacterDef"
@@ -111,6 +123,7 @@ erDiagram
     number nextStageIndex
     list roster "RosterEntry[]"
     number seals
+    Convoy convoy
   }
   StageDef {
     string id PK
@@ -125,6 +138,7 @@ erDiagram
     list events "EventTrigger[]"
     list recruitOnClear FK "-> CharacterDef; opcional"
     number rewardSeals "opcional"
+    list caches "opcional; CacheDef[]"
   }
   TerrainDef {
     string id PK
@@ -134,6 +148,7 @@ erDiagram
     number avoid
     number heal
     object costs "opcional; Partial<Record<MoveType, number | null>>"
+    boolean searchable "opcional"
   }
   UnitPlacement {
     string characterId FK "-> CharacterDef; opcional"
@@ -161,6 +176,8 @@ erDiagram
     number heal "opcional"
     list effective FK "-> ClassDef; opcional"
   }
+  CacheDef }o--o| ItemDef : "itemId"
+  CacheDef }o--o| WeaponDef : "weaponId"
   ChapterDef ||--o{ PremadeMember : "premade"
   ChapterDef }o--o{ StageDef : "stageIds"
   ChapterDef }o--o| ChapterDef : "nextChapterId"
@@ -169,6 +186,8 @@ erDiagram
   CharacterDef }o--|| WeaponDef : "weaponId"
   ClassDef_ }o--o| ClassDef_ : "artBase"
   ClassDef_ }o--o| ClassDef_ : "promotesTo"
+  Convoy ||--o{ InventorySlot : "items"
+  Convoy }o--o{ WeaponDef : "weapons"
   DialogueLine }o--|| CharacterDef : "speakerId"
   EventTrigger ||--o{ DialogueLine : "dialogue"
   EventTrigger ||--o{ UnitPlacement : "spawns"
@@ -184,7 +203,9 @@ erDiagram
   RosterEntry }o--|| CharacterDef : "characterId"
   RosterEntry }o--|| WeaponDef : "weaponId"
   SaveData ||--o{ RosterEntry : "roster"
+  SaveData ||--|| Convoy : "convoy"
   SaveData }o--|| ChapterDef : "chapterId"
+  StageDef ||--o{ CacheDef : "caches"
   StageDef ||--o{ DialogueLine : "postDialogue"
   StageDef ||--o{ DialogueLine : "preDialogue"
   StageDef ||--o{ EventTrigger : "events"
@@ -203,9 +224,11 @@ erDiagram
 
 | Entidade | Descrição | Arquivo |
 |---|---|---|
+| `CacheDef` | Esconderijo numa construção: o que se acha ao investigar o tile. | `src/data/types.ts` |
 | `ChapterDef` | Capítulo da campanha. | `src/data/types.ts` |
 | `CharacterDef` | Personagem nomeado (jogável ou chefe). | `src/data/types.ts` |
 | `ClassDef` | Classe de unidade: atributos-base, crescimento e armas permitidas. | `src/data/types.ts` |
+| `Convoy` | Baú do grupo: itens e armas guardados entre as fases. | `src/data/types.ts` |
 | `DialogueLine` | Uma fala de diálogo. | `src/data/types.ts` |
 | `EventTrigger` | Evento disparado durante a batalha. | `src/data/types.ts` |
 | `InventorySlot` | Item no inventário de uma unidade, com os usos restantes. | `src/data/types.ts` |

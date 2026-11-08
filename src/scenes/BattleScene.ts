@@ -146,7 +146,11 @@ export class BattleScene extends Phaser.Scene {
     this.input.mouse?.disableContextMenu();
     this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => this.onKey(ev.code));
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (this.mode === 'busy' || this.mode === 'moving' || this.menu.isOpen) return;
+      if (this.menu.isOpen) {
+        this.menu.hoverAt(pointer.x, pointer.y);
+        return;
+      }
+      if (this.mode === 'busy' || this.mode === 'moving') return;
       const tile = this.mapView.toTile(pointer.x, pointer.y);
       if (!tile || samePoint(tile, this.cursor)) return;
       if (this.mode === 'targeting') {
@@ -156,14 +160,15 @@ export class BattleScene extends Phaser.Scene {
       }
       this.setCursor(tile);
     });
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-      if (over.length > 0 || this.ended) return; // clique tratado por um item de menu
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (this.ended) return;
       if (pointer.rightButtonDown()) {
         this.cancel();
         return;
       }
       if (this.menu.isOpen) {
-        this.cancel();
+        // A linha inteira é clicável; na borda do menu, nada acontece; fora dele, cancela.
+        if (this.menu.clickAt(pointer.x, pointer.y) === 'outside') this.cancel();
         return;
       }
       const tile = this.mapView.toTile(pointer.x, pointer.y);
@@ -325,6 +330,7 @@ export class BattleScene extends Phaser.Scene {
     if (targets.length > 0) options.push({ id: 'attack', label: 'Atacar' });
     if (healable.length > 0) options.push({ id: 'heal', label: 'Curar' });
     talks.forEach(([, other], i) => options.push({ id: `talk:${i}`, label: `Conversar (${other.name.split(' ')[0]})` }));
+    if (this.state.canInvestigate(u)) options.push({ id: 'investigate', label: 'Investigar' });
     if (u.items.length > 0) options.push({ id: 'item', label: 'Item' });
     options.push({ id: 'wait', label: 'Esperar' });
     this.menuCancel = () => this.undoMove(sel);
@@ -336,6 +342,7 @@ export class BattleScene extends Phaser.Scene {
       else if (id === 'attack') this.startTargeting('attack', sel, targets);
       else if (id === 'heal') this.startTargeting('heal', sel, healable);
       else if (id === 'item') this.openItemMenu(sel);
+      else if (id === 'investigate') void this.executeInvestigate(u);
       else if (id.startsWith('talk:')) void this.executeTalk(u, talks[Number(id.slice(5))][0]);
       else if (id === 'seize') {
         this.state.seize(u);
@@ -362,6 +369,22 @@ export class BattleScene extends Phaser.Scene {
       }
       void this.executeItem(u, Number(id));
     });
+  }
+
+  private async executeInvestigate(unit: Unit): Promise<void> {
+    this.setMode('busy');
+    const out = this.state.investigate(unit);
+    if (out.gained.length === 0) {
+      playSfx(this, 'miss');
+      this.panel.setHelp(out.text);
+      await floatText(this, unit.x, unit.y, 'Nada aqui', '#cfd8e3', 16);
+    } else {
+      playSfx(this, out.cache?.seals ? 'levelup' : 'heal');
+      for (const g of out.gained) await floatText(this, unit.x, unit.y, g, out.cache?.seals ? '#ffd34d' : '#9fe3b0', 16);
+      await runDialogue(this, [{ speakerId: 'narrator', side: 'left', text: out.text }]);
+    }
+    this.refreshPanel();
+    await this.finishAction(unit);
   }
 
   private async executeItem(unit: Unit, index: number): Promise<void> {

@@ -15,27 +15,27 @@ title: Arquitetura — camadas
 flowchart TB
   app["<b>main.ts — bootstrap do Phaser</b><br/>1 módulo(s)"]:::layer_app
   ui["<b>ui/ — controles de toque (DOM)</b><br/>1 módulo(s)"]:::layer_ui
-  scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>5 módulo(s)"]:::layer_scenes
-  render["<b>render/ — componentes visuais</b><br/>13 módulo(s)"]:::layer_render
-  core["<b>core/ — regras do jogo (puro)</b><br/>14 módulo(s)"]:::layer_core
+  scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>7 módulo(s)"]:::layer_scenes
+  render["<b>render/ — componentes visuais</b><br/>14 módulo(s)"]:::layer_render
+  core["<b>core/ — regras do jogo (puro)</b><br/>15 módulo(s)"]:::layer_core
   data["<b>data/ — definições e conteúdo</b><br/>20 módulo(s)"]:::layer_data
   save["<b>save/ — persistência</b><br/>1 módulo(s)"]:::layer_save
   ext_phaser[("phaser")]:::external
   app -->|"1 import(s)"| ext_phaser
   app -->|"1 import(s)"| render
-  app -->|"5 import(s)"| scenes
+  app -->|"6 import(s)"| scenes
   app -->|"1 import(s)"| ui
-  core -->|"2 import(s), 12 só tipos"| data
+  core -->|"4 import(s), 14 só tipos"| data
   render -.->|"9 só tipos"| core
   render -->|"1 import(s), 4 só tipos"| data
   render -->|"10 import(s)"| ext_phaser
   save -->|"1 import(s)"| core
   save -.->|"1 só tipos"| data
-  scenes -->|"10 import(s), 1 só tipos"| core
-  scenes -->|"6 import(s), 4 só tipos"| data
-  scenes -->|"5 import(s)"| ext_phaser
-  scenes -->|"18 import(s)"| render
-  scenes -->|"3 import(s)"| save
+  scenes -->|"12 import(s), 1 só tipos"| core
+  scenes -->|"7 import(s), 6 só tipos"| data
+  scenes -->|"6 import(s)"| ext_phaser
+  scenes -->|"21 import(s)"| render
+  scenes -->|"4 import(s)"| save
   classDef external fill:#e9e2cc,stroke:#5c4630,color:#1f1a24
   classDef layer_app fill:#f3dcc0,stroke:#8a4a2a,color:#1f1a24
   classDef layer_scenes fill:#f6c9c4,stroke:#7a2420,color:#1f1a24
@@ -65,8 +65,10 @@ flowchart TB
     src_scenes_BattleScene_ts["BattleScene.ts"]
     src_scenes_BootScene_ts["BootScene.ts"]
     src_scenes_DialogueScene_ts["DialogueScene.ts"]
+    src_scenes_PartyScene_ts["PartyScene.ts"]
     src_scenes_ResultScene_ts["ResultScene.ts"]
     src_scenes_TitleScene_ts["TitleScene.ts"]
+    src_scenes_scene_data_ts["scene-data.ts"]
   end
   subgraph layer_render["src/render"]
     src_render_ActionMenu_ts["ActionMenu.ts"]
@@ -79,6 +81,7 @@ flowchart TB
     src_render_art_ts["art.ts"]
     src_render_effects_ts["effects.ts"]
     src_render_layout_ts["layout.ts"]
+    src_render_menu_geometry_ts["menu-geometry.ts"]
     src_render_pixel_canvas_ts["pixel-canvas.ts"]
     src_render_sfx_ts["sfx.ts"]
     src_render_textures_ts["textures.ts"]
@@ -94,6 +97,7 @@ flowchart TB
     src_core_grid_ts["grid.ts"]
     src_core_leveling_ts["leveling.ts"]
     src_core_objectives_ts["objectives.ts"]
+    src_core_party_ts["party.ts"]
     src_core_pathfinding_ts["pathfinding.ts"]
     src_core_rng_ts["rng.ts"]
     src_core_unit_factory_ts["unit-factory.ts"]
@@ -134,15 +138,18 @@ flowchart TB
   src_core_battle_state_ts --> src_core_faction_ts
   src_core_battle_state_ts --> src_core_grid_ts
   src_core_battle_state_ts --> src_core_leveling_ts
+  src_core_battle_state_ts --> src_core_party_ts
   src_core_battle_state_ts --> src_core_pathfinding_ts
   src_core_battle_state_ts --> src_core_rng_ts
   src_core_battle_state_ts --> src_core_unit_factory_ts
   src_core_battle_state_ts --> src_core_unit_ts
+  src_core_battle_state_ts --> src_data_index_ts
   src_core_campaign_ts --> src_core_unit_factory_ts
   src_core_campaign_ts --> src_core_unit_ts
   src_core_campaign_ts --> src_data_index_ts
   src_core_combat_ts --> src_core_grid_ts
   src_core_events_ts --> src_core_grid_ts
+  src_core_party_ts --> src_data_index_ts
   src_core_pathfinding_ts --> src_core_faction_ts
   src_core_pathfinding_ts --> src_core_grid_ts
   src_core_unit_factory_ts --> src_core_unit_ts
@@ -181,11 +188,13 @@ flowchart TB
   src_main_ts --> src_scenes_BattleScene_ts
   src_main_ts --> src_scenes_BootScene_ts
   src_main_ts --> src_scenes_DialogueScene_ts
+  src_main_ts --> src_scenes_PartyScene_ts
   src_main_ts --> src_scenes_ResultScene_ts
   src_main_ts --> src_scenes_TitleScene_ts
   src_main_ts --> src_ui_touch_controls_ts
   src_render_ActionMenu_ts --> ext_phaser
   src_render_ActionMenu_ts --> src_render_layout_ts
+  src_render_ActionMenu_ts --> src_render_menu_geometry_ts
   src_render_art_ts --> src_render_layout_ts
   src_render_art_ts --> src_render_pixel_canvas_ts
   src_render_effects_ts --> ext_phaser
@@ -204,6 +213,7 @@ flowchart TB
   src_render_SidePanel_ts --> src_render_layout_ts
   src_render_TextMenu_ts --> ext_phaser
   src_render_TextMenu_ts --> src_render_layout_ts
+  src_render_TextMenu_ts --> src_render_menu_geometry_ts
   src_render_TextMenu_ts --> src_render_sfx_ts
   src_render_textures_ts --> ext_phaser
   src_render_textures_ts --> src_render_art_ts
@@ -240,6 +250,14 @@ flowchart TB
   src_scenes_DialogueScene_ts --> src_data_index_ts
   src_scenes_DialogueScene_ts --> src_render_layout_ts
   src_scenes_DialogueScene_ts --> src_render_textures_ts
+  src_scenes_PartyScene_ts --> ext_phaser
+  src_scenes_PartyScene_ts --> src_core_campaign_ts
+  src_scenes_PartyScene_ts --> src_core_party_ts
+  src_scenes_PartyScene_ts --> src_data_index_ts
+  src_scenes_PartyScene_ts --> src_render_layout_ts
+  src_scenes_PartyScene_ts --> src_render_sfx_ts
+  src_scenes_PartyScene_ts --> src_render_TextMenu_ts
+  src_scenes_PartyScene_ts --> src_save_save_ts
   src_scenes_ResultScene_ts --> ext_phaser
   src_scenes_ResultScene_ts --> src_core_campaign_ts
   src_scenes_ResultScene_ts --> src_data_index_ts

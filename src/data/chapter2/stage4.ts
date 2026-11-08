@@ -56,6 +56,13 @@ export const C2_STAGE_4: StageDef = {
     { classId: 'bandit', weaponId: 'steel_axe', faction: 'enemy', x: 8, y: 0, level: 7, ai: 'aggressive' },
   ],
   rewardSeals: 1,
+  caches: [
+    { x: 13, y: 13, seals: 1, text: 'Uma família escondida entrega a Aren a brasa que guardava em segredo: um Selo da Brasa!' },
+    { x: 3, y: 3, itemId: 'potion' },
+    { x: 18, y: 8, itemId: 'elixir' },
+    { x: 8, y: 13, weaponId: 'flare_tome' },
+    { x: 13, y: 7, weaponId: 'radiant_tome', text: 'No pedestal da praça, um tomo dourado que a Ordem tentou esconder: o Tomo Radiante!' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'As ruas de Vessaria estão vazias. Janelas fechadas, lampiões apagados. Só os sinos da Ordem tocam, lentos como um coração cansado.' },
     { speakerId: 'seraphine', side: 'right', text: 'Pequena brasa. Você cresceu. Trouxe amigos, até. Que pena que vão todos dormir na mesma praça.' },

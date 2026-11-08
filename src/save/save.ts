@@ -24,8 +24,11 @@ export function loadSave(store: KeyValueStore | undefined = defaultStore()): Sav
     const raw = store?.getItem(SAVE_KEY);
     if (!raw) return undefined;
     const data = JSON.parse(raw) as SaveData;
-    // v1 → v2: o save ganhou os Selos da Brasa; o resto é compatível.
-    if (data.version === 1) return { ...data, version: SAVE_VERSION, seals: 0 };
+    // v1 → v2 ganhou os Selos da Brasa; v2 → v3 ganhou o baú do grupo. O resto é compatível.
+    const legacy = data as Partial<SaveData> & { version: number };
+    if (legacy.version === 1 || legacy.version === 2) {
+      return { ...data, version: SAVE_VERSION, seals: legacy.seals ?? 0, convoy: legacy.convoy ?? { items: [], weapons: [] } };
+    }
     return data.version === SAVE_VERSION ? data : undefined;
   } catch {
     return undefined;

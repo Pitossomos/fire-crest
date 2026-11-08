@@ -45,6 +45,18 @@ Os valores ficam em `src/data/classes.ts`, `src/data/weapons.ts` e `src/data/cha
 - **Mapas maiores** (até 24×16): a câmera rola para acompanhar o cursor, as unidades da IA, os reforços e os alvos. Painel, menus e previsão ficam fixos na tela.
 - **Continuidade:** o save do Capítulo 1 segue para o Capítulo 2 com níveis, itens e mortos (no Clássico). O título também oferece começar direto no Capítulo 2 com um time pronto.
 
+## Investigar, baú e gerenciar o time
+
+- **Investigar:** toda **Casa** e **Fortaleza/ruína** pode ser investigada uma vez por fase. Basta parar a unidade em cima e escolher *Investigar*, o que gasta a ação. Algumas escondem itens, armas ou **Selos da Brasa** (definidos em `caches` de cada fase); as outras rendem só uma fala.
+  - Há um selo escondido por fase: Fases 2–5 do Capítulo 1 e Fases 1–5 do Capítulo 2.
+  - Armas novas também se acham assim: Machadinha, Espada de Aço, Machado de Aço, Arco de Aço, Tomo das Labaredas e Tomo Radiante.
+- **Inventário:** cada herói carrega até **5 itens**. O que não cabe, e toda arma achada, vai para o **baú do grupo**. Os achados só entram no save se a fase for vencida.
+- **Gerenciar time** (na tela de resultado, após cada vitória), passo a passo à esquerda e detalhes à direita:
+  - dar um item a outro herói;
+  - guardar ou pegar itens do baú;
+  - equipar uma arma do baú (só se a classe usar aquele tipo; a arma antiga volta ao baú);
+  - promover com Selo da Brasa.
+
 ## Terreno
 
 | Terreno | Custo | DEF | EVA | Especial |
@@ -99,6 +111,8 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 | Ver o alcance de um inimigo | Selecionar o inimigo | Clicar no inimigo |
 | Ligar/desligar o som | M | — |
 | Pular diálogo | Esc | — |
+
+**Menus:** a linha inteira de cada opção é clicável, inclusive no celular e com a câmera rolada. Clicar na borda do menu não faz nada; clicar fora dele cancela.
 
 **Celular:** em aparelhos de toque aparecem botões virtuais flutuantes.
 - **À esquerda:** um direcional (▲◀▼▶ = W/A/S/D); segurar repete o movimento do cursor.

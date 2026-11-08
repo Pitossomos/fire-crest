@@ -92,3 +92,10 @@ Com o Farol de Brasalva aceso de novo, o grupo descobre que a Ordem do Ocaso já
 | 5 | **A Catedral do Ocaso** | Derrotar Malachar | Nave com pilares, capelas laterais | — |
 
 **Final do capítulo:** Aren reacende o Farol de Vessa, e dois dos Sete Faróis voltam a brilhar. Nas cartas de Malachar, o grupo descobre que o **Grão-Hierofante** reúne as brasas roubadas na Capital de Solmarch para fundi-las e devorar o sol (o "Eclipse Eterno"). Gancho: a estrada leva à Capital, ao trono do pai de Aren.
+
+## Tesouros escondidos
+
+Nas casas, fortalezas e ruínas de Aldrenn ainda há o que a Ordem não confiscou:
+- **Selos da Brasa:** brasas adormecidas, guardadas por vigias dos Faróis, famílias e até pelos próprios inimigos;
+- **armas de aço** de antigos arsenais de Solmarch;
+- o **Tomo Radiante**, que a Ordem tentou esconder em Vessaria.

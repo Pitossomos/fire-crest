@@ -43,6 +43,11 @@ export const STAGE_5: StageDef = {
     { classId: 'archer', weaponId: 'iron_bow', faction: 'enemy', x: 8, y: 1, level: 5, ai: 'guard' },
     { classId: 'dusk_monk', weaponId: 'sleep_psalm', faction: 'enemy', x: 9, y: 7, level: 5, ai: 'guard' },
   ],
+  caches: [
+    { x: 11, y: 2, seals: 1, text: 'No depósito do Farol, uma brasa guardada pelos antigos vigias: um Selo da Brasa!' },
+    { x: 12, y: 6, itemId: 'elixir' },
+    { x: 11, y: 6, weaponId: 'steel_sword' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'O Farol de Brasalva ergue-se sobre o penhasco, frio e escuro. Ao seu redor, monges de capuz pontudo cantam sem parar.' },
     { speakerId: 'narrator', side: 'left', text: 'Seus hábitos negros são bordados de caveiras e de uma cruz sobre um monte, em vermelho e branco-osso — o Grande Esquema da Ordem do Ocaso.' },

@@ -34,6 +34,10 @@ export const STAGE_1: StageDef = {
     { classId: 'bandit', weaponId: 'hand_axe', faction: 'enemy', x: 4, y: 1, level: 1, ai: 'guard' },
     { characterId: 'brom', faction: 'enemy', x: 8, y: 0, ai: 'guard' },
   ],
+  caches: [
+    { x: 4, y: 8, itemId: 'potion' },
+    { x: 11, y: 7, weaponId: 'hand_axe', text: 'Na despensa da casa, uma Machadinha de lenhador. Dá para arremessar!' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'Ano 300 do Longo Crepúsculo. O sol nasce cada vez mais pálido sobre o vale de Brasalva.' },
     { speakerId: 'mira', side: 'left', text: 'Aren! Bandidos cruzaram as pontes. Estão incendiando as casas do lado norte!' },

@@ -35,6 +35,12 @@ classDiagram
     class HealOutcome {
       <<interface>>
     }
+    class FoundLoot {
+      <<interface>>
+    }
+    class InvestigateOutcome {
+      <<interface>>
+    }
     class AttackOutcome {
       <<interface>>
     }
@@ -79,6 +85,9 @@ classDiagram
       <<module>>
     }
     class mod_core_objectives["objectives.ts"] {
+      <<module>>
+    }
+    class mod_core_party["party.ts"] {
       <<module>>
     }
     class ReachNode {
@@ -142,6 +151,9 @@ classDiagram
     class EventTrigger {
       <<interface>>
     }
+    class CacheDef {
+      <<interface>>
+    }
     class StageDef {
       <<interface>>
     }
@@ -152,6 +164,9 @@ classDiagram
       <<interface>>
     }
     class RosterEntry {
+      <<interface>>
+    }
+    class Convoy {
       <<interface>>
     }
     class SaveData {
@@ -174,6 +189,12 @@ classDiagram
     }
     class ForecastPanel
     class MapView
+    class MenuRows {
+      <<interface>>
+    }
+    class mod_render_menu_geometry["menu-geometry.ts"] {
+      <<module>>
+    }
     class mod_render_PhaseBanner["PhaseBanner.ts"] {
       <<module>>
     }
@@ -187,6 +208,9 @@ classDiagram
     class SidePanel
     class TextMenu
     class TextMenuOption {
+      <<interface>>
+    }
+    class TextMenuStyle {
       <<interface>>
     }
     class mod_render_textures["textures.ts"] {
@@ -218,8 +242,12 @@ classDiagram
     class mod_scenes_DialogueScene["DialogueScene.ts"] {
       <<module>>
     }
+    class PartyScene
     class ResultScene
     class ResultData {
+      <<interface>>
+    }
+    class PartyData {
       <<interface>>
     }
     class TitleScene
@@ -246,6 +274,7 @@ classDiagram
     <<external>>
   }
   ActionMenu "1" *-- "*" MenuOption : options
+  ActionMenu --> MenuRows : rows
   AiPlan --> Point : moveTo
   AiPlan --> Unit : target
   AiPlan --> Unit : unit
@@ -267,9 +296,12 @@ classDiagram
   BattleState "1" *-- "*" TerrainHeal : phaseHeals
   BattleState "1" *-- "*" Unit : units
   BattleState --> BattleMap : map
+  BattleState --> FoundLoot : found
   BattleState --> GameDatabase : db
   BattleState --> Rng : rng
   BattleState --> StageDef : stage
+  CacheDef --> ItemDef : itemId
+  CacheDef --> WeaponDef : weaponId
   CarriedItem --> ItemDef : def
   ChapterDef "1" *-- "*" PremadeMember : premade
   ChapterDef "1" *-- "*" StageDef : stageIds
@@ -277,6 +309,8 @@ classDiagram
   CharacterDef --> ClassDef : classId
   CharacterDef --> WeaponDef : weaponId
   CombatResult "1" *-- "*" Strike : strikes
+  Convoy "1" *-- "*" InventorySlot : items
+  Convoy "1" *-- "*" WeaponDef : weapons
   DialogueData "1" *-- "*" DialogueLine : lines
   DialogueLine --> CharacterDef : speakerId
   DialogueScene "1" *-- "*" DialogueLine : lines
@@ -296,6 +330,7 @@ classDiagram
   Forecast --> StrikeStats : defenderStats
   Forecast --> Unit : attacker
   Forecast --> Unit : defender
+  FoundLoot "1" *-- "*" InventorySlot : items
   GameDatabase "1" *-- "*" ChapterDef : chapters
   GameDatabase "1" *-- "*" CharacterDef : characters
   GameDatabase "1" *-- "*" ClassDef : classes
@@ -306,12 +341,19 @@ classDiagram
   HealOutcome --> ExpGain : exp
   HoldRepeater --> Timers : timers
   InventorySlot --> ItemDef : itemId
+  InvestigateOutcome --> CacheDef : cache
   MapDef "1" *-- "*" TerrainDef : legend
   MapView --> BattleMap : map
   ObjectiveDef --> CharacterDef : targetId
+  PartyData --> ResultData : result
+  PartyData --> SaveData : save
+  PartyScene --> ResultData : result
+  PartyScene --> SaveData : save
+  PartyScene --> TextMenu : menu
   Phaser_Scene <|-- BattleScene
   Phaser_Scene <|-- BootScene
   Phaser_Scene <|-- DialogueScene
+  Phaser_Scene <|-- PartyScene
   Phaser_Scene <|-- ResultScene
   Phaser_Scene <|-- TitleScene
   PremadeMember --> CharacterDef : characterId
@@ -327,9 +369,11 @@ classDiagram
   RosterEntry --> WeaponDef : weaponId
   SaveData "1" *-- "*" RosterEntry : roster
   SaveData --> ChapterDef : chapterId
+  SaveData --> Convoy : convoy
   Selection --> Point : origin
   Selection --> RangeInfo : range
   Selection --> Unit : unit
+  StageDef "1" *-- "*" CacheDef : caches
   StageDef "1" *-- "*" CharacterDef : recruitOnClear
   StageDef "1" *-- "*" DialogueLine : postDialogue
   StageDef "1" *-- "*" DialogueLine : preDialogue
@@ -342,6 +386,8 @@ classDiagram
   Targeting --> Selection : sel
   TerrainHeal --> Unit : unit
   TextMenu "1" *-- "*" TextMenuOption : options
+  TextMenu --> MenuRows : rows
+  TextMenu --> TextMenuStyle : style
   TitleScene --> TextMenu : menu
   Unit "1" *-- "*" CarriedItem : items
   Unit --> ClassDef : classDef
@@ -400,6 +446,8 @@ classDiagram
       +seized: boolean
       +phaseHeals: TerrainHeal[]
       -nextIndex: number
+      +searched: Set~string~
+      +found: FoundLoot
       +livingUnits: Unit[]
       +unitAt(p: Point) Unit | undefined
       +unitsOf(faction: Faction) Unit[]
@@ -412,6 +460,8 @@ classDiagram
       +healTargets(unit: Unit) Unit[]
       +healUnit(healer: Unit, target: Unit) HealOutcome
       +useItem(unit: Unit, index: number) number
+      +canInvestigate(unit: Unit) boolean
+      +investigate(unit: Unit) InvestigateOutcome
       +canSeize(unit: Unit) boolean
       +seize(unit: Unit) void
       +undoMove(unit: Unit, origin: Point) void
@@ -439,6 +489,18 @@ classDiagram
       <<interface>>
       +amount: number
       +exp?: ExpGain
+    }
+    class FoundLoot {
+      <<interface>>
+      +seals: number
+      +items: InventorySlot[]
+      +weapons: string[]
+    }
+    class InvestigateOutcome {
+      <<interface>>
+      +cache?: CacheDef
+      +gained: string[]
+      +text: string
     }
     class AttackOutcome {
       <<interface>>
@@ -559,6 +621,15 @@ classDiagram
       <<module>>
       +evaluate(state: BattleState) Outcome
     }
+    class mod_core_party["party.ts"] {
+      <<module>>
+      +giveItem(save: SaveData, fromId: string, slotIndex: number, toId: string) SaveData
+      +storeItem(save: SaveData, heroId: string, slotIndex: number) SaveData
+      +takeItem(save: SaveData, convoyIndex: number, heroId: string) SaveData
+      +canEquip(save: SaveData, heroId: string, weaponId: string, db: GameDatabase) boolean
+      +equipWeapon(save: SaveData, heroId: string, convoyIndex: number, db: GameDatabase) SaveData
+      +addToConvoy(save: SaveData, items: InventorySlot[], weapons: string[]) SaveData
+    }
     class ReachNode {
       <<interface>>
       +point: Point
@@ -645,6 +716,7 @@ classDiagram
   BattleState "1" *-- "*" TerrainHeal : phaseHeals
   BattleState "1" *-- "*" Unit : units
   BattleState --> BattleMap : map
+  BattleState --> FoundLoot : found
   BattleState --> Rng : rng
   CombatResult "1" *-- "*" Strike : strikes
   EventEffects "1" *-- "*" Unit : recruited
@@ -706,6 +778,7 @@ classDiagram
       +avoid: number
       +heal: number
       +costs?: Partial~Record~MoveType, number | null~~
+      +searchable?: boolean
     }
     class WeaponDef {
       <<interface>>
@@ -811,6 +884,15 @@ classDiagram
       +spawns: UnitPlacement[]
       +recruitId?: Ref~CharacterDef~
     }
+    class CacheDef {
+      <<interface>>
+      +x: number
+      +y: number
+      +itemId?: Ref~ItemDef~
+      +weaponId?: Ref~WeaponDef~
+      +seals?: number
+      +text?: string
+    }
     class StageDef {
       <<interface>>
       +id: string
@@ -825,6 +907,7 @@ classDiagram
       +events: EventTrigger[]
       +recruitOnClear?: Ref~CharacterDef~[]
       +rewardSeals?: number
+      +caches?: CacheDef[]
     }
     class PremadeMember {
       <<interface>>
@@ -852,6 +935,11 @@ classDiagram
       +items: InventorySlot[]
       +alive: boolean
     }
+    class Convoy {
+      <<interface>>
+      +items: InventorySlot[]
+      +weapons: Ref~WeaponDef~[]
+    }
     class SaveData {
       <<interface>>
       +version: number
@@ -860,13 +948,18 @@ classDiagram
       +nextStageIndex: number
       +roster: RosterEntry[]
       +seals: number
+      +convoy: Convoy
     }
   }
+  CacheDef --> ItemDef : itemId
+  CacheDef --> WeaponDef : weaponId
   ChapterDef "1" *-- "*" PremadeMember : premade
   ChapterDef "1" *-- "*" StageDef : stageIds
   CharacterDef "1" *-- "*" ItemDef : items
   CharacterDef --> ClassDef : classId
   CharacterDef --> WeaponDef : weaponId
+  Convoy "1" *-- "*" InventorySlot : items
+  Convoy "1" *-- "*" WeaponDef : weapons
   DialogueLine --> CharacterDef : speakerId
   EventTrigger "1" *-- "*" DialogueLine : dialogue
   EventTrigger "1" *-- "*" UnitPlacement : spawns
@@ -890,6 +983,8 @@ classDiagram
   RosterEntry --> WeaponDef : weaponId
   SaveData "1" *-- "*" RosterEntry : roster
   SaveData --> ChapterDef : chapterId
+  SaveData --> Convoy : convoy
+  StageDef "1" *-- "*" CacheDef : caches
   StageDef "1" *-- "*" CharacterDef : recruitOnClear
   StageDef "1" *-- "*" DialogueLine : postDialogue
   StageDef "1" *-- "*" DialogueLine : preDialogue
@@ -923,8 +1018,12 @@ classDiagram
       -items: Phaser.GameObjects.Text[]
       -highlight: Phaser.GameObjects.Rectangle
       -onPick: Function
+      -rows: MenuRows
       +isOpen: boolean
       +open(x: number, y: number, options: MenuOption[], onPick: Function) void
+      +hitTest(screenX: number, screenY: number) MenuHit
+      +hoverAt(screenX: number, screenY: number) void
+      +clickAt(screenX: number, screenY: number) MenuHit
       +moveSelection(delta: number) void
       +confirm() void
       +close() void
@@ -988,6 +1087,19 @@ classDiagram
       -drawCursor() void
       +destroy() void
     }
+    class MenuRows {
+      <<interface>>
+      +x: number
+      +y: number
+      +width: number
+      +rowHeight: number
+      +count: number
+      +padding?: number
+    }
+    class mod_render_menu_geometry["menu-geometry.ts"] {
+      <<module>>
+      +menuHitTest(m: MenuRows, px: number, py: number) MenuHit
+    }
     class mod_render_PhaseBanner["PhaseBanner.ts"] {
       <<module>>
       +showPhaseBanner(scene: Phaser.Scene, label: string, faction: keyof typeof BANNER_COLOR) Promise~void~
@@ -1029,11 +1141,17 @@ classDiagram
       -scene: Phaser.Scene
       -items: Phaser.GameObjects.Text[]
       -options: TextMenuOption[]
+      -rows: MenuRows
+      -style: TextMenuStyle
       -index: number
       -onPick: Function
       -done: boolean
       +selectedId: string
+      +destroy() void
+      -detach() void
       -onKey(ev: KeyboardEvent) void
+      -onPointerMove(pointer: Phaser.Input.Pointer) void
+      -onPointerDown(pointer: Phaser.Input.Pointer) void
       -move(delta: number) void
       -select(i: number, silent: any) void
       -confirm() void
@@ -1043,6 +1161,14 @@ classDiagram
       +id: string
       +label: string
       +enabled?: boolean
+    }
+    class TextMenuStyle {
+      <<interface>>
+      +align?: center | left
+      +fontSize?: number
+      +width?: number
+      +onHover?: Function
+      +onCancel?: Function
     }
     class mod_render_textures["textures.ts"] {
       <<module>>
@@ -1072,7 +1198,10 @@ classDiagram
     }
   }
   ActionMenu "1" *-- "*" MenuOption : options
+  ActionMenu --> MenuRows : rows
   TextMenu "1" *-- "*" TextMenuOption : options
+  TextMenu --> MenuRows : rows
+  TextMenu --> TextMenuStyle : style
 ```
 
 ## Camada `save`
@@ -1144,6 +1273,7 @@ classDiagram
       -moveSelected(to: Point) Promise~void~
       -openUnitMenu(sel: Selection) void
       -openItemMenu(sel: Selection) void
+      -executeInvestigate(unit: Unit) Promise~void~
       -executeItem(unit: Unit, index: number) Promise~void~
       -executeTalk(unit: Unit, event: Parameters~EventEngine[talk]~[1]) Promise~void~
       -executeHeal(healer: Unit, target: Unit) Promise~void~
@@ -1213,12 +1343,40 @@ classDiagram
       <<module>>
       +runDialogue(scene: Phaser.Scene, lines: DialogueLine[]) Promise~void~
     }
+    class PartyScene {
+      +menu: TextMenu
+      +step: string
+      -save: SaveData
+      -result: ResultData
+      -details: Phaser.GameObjects.Text
+      -convoyText: Phaser.GameObjects.Text
+      -header: Phaser.GameObjects.Text
+      -message: Phaser.GameObjects.Text
+      -prompt: Phaser.GameObjects.Text
+      +create(data: PartyData) void
+      -alive() RosterEntry[]
+      -entry(id: string) RosterEntry
+      -name(id: string) string
+      -itemLabel(i: object) string
+      -weaponLabel(id: string) string
+      -refresh(heroId: string) void
+      -setMenu(prompt: string, options: TextMenuOption[], onPick: Function, onCancel: Function, onHover: Function) void
+      -done(text: string) void
+      -fail(err: unknown) void
+      -heroStep() void
+      -actionStep(heroId: string) void
+      -pickItem(heroId: string, next: Function) void
+      -pickTarget(heroId: string, slot: number) void
+      -pickConvoyItem(heroId: string) void
+      -pickWeapon(heroId: string) void
+      -apply(heroId: string, op: Function, msg: Function, sfx: heal | levelup) void
+      -exit() void
+    }
     class ResultScene {
       +menu: TextMenu
       +create(data: ResultData) void
       -go(target: Function) void
       -mainMenu(data: ResultData, chapterDone: boolean) void
-      -promotionMenu(data: ResultData) void
       -drawRoster(save: SaveData) void
     }
     class ResultData {
@@ -1227,7 +1385,12 @@ classDiagram
       +stageName: string
       +save: SaveData
       +message?: string
-      +promoting?: boolean
+      +fromParty?: boolean
+    }
+    class PartyData {
+      <<interface>>
+      +save: SaveData
+      +result: ResultData
     }
     class TitleScene {
       +menu: TextMenu
@@ -1246,9 +1409,12 @@ classDiagram
   }
   BattleScene --> Selection : selection
   BattleScene --> Targeting : targeting
+  PartyData --> ResultData : result
+  PartyScene --> ResultData : result
   Phaser_Scene <|-- BattleScene
   Phaser_Scene <|-- BootScene
   Phaser_Scene <|-- DialogueScene
+  Phaser_Scene <|-- PartyScene
   Phaser_Scene <|-- ResultScene
   Phaser_Scene <|-- TitleScene
   Targeting --> Selection : sel

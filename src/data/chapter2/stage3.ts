@@ -52,6 +52,11 @@ export const C2_STAGE_3: StageDef = {
     { classId: 'bandit', weaponId: 'steel_axe', faction: 'enemy', x: 7, y: 1, level: 7, ai: 'aggressive' },
   ],
   rewardSeals: 1,
+  caches: [
+    { x: 21, y: 2, seals: 1, text: 'Na casa da guarda de Vessaria, um cofre da Ordem com um Selo da Brasa!' },
+    { x: 22, y: 11, itemId: 'potion' },
+    { x: 18, y: 12, weaponId: 'steel_bow' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'Vessaria ergue-se além do rio, cercada por muralhas brancas manchadas de fuligem. No alto, o Farol de Vessa: escuro.' },
     { speakerId: 'draven', side: 'right', text: 'Ventor. Hadric. E o bastardo do rei. Que reunião comovente — para um velório.' },

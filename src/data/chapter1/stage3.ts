@@ -41,6 +41,9 @@ export const STAGE_3: StageDef = {
     hollow(8, 1, 2),
   ],
   recruitOnClear: ['wren'],
+  caches: [
+    { x: 5, y: 4, seals: 1, text: 'Sob o altar das ruínas do bosque, Vela guardava uma brasa antiga: um Selo da Brasa!' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'O Bosque dos Sussurros nunca foi silencioso. Hoje, nem os pássaros cantam. Uma névoa fria escorre entre as árvores.' },
     { speakerId: 'mira', side: 'left', text: 'Que frio é esse? Estamos no verão... ou no que o Crepúsculo chama de verão.' },

@@ -37,6 +37,9 @@ export const STAGE_2: StageDef = {
     { classId: 'archer', weaponId: 'iron_bow', faction: 'enemy', x: 13, y: 2, level: 2, ai: 'stationary' },
     { classId: 'archer', weaponId: 'iron_bow', faction: 'enemy', x: 13, y: 6, level: 2, ai: 'stationary' },
   ],
+  caches: [
+    { x: 14, y: 3, seals: 1, text: 'No posto avançado atrás da muralha, um baú de Grull. Dentro dele... um Selo da Brasa!' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'Ao amanhecer, os três seguem a trilha de Grull até a ponte de Thornmere, a única travessia do rio em léguas.' },
     { speakerId: 'hadric', side: 'right', text: 'Aren. Tome isto. É a Lâmina de Brasa, a espada do último rei de Solmarch.' },

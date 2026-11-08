@@ -50,6 +50,10 @@ export const C2_STAGE_1: StageDef = {
     { classId: 'dusk_monk', weaponId: 'sleep_psalm', faction: 'enemy', x: 19, y: 9, level: 5, ai: 'guard' },
   ],
   rewardSeals: 0,
+  caches: [
+    { x: 6, y: 5, seals: 1, text: 'Numa casa abandonada à beira da estrada, um relicário de Solmarch com um Selo da Brasa!' },
+    { x: 7, y: 9, weaponId: 'steel_axe' },
+  ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'Capítulo 2 — O Caminho dos Faróis. O Farol de Brasalva arde de novo, mas três dos Sete Faróis continuam apagados.' },
     { speakerId: 'corvin', side: 'left', text: 'O mais próximo é o Farol de Vessa, ao sul. Destilei uma brasa da pira de Brasalva: um Selo da Brasa. Com ele, um de vocês pode... evoluir.' },
