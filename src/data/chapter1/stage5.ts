@@ -11,13 +11,13 @@ export const STAGE_5: StageDef = {
   map: {
     rows: [
       'hhff....f..hh~~',
-      'hf....f...####~',
+      'hf..R.f...####~',
       'f..h......#FF#~',
-      '...f..f...#,,#~',
+      '...f..f.R.#,,#~',
       '......=====G,F~',
       '...f..f...#,,#~',
       'f..h......#FF#~',
-      'hf....f...####~',
+      'hH....f...####~',
       'hhf..f..f..hh~~',
       'hhhff...ff.hhh~',
     ],
@@ -44,9 +44,12 @@ export const STAGE_5: StageDef = {
     { classId: 'dusk_monk', weaponId: 'sleep_psalm', faction: 'enemy', x: 9, y: 7, level: 5, ai: 'guard' },
   ],
   caches: [
-    { x: 11, y: 2, seals: 1, text: 'No depósito do Farol, uma brasa guardada pelos antigos vigias: um Selo da Brasa!' },
+    { x: 11, y: 2, armorId: 'dusk_mantle', text: 'No depósito do Farol, um Manto do Ocaso tomado de um inquisidor caído há muito tempo.' },
     { x: 12, y: 6, itemId: 'elixir' },
     { x: 11, y: 6, weaponId: 'steel_sword' },
+    { x: 1, y: 7, weaponId: 'steel_bow' },
+    { x: 4, y: 1, armorId: 'chainmail' },
+    { x: 8, y: 3, itemId: 'potion' },
   ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'O Farol de Brasalva ergue-se sobre o penhasco, frio e escuro. Ao seu redor, monges de capuz pontudo cantam sem parar.' },

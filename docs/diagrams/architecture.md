@@ -17,21 +17,21 @@ flowchart TB
   ui["<b>ui/ — controles de toque (DOM)</b><br/>1 módulo(s)"]:::layer_ui
   scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>7 módulo(s)"]:::layer_scenes
   render["<b>render/ — componentes visuais</b><br/>14 módulo(s)"]:::layer_render
-  core["<b>core/ — regras do jogo (puro)</b><br/>15 módulo(s)"]:::layer_core
-  data["<b>data/ — definições e conteúdo</b><br/>20 módulo(s)"]:::layer_data
+  core["<b>core/ — regras do jogo (puro)</b><br/>16 módulo(s)"]:::layer_core
+  data["<b>data/ — definições e conteúdo</b><br/>21 módulo(s)"]:::layer_data
   save["<b>save/ — persistência</b><br/>1 módulo(s)"]:::layer_save
   ext_phaser[("phaser")]:::external
   app -->|"1 import(s)"| ext_phaser
   app -->|"1 import(s)"| render
   app -->|"6 import(s)"| scenes
   app -->|"1 import(s)"| ui
-  core -->|"4 import(s), 14 só tipos"| data
+  core -->|"4 import(s), 15 só tipos"| data
   render -.->|"9 só tipos"| core
   render -->|"1 import(s), 4 só tipos"| data
   render -->|"10 import(s)"| ext_phaser
   save -->|"1 import(s)"| core
   save -.->|"1 só tipos"| data
-  scenes -->|"12 import(s), 1 só tipos"| core
+  scenes -->|"13 import(s), 1 só tipos"| core
   scenes -->|"7 import(s), 6 só tipos"| data
   scenes -->|"6 import(s)"| ext_phaser
   scenes -->|"21 import(s)"| render
@@ -92,6 +92,7 @@ flowchart TB
     src_core_battle_state_ts["battle-state.ts"]
     src_core_campaign_ts["campaign.ts"]
     src_core_combat_ts["combat.ts"]
+    src_core_equipment_ts["equipment.ts"]
     src_core_events_ts["events.ts"]
     src_core_faction_ts["faction.ts"]
     src_core_grid_ts["grid.ts"]
@@ -104,6 +105,7 @@ flowchart TB
     src_core_unit_ts["unit.ts"]
   end
   subgraph layer_data["src/data"]
+    src_data_armors_ts["armors.ts"]
     src_data_chapter1_index_ts["chapter1/index.ts"]
     src_data_chapter1_stage1_ts["chapter1/stage1.ts"]
     src_data_chapter1_stage2_ts["chapter1/stage2.ts"]
@@ -144,11 +146,13 @@ flowchart TB
   src_core_battle_state_ts --> src_core_unit_factory_ts
   src_core_battle_state_ts --> src_core_unit_ts
   src_core_battle_state_ts --> src_data_index_ts
+  src_core_campaign_ts --> src_core_equipment_ts
   src_core_campaign_ts --> src_core_unit_factory_ts
   src_core_campaign_ts --> src_core_unit_ts
   src_core_campaign_ts --> src_data_index_ts
   src_core_combat_ts --> src_core_grid_ts
   src_core_events_ts --> src_core_grid_ts
+  src_core_party_ts --> src_core_equipment_ts
   src_core_party_ts --> src_data_index_ts
   src_core_pathfinding_ts --> src_core_faction_ts
   src_core_pathfinding_ts --> src_core_grid_ts
@@ -176,6 +180,7 @@ flowchart TB
   src_data_chapter2_stage5_ts --> src_data_terrain_ts
   src_data_characters_ts --> src_data_stats_ts
   src_data_classes_ts --> src_data_stats_ts
+  src_data_index_ts --> src_data_armors_ts
   src_data_index_ts --> src_data_chapter1_index_ts
   src_data_index_ts --> src_data_chapter2_index_ts
   src_data_index_ts --> src_data_characters_ts
@@ -252,6 +257,7 @@ flowchart TB
   src_scenes_DialogueScene_ts --> src_render_textures_ts
   src_scenes_PartyScene_ts --> ext_phaser
   src_scenes_PartyScene_ts --> src_core_campaign_ts
+  src_scenes_PartyScene_ts --> src_core_equipment_ts
   src_scenes_PartyScene_ts --> src_core_party_ts
   src_scenes_PartyScene_ts --> src_data_index_ts
   src_scenes_PartyScene_ts --> src_render_layout_ts

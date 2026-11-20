@@ -13,7 +13,7 @@ import type { PartyData, ResultData } from './scene-data';
 export type { ResultData } from './scene-data';
 
 
-/** Tela entre fases: resumo do time, promoções com Selos da Brasa e próxima fase/capítulo. */
+/** Tela entre fases: resumo do time, promoções (nível 5+) e próxima fase/capítulo. */
 export class ResultScene extends Phaser.Scene {
   /** Menu atual (lido por testes de ponta a ponta). */
   menu?: TextMenu;
@@ -37,7 +37,7 @@ export class ResultScene extends Phaser.Scene {
       fontFamily: FONT_TITLE, fontSize: '38px', color: victory ? '#ffb347' : '#c8a2a2', fontStyle: 'bold',
     }).setOrigin(0.5);
     const subtitle = chapterDone ? `${chapter.name} — mais um Farol voltou a arder.` : data.stageName;
-    this.add.text(cx, 72, `${subtitle}${victory ? `   ·   Selos da Brasa: ${save.seals}` : ''}`, {
+    this.add.text(cx, 72, subtitle, {
       fontFamily: FONT_UI, fontSize: '15px', color: COLORS.textDim,
     }).setOrigin(0.5);
     if (data.message) {
@@ -72,14 +72,16 @@ export class ResultScene extends Phaser.Scene {
     }
     if (!victory) options.push({ id: 'retry', label: 'Tentar de novo' });
     if (victory) {
-      const ready = save.seals > 0 && save.roster.some((r) => canPromote(r, DB));
-      options.push({ id: 'manage', label: `Gerenciar time (itens, armas${ready ? ', promover ✦' : ''})` });
+      const ready = save.roster.filter((r) => canPromote(r, DB)).length;
+      if (ready > 0) options.push({ id: 'promote', label: `Promover heróis ✦ (${ready} pronto${ready === 1 ? '' : 's'})` });
+      options.push({ id: 'manage', label: 'Gerenciar time (itens, armas, armaduras)' });
     }
     options.push({ id: 'title', label: victory && !(chapterDone && !nextChapter) ? 'Salvar e voltar ao título' : 'Voltar ao título' });
 
     this.menu = new TextMenu(this, GAME_WIDTH / 2, GAME_HEIGHT - 22 - options.length * 32, options, (id) => {
-      if (id === 'manage') {
-        this.go(() => this.scene.start('Party', { save, result: { ...data, message: undefined } } satisfies PartyData));
+      if (id === 'manage' || id === 'promote') {
+        const focus = id === 'promote' ? 'promote' as const : undefined;
+        this.go(() => this.scene.start('Party', { save, result: { ...data, message: undefined }, focus } satisfies PartyData));
         return;
       }
       if (id === 'chapter' && nextChapter) {
@@ -99,7 +101,7 @@ export class ResultScene extends Phaser.Scene {
     const cols = 4;
     const rows = Math.ceil(save.roster.length / cols);
     if (save.roster.some((r) => canPromote(r, DB))) {
-      this.add.text(GAME_WIDTH - 16, 112 + rows * 78, 'Borda verde: pode ser promovido (nível 5+) · ★ classe avançada', {
+      this.add.text(GAME_WIDTH - 16, 112 + rows * 78, 'Borda verde: pronto para promover (nível 5+) · ★ avançada · ★★ mestra', {
         fontFamily: FONT_UI, fontSize: '11px', color: '#7CFC9A',
       }).setOrigin(1, 0);
     }
@@ -113,7 +115,7 @@ export class ResultScene extends Phaser.Scene {
       const ready = canPromote(r, DB);
       this.add.rectangle(x, y, cardW, cardH, COLORS.panel, 1).setOrigin(0)
         .setStrokeStyle(2, !r.alive ? 0x4a2a2a : ready ? 0x7cfc9a : COLORS.panelBorder);
-      const star = (cls.tier ?? 1) > 1 ? ' ★' : '';
+      const star = (cls.tier ?? 1) > 2 ? ' ★★' : (cls.tier ?? 1) > 1 ? ' ★' : '';
       this.add.text(x + 8, y + 6, `${ch.name}${star}`, { fontFamily: FONT_UI, fontSize: '13px', color: r.alive ? COLORS.accent : '#8a6a6a' });
       const s = r.stats;
       const lines = r.alive

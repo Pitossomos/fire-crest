@@ -13,12 +13,21 @@ Interfaces marcadas com `@entity`. `Ref<X>` é chave estrangeira (FK) para X; li
 title: Modelo de dados (entidades @entity)
 ---
 erDiagram
+  ArmorDef {
+    string id PK
+    string name
+    number def
+    number res
+    number hp "opcional"
+    number spd "opcional"
+    boolean heavy "opcional"
+  }
   CacheDef {
     number x
     number y
     string itemId FK "-> ItemDef; opcional"
     string weaponId FK "-> WeaponDef; opcional"
-    number seals "opcional"
+    string armorId FK "-> ArmorDef; opcional"
     string text "opcional"
   }
   ChapterDef {
@@ -27,7 +36,6 @@ erDiagram
     string name
     list stageIds FK "-> StageDef"
     string nextChapterId FK "-> ChapterDef; opcional"
-    number startSeals "opcional"
     list premade "opcional; PremadeMember[]"
   }
   CharacterDef {
@@ -55,13 +63,16 @@ erDiagram
     boolean isLord "opcional"
     MoveType movement "opcional"
     number tier "opcional"
-    string promotesTo FK "-> ClassDef; opcional"
+    list promotesTo FK "-> ClassDef; opcional"
+    boolean heavyArmor "opcional"
+    string blurb "opcional"
     Stats promotionBonus "opcional"
     string artBase FK "-> ClassDef; opcional"
   }
   Convoy {
     list items "InventorySlot[]"
     list weapons FK "-> WeaponDef"
+    list armors FK "-> ArmorDef"
   }
   DialogueLine {
     string speakerId FK "-> CharacterDef"
@@ -113,6 +124,7 @@ erDiagram
     number exp
     Stats stats
     string weaponId FK "-> WeaponDef"
+    string armorId FK "-> ArmorDef; opcional"
     list items "InventorySlot[]"
     boolean alive
   }
@@ -122,7 +134,6 @@ erDiagram
     string chapterId FK "-> ChapterDef"
     number nextStageIndex
     list roster "RosterEntry[]"
-    number seals
     Convoy convoy
   }
   StageDef {
@@ -137,7 +148,6 @@ erDiagram
     list postDialogue "DialogueLine[]"
     list events "EventTrigger[]"
     list recruitOnClear FK "-> CharacterDef; opcional"
-    number rewardSeals "opcional"
     list caches "opcional; CacheDef[]"
   }
   TerrainDef {
@@ -176,6 +186,7 @@ erDiagram
     number heal "opcional"
     list effective FK "-> ClassDef; opcional"
   }
+  CacheDef }o--o| ArmorDef : "armorId"
   CacheDef }o--o| ItemDef : "itemId"
   CacheDef }o--o| WeaponDef : "weaponId"
   ChapterDef ||--o{ PremadeMember : "premade"
@@ -184,9 +195,10 @@ erDiagram
   CharacterDef }o--o{ ItemDef : "items"
   CharacterDef }o--|| ClassDef_ : "classId"
   CharacterDef }o--|| WeaponDef : "weaponId"
+  ClassDef_ }o--o{ ClassDef_ : "promotesTo"
   ClassDef_ }o--o| ClassDef_ : "artBase"
-  ClassDef_ }o--o| ClassDef_ : "promotesTo"
   Convoy ||--o{ InventorySlot : "items"
+  Convoy }o--o{ ArmorDef : "armors"
   Convoy }o--o{ WeaponDef : "weapons"
   DialogueLine }o--|| CharacterDef : "speakerId"
   EventTrigger ||--o{ DialogueLine : "dialogue"
@@ -199,6 +211,7 @@ erDiagram
   ObjectiveDef }o--o| CharacterDef : "targetId"
   PremadeMember }o--|| CharacterDef : "characterId"
   RosterEntry ||--o{ InventorySlot : "items"
+  RosterEntry }o--o| ArmorDef : "armorId"
   RosterEntry }o--o| ClassDef_ : "classId"
   RosterEntry }o--|| CharacterDef : "characterId"
   RosterEntry }o--|| WeaponDef : "weaponId"
@@ -224,6 +237,7 @@ erDiagram
 
 | Entidade | Descrição | Arquivo |
 |---|---|---|
+| `ArmorDef` | Armadura: um espaço por herói; bônus somados aos atributos. | `src/data/types.ts` |
 | `CacheDef` | Esconderijo numa construção: o que se acha ao investigar o tile. | `src/data/types.ts` |
 | `ChapterDef` | Capítulo da campanha. | `src/data/types.ts` |
 | `CharacterDef` | Personagem nomeado (jogável ou chefe). | `src/data/types.ts` |

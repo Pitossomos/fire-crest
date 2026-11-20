@@ -21,7 +21,7 @@ Os primeiros portadores fundaram o **Reino de Solmarch** e acenderam os **Sete F
 | **Sir Hadric Moor** | Lanceiro | O último cavaleiro do Farol de Brasalva. Sabe quem Aren é e esconde isso. |
 | **Kaira Forjaluz** | Guerreira (machado) | Ferreira de Brasalva, braços largos e pavio curto. Protege Aren como a um irmão mais novo e jura que foi ela quem amolou a Lâmina de Brasa. Está no time desde a Fase 1. |
 | **Ilian Solvarr** | Mago de Luz | Último guardião de um santuário do sol à beira da ponte de Thornmere. Seu Tomo da Aurora queima os Esvaídos e os servos do Ocaso. Entra na Fase 2, quando Aren conversa com ele. |
-| **Wren** | Arqueira | Caçadora órfã do Bosque dos Sussurros; perdeu a família para os Esvaídos. Entra na Fase 3. |
+| **Wren** | Arqueira | Caçadora órfã do Bosque dos Sussurros; perdeu a família para os Esvaídos. Entra no time no início da Fase 3. |
 | **Irmã Lys** | Clériga | Noviça que desertou da Ordem do Ocaso ao ver o que fazem com os portadores. Entra na Fase 4 (conversa com Aren). |
 | **Corvin Ash** | Piromante | Estudioso excêntrico que tenta replicar a Crista com alquimia. Entra na Fase 4. |
 
@@ -53,7 +53,7 @@ O hábito da Ordem, e em especial o de Seraphine, se inspira no hábito dos mong
 |---|---|---|---|---|
 | 1 | **A Vila em Chamas** | Derrotar todos os inimigos | Tutorial: mover, atacar, terreno, fim de turno | Aren, Mira, Hadric, Kaira |
 | 2 | **A Ponte de Thornmere** | Tomar o portão do outro lado da ponte | Triângulo de armas, gargalo, chefe Grull, conversa | Ilian (conversa com Aren) |
-| 3 | **O Bosque dos Sussurros** | Sobreviver 8 turnos | Floresta, reforços, Esvaídos | Wren (aliada NPC; entra no time se sobreviver) |
+| 3 | **O Bosque dos Sussurros** | Sobreviver 8 turnos | Floresta, reforços, Esvaídos | Wren (entra no time no início) |
 | 4 | **A Fortaleza de Cinzaforte** | Derrotar o chefe | Conversar, curar, portas | Lys (conversa com Aren), Corvin (libertado da cela) |
 | 5 | **O Farol Apagado** | Derrotar a Inquisidora Seraphine | Mapa maior, chefe em terreno fortificado | — |
 
@@ -63,14 +63,14 @@ O hábito da Ordem, e em especial o de Seraphine, se inspira no hábito dos mong
 
 # Capítulo 2 — O Caminho dos Faróis
 
-Com o Farol de Brasalva aceso de novo, o grupo descobre que a Ordem do Ocaso já apagou três dos Sete Faróis. O mais próximo é o **Farol de Vessa**, ao sul. A cidade de **Vessaria** é governada pelo **Arquidiácono Malachar**, que transformou a antiga Catedral do Sol em templo do Ocaso. Corvin destila uma brasa da pira de Brasalva e cria o primeiro **Selo da Brasa**, capaz de fazer um herói evoluir para uma classe avançada.
+Com o Farol de Brasalva aceso de novo, o grupo descobre que a Ordem do Ocaso já apagou três dos Sete Faróis. O mais próximo é o **Farol de Vessa**, ao sul. A cidade de **Vessaria** é governada pelo **Arquidiácono Malachar**, que transformou a antiga Catedral do Sol em templo do Ocaso. A pira de Brasalva aviva a brasa de cada herói: quem luta o bastante pode **evoluir** para uma classe avançada e, mais tarde, escolher um entre dois caminhos de mestre.
 
 ## Novos aliados
 
 | Personagem | Classe | Gancho |
 |---|---|---|
-| **Ser Brielle Ventor** | Cavaleira (montada, lança) | Última cavaleira de uma patrulha de Solmarch e filha de Gerold Ventor, velho camarada de Hadric. Cabelo vermelho. Entra na Fase 1 quando **Hadric** conversa com ela. |
-| **Sorrel** | Batedora (espada, muito rápida) | Contrabandista do Pântano de Vessa e velha amiga (e credora) da Mira. Cabelo rosa. Entra na Fase 2 quando **Mira** conversa com ela. |
+| **Ser Brielle Ventor** | Cavaleira (montada, lança) | Última cavaleira de uma patrulha de Solmarch e filha de Gerold Ventor, velho camarada de Hadric. Cabelo vermelho. Chega fugindo dos Cavaleiros do Ocaso e entra no time logo no início da Fase 1, ao reconhecer Hadric. |
+| **Sorrel** | Batedora (espada, muito rápida) | Contrabandista do Pântano de Vessa e velha amiga (e credora) da Mira. Cabelo rosa. Na Fase 2, espera perto do grupo e entra quando **Mira** conversa com ela. |
 
 ## Novos inimigos
 
@@ -85,7 +85,7 @@ Com o Farol de Brasalva aceso de novo, o grupo descobre que a Ordem do Ocaso já
 
 | # | Fase | Objetivo | Novidade | Recrutamento |
 |---|---|---|---|---|
-| 1 | **A Estrada do Rei** | Derrotar todos | Cavaleiros montados, reforços pelo leste | Brielle (conversa com Hadric) |
+| 1 | **A Estrada do Rei** | Derrotar todos | Cavaleiros montados, reforços pelo leste | Brielle (entra no início) |
 | 2 | **O Pântano de Vessa** | Derrotar o Guardião Afogado | Pântano (movimento lento), Sentinelas | Sorrel (conversa com Mira) |
 | 3 | **As Muralhas de Vessaria** | Tomar o portão | Pontes guardadas, Comandante Draven | — |
 | 4 | **Os Becos Apagados** | Chegar ao Farol de Vessa | Cidade em quarteirões, Seraphine na praça (opcional) | — |
@@ -96,6 +96,8 @@ Com o Farol de Brasalva aceso de novo, o grupo descobre que a Ordem do Ocaso já
 ## Tesouros escondidos
 
 Nas casas, fortalezas e ruínas de Aldrenn ainda há o que a Ordem não confiscou:
-- **Selos da Brasa:** brasas adormecidas, guardadas por vigias dos Faróis, famílias e até pelos próprios inimigos;
-- **armas de aço** de antigos arsenais de Solmarch;
-- o **Tomo Radiante**, que a Ordem tentou esconder em Vessaria.
+- **armas de aço e de prata** de antigos arsenais de Solmarch;
+- **armaduras**: couraças, cotas de malha, mantos rúnicos e as placas dos antigos guardiões dos Faróis;
+- o **Tomo Radiante** e o **Tomo da Alvorada**, que a Ordem tentou esconder em Vessaria;
+- a **Égide da Aurora**, numa capela esquecida da Catedral;
+- a **Lâmina do Sol**, presa em correntes negras no altar de Malachar.

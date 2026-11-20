@@ -4,16 +4,17 @@ import type { ChapterDef, GameMode, RosterEntry, SaveData, StageDef, StatKey } f
 import type { BattleState } from './battle-state';
 import { Unit } from './unit';
 import { createUnit } from './unit-factory';
+import { applyArmor } from './equipment';
 
-export const SAVE_VERSION = 3;
-/** Nível mínimo para promover com um Selo da Brasa. */
+export const SAVE_VERSION = 4;
+/** Nível mínimo para promover (ao fim da fase, se o jogador quiser). */
 export const PROMOTION_LEVEL = 5;
 
 const STAT_KEYS: StatKey[] = ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'res'];
 
 /** Novo save no início do capítulo 1 (roster vazio: a primeira fase traz o time). */
 export function newCampaign(mode: GameMode, chapterId = 'c1'): SaveData {
-  return { version: SAVE_VERSION, mode, chapterId, nextStageIndex: 0, roster: [], seals: 0, convoy: { items: [], weapons: [] } };
+  return { version: SAVE_VERSION, mode, chapterId, nextStageIndex: 0, roster: [], convoy: { items: [], weapons: [], armors: [] } };
 }
 
 /**
@@ -23,7 +24,7 @@ export function newCampaign(mode: GameMode, chapterId = 'c1'): SaveData {
 export function newCampaignAt(mode: GameMode, chapterId: string, db: GameDatabase): SaveData {
   const chapter = lookup(db.chapters, chapterId, 'Capítulo');
   const roster = (chapter.premade ?? []).map((m) => premadeEntry(m.characterId, m.level, db));
-  return { ...newCampaign(mode, chapterId), roster, seals: chapter.startSeals ?? 0 };
+  return { ...newCampaign(mode, chapterId), roster };
 }
 
 /** Entrada de roster de um herói no nível pedido (sem rolagens: crescimento médio). */
@@ -57,13 +58,13 @@ export function isChapterDone(save: SaveData, db: GameDatabase): boolean {
 }
 
 /**
- * Passa para o próximo capítulo mantendo o time (e os mortos do Clássico),
- * somando os selos iniciais do capítulo novo. `undefined` se não houver próximo.
+ * Passa para o próximo capítulo mantendo o time (e os mortos do Clássico).
+ * `undefined` se não houver próximo.
  */
 export function startNextChapter(save: SaveData, db: GameDatabase): SaveData | undefined {
   const next = currentChapter(save, db).nextChapterId;
   if (!next || !db.chapters[next]) return undefined;
-  return { ...save, chapterId: next, nextStageIndex: 0, seals: save.seals + (db.chapters[next].startSeals ?? 0) };
+  return { ...save, chapterId: next, nextStageIndex: 0 };
 }
 
 /**
@@ -88,6 +89,7 @@ export function buildStageUnits(stage: StageDef, save: SaveData, db: GameDatabas
     }
     if (!entry.alive) return;
     const base = createUnit(p, db, i);
+    const armor = entry.armorId ? lookup(db.armors, entry.armorId, 'Armadura') : undefined;
     units.push(new Unit({
       id: base.id,
       name: base.name,
@@ -99,7 +101,9 @@ export function buildStageUnits(stage: StageDef, save: SaveData, db: GameDatabas
         ? p.weaponId : entry.weaponId, 'Arma'),
       level: entry.level,
       exp: entry.exp,
-      stats: entry.stats,
+      // O roster guarda os atributos de base; a armadura soma o bônus na batalha.
+      stats: applyArmor(entry.stats, armor, 1),
+      armor,
       growths: base.growths,
       position: base.position,
       characterId: entry.characterId,
@@ -115,8 +119,9 @@ function toEntry(u: Unit, alive: boolean): RosterEntry {
     classId: u.classDef.id,
     level: u.level,
     exp: u.exp,
-    stats: { ...u.stats },
+    stats: applyArmor(u.stats, u.armor, -1),
     weaponId: u.weapon.id,
+    ...(u.armor ? { armorId: u.armor.id } : {}),
     items: u.items.map((i) => ({ itemId: i.def.id, uses: i.uses })),
     alive,
   };
@@ -125,7 +130,7 @@ function toEntry(u: Unit, alive: boolean): RosterEntry {
 /**
  * Atualiza o save após vencer a fase: grava o estado dos heróis (no Casual,
  * os caídos voltam), adiciona recrutas e NPCs de `recruitOnClear` vivos,
- * soma os selos da fase e avança para a próxima.
+ * guarda os achados das investigações no baú e avança para a próxima.
  */
 export function applyVictory(save: SaveData, state: BattleState): SaveData {
   const roster = new Map(save.roster.map((r) => [r.characterId, r]));
@@ -137,15 +142,14 @@ export function applyVictory(save: SaveData, state: BattleState): SaveData {
     if (!isMember && !clearRecruit) continue;
     roster.set(u.characterId, toEntry(u, u.isAlive() || save.mode === 'casual'));
   }
-  // Achados das investigações: selos para o grupo; armas e excedentes para o baú.
   return {
     ...save,
     roster: [...roster.values()],
     nextStageIndex: save.nextStageIndex + 1,
-    seals: save.seals + (state.stage.rewardSeals ?? 0) + state.found.seals,
     convoy: {
       items: [...save.convoy.items, ...state.found.items],
       weapons: [...save.convoy.weapons, ...state.found.weapons],
+      armors: [...save.convoy.armors, ...state.found.armors],
     },
   };
 }
@@ -155,31 +159,34 @@ export function rosterClassId(entry: RosterEntry, db: GameDatabase): string {
   return entry.classId ?? lookup(db.characters, entry.characterId, 'Personagem').classId;
 }
 
-/** O herói pode ser promovido agora (vivo, nível suficiente, classe com promoção)? */
+/** Classes para as quais o herói pode promover (uma, ou dois caminhos no tier 3). */
+export function promotionOptions(entry: RosterEntry, db: GameDatabase): string[] {
+  return lookup(db.classes, rosterClassId(entry, db), 'Classe').promotesTo ?? [];
+}
+
+/** O herói pode ser promovido agora (vivo, nível 5+, classe com promoção)? */
 export function canPromote(entry: RosterEntry, db: GameDatabase): boolean {
-  const cls = lookup(db.classes, rosterClassId(entry, db), 'Classe');
-  return entry.alive && !!cls.promotesTo && entry.level >= PROMOTION_LEVEL;
+  return entry.alive && entry.level >= PROMOTION_LEVEL && promotionOptions(entry, db).length > 0;
 }
 
 /**
- * Promove o herói gastando um Selo da Brasa: troca de classe, soma o bônus de
- * atributos e volta ao nível 1 da classe avançada (a arma continua a mesma).
+ * Promove o herói (sem custo, ao fim da fase): troca de classe, soma o bônus
+ * de atributos e volta ao nível 1 da classe nova. Quando há dois caminhos,
+ * `targetClassId` diz qual. A arma e a armadura continuam as mesmas.
  */
-export function promote(save: SaveData, characterId: string, db: GameDatabase): SaveData {
+export function promote(save: SaveData, characterId: string, db: GameDatabase, targetClassId?: string): SaveData {
   const entry = save.roster.find((r) => r.characterId === characterId);
   if (!entry) throw new Error(`${characterId} não está no time`);
-  if (save.seals <= 0) throw new Error('Sem Selos da Brasa');
   if (!canPromote(entry, db)) throw new Error(`${characterId} não pode ser promovido agora`);
-  const from = lookup(db.classes, rosterClassId(entry, db), 'Classe');
-  const to = lookup(db.classes, from.promotesTo!, 'Classe');
+  const options = promotionOptions(entry, db);
+  const target = targetClassId ?? (options.length === 1 ? options[0] : undefined);
+  if (!target) throw new Error('Escolha o caminho da promoção');
+  if (!options.includes(target)) throw new Error(`${characterId} não pode promover para ${target}`);
+  const to = lookup(db.classes, target, 'Classe');
   const stats = { ...entry.stats };
   for (const k of STAT_KEYS) stats[k] += to.promotionBonus?.[k] ?? 0;
   const promoted: RosterEntry = { ...entry, classId: to.id, level: 1, exp: 0, stats };
-  return {
-    ...save,
-    seals: save.seals - 1,
-    roster: save.roster.map((r) => (r.characterId === characterId ? promoted : r)),
-  };
+  return { ...save, roster: save.roster.map((r) => (r.characterId === characterId ? promoted : r)) };
 }
 
 /** Membros vivos do roster (para a tela de resultado). */

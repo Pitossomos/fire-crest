@@ -38,6 +38,7 @@ export function artSpecFor(cls: ClassDef, weaponType: string, faction: Faction, 
     hair,
     mounted: cls.movement === 'mounted',
     promoted: (cls.tier ?? 1) > 1,
+    master: (cls.tier ?? 1) > 2,
     layerOf: cls.artBase,
   };
 }
@@ -59,7 +60,11 @@ export function generateTextures(scene: Phaser.Scene, db: GameDatabase): void {
     if (!ch.hair) continue;
     const base = db.classes[ch.classId];
     // Classe original e a promovida (o cabelo acompanha a promoção).
-    const classes = [base, ...(base.promotesTo ? [db.classes[base.promotesTo]] : [])];
+    // Classe original e toda a árvore de promoção (o cabelo acompanha).
+    const classes = [base];
+    for (let i = 0; i < classes.length; i++) {
+      for (const next of classes[i].promotesTo ?? []) if (!classes.includes(db.classes[next])) classes.push(db.classes[next]);
+    }
     for (const cls of classes) {
       for (const weaponType of cls.weaponTypes) {
         for (const faction of ['player', 'enemy', 'ally'] as const) {

@@ -40,11 +40,12 @@ export interface HealOutcome {
 
 /** O que o grupo achou investigando nesta fase (vai para o save na vitória). */
 export interface FoundLoot {
-  seals: number;
   /** Itens que não couberam no inventário de quem achou (vão para o baú). */
   items: InventorySlot[];
   /** Armas achadas (vão para o baú). */
   weapons: string[];
+  /** Armaduras achadas (vão para o baú). */
+  armors: string[];
 }
 
 /** Resultado de uma investigação. */
@@ -97,7 +98,7 @@ export class BattleState {
   /** Tiles já investigados nesta fase ("x,y"). */
   readonly searched = new Set<string>();
   /** Achados das investigações nesta fase. */
-  readonly found: FoundLoot = { seals: 0, items: [], weapons: [] };
+  readonly found: FoundLoot = { items: [], weapons: [], armors: [] };
 
   constructor(stage: StageDef, db: GameDatabase, opts: BattleOptions = {}) {
     this.stage = stage;
@@ -240,7 +241,7 @@ export class BattleState {
 
   /**
    * Investiga a construção: aplica o esconderijo da fase (item para a unidade,
-   * ou para o baú se ela já carrega o máximo; arma e selos para os achados do
+   * ou para o baú se ela já carrega o máximo; armas e armaduras para o baú do
    * grupo) e consome a ação.
    */
   investigate(unit: Unit): InvestigateOutcome {
@@ -267,9 +268,10 @@ export class BattleState {
       this.found.weapons.push(w.id);
       gained.push(`${w.name} (baú)`);
     }
-    if (cache.seals) {
-      this.found.seals += cache.seals;
-      gained.push(cache.seals > 1 ? `${cache.seals} Selos da Brasa` : 'Selo da Brasa');
+    if (cache.armorId) {
+      const a = lookup(this.db.armors, cache.armorId, 'Armadura');
+      this.found.armors.push(a.id);
+      gained.push(`${a.name} (baú)`);
     }
     const text = cache.text ?? `${unit.name} encontrou: ${gained.join(', ')}.`;
     return { cache, gained, text };

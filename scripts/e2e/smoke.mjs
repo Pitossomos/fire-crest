@@ -208,7 +208,7 @@ if (!s.outcome) {
   await page.evaluate(() => {
     const sc = window.__FIRE_CREST__.scene.getScene('Battle');
     const aren = sc.battle.units.find((u) => u.characterId === 'aren');
-    aren.moveTo({ x: 4, y: 2 }); // ao lado de Ilian (4,1)
+    aren.moveTo({ x: 3, y: 2 }); // ao lado de Ilian (3,1), que agora começa perto do grupo
     sc.sprites.get(aren.id).snap();
     sc.setCursor(aren.position);
   });
@@ -236,7 +236,7 @@ await page.evaluate(() => {
   const sc = window.__FIRE_CREST__.scene.getScene('Battle');
   const b = sc.battle;
   const aren = b.units.find((u) => u.characterId === 'aren');
-  aren.moveTo({ x: 2, y: 8 }); // ao lado de Lys (1,8)
+  aren.moveTo({ x: 5, y: 7 }); // ao lado de Lys (5,8), perto do grupo
   sc.sprites.get(aren.id).snap();
   sc.setCursor(aren.position);
 });
@@ -295,23 +295,16 @@ const cam = await camScroll();
 if (cam.x <= 0) fail(`a câmera deveria rolar no mapa grande (scrollX=${cam.x})`);
 await shot('18-c2-camera');
 
-// Hadric conversa com Brielle (12,7) e a recruta
-await page.evaluate(() => {
-  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
-  const hadric = sc.battle.units.find((u) => u.characterId === 'hadric');
-  hadric.moveTo({ x: 11, y: 7 });
-  sc.sprites.get(hadric.id).snap();
-  sc.setCursor(hadric.position);
+// Brielle já começa no time, ao lado do grupo
+const brielle = await page.evaluate(() => {
+  const u = window.__FIRE_CREST__.scene.getScene('Battle').battle.units.find((v) => v.characterId === 'brielle');
+  return u && { faction: u.faction, x: u.x, y: u.y };
 });
-await press('KeyZ');
-await press('KeyZ', 300);
-await pick('talk:0');
-await until(idle, null, 20000, 'conversa com Brielle');
-const brielle = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').battle.units.find((u) => u.characterId === 'brielle').faction);
-if (brielle !== 'player') fail(`Brielle deveria ter sido recrutada, facção ${brielle}`);
+if (brielle?.faction !== 'player') fail(`Brielle deveria entrar no time logo no início: ${JSON.stringify(brielle)}`);
 await shot('19-c2-brielle');
 
-// Investigar construções: Mira na casa (6,5) acha um Selo; Kaira na casa (7,9) acha um Machado de Aço
+// Investigar construções: Mira na casa (6,5) acha a Espada de Prata; Kaira na casa (7,9), o Machado de Aço;
+// Hadric nas ruínas (2,2), a Cota de Malha
 const investigateAt = async (heroId, x, y) => {
   await page.evaluate(({ heroId, x, y }) => {
     const sc = window.__FIRE_CREST__.scene.getScene('Battle');
@@ -328,8 +321,12 @@ const investigateAt = async (heroId, x, y) => {
 await investigateAt('mira', 6, 5);
 await shot('19b-c2-investigate');
 await investigateAt('kaira', 7, 9);
+await investigateAt('hadric', 2, 2);
+await shot('19c-c2-ruins');
 const found = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').battle.found);
-if (found.seals !== 1 || !found.weapons.includes('steel_axe')) fail(`achados inesperados: ${JSON.stringify(found)}`);
+if (!found.weapons.includes('silver_sword') || !found.weapons.includes('steel_axe') || !found.armors.includes('chainmail')) {
+  fail(`achados inesperados: ${JSON.stringify(found)}`);
+}
 
 // Vitória → resultado → gerenciar o time (promover, dar item, equipar arma)
 await page.evaluate(() => {
@@ -343,6 +340,7 @@ await until(() => window.__FIRE_CREST__.scene.isActive('Result'), null, 20000, '
 await page.waitForTimeout(400);
 const resultOptions = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Result').menu.options.map((o) => o.id));
 if (!resultOptions.includes('manage')) fail(`esperava "Gerenciar time" na tela de resultado: ${resultOptions}`);
+if (!resultOptions.includes('promote')) fail(`esperava "Promover heróis" na tela de resultado (nível ≥ 5): ${resultOptions}`);
 await shot('20-c2-result');
 const pickIn = async (sceneKey, optionId) => {
   // ↓ até a opção ficar destacada (o menu pula as opções desabilitadas).
@@ -360,16 +358,23 @@ const pickIn = async (sceneKey, optionId) => {
 };
 const pickResult = (id) => pickIn('Result', id);
 const savedNow = () => page.evaluate(() => JSON.parse(localStorage.getItem('fire-crest-save-v1')));
-await pickResult('manage');
-await until(() => window.__FIRE_CREST__.scene.isActive('Party'), null, 10000, 'tela de gerenciar o time');
+const partyStep = () => page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Party').step);
+// Promover pela tela de resultado: lista dos prontos → Aren → Lorde Solar (sem selos)
+await pickResult('promote');
+await until(() => window.__FIRE_CREST__.scene.isActive('Party'), null, 10000, 'tela de promoção');
 await page.waitForTimeout(300);
-await shot('21-c2-party');
-// Promover o Aren (selos: 1 inicial + 1 achado = 2)
+if ((await partyStep()) !== 'promoteList') fail(`esperava a lista de promoção, veio ${await partyStep()}`);
+await shot('21-c2-promote-list');
 await pickIn('Party', 'aren');
-await pickIn('Party', 'promote');
+await shot('21b-c2-promote-confirm');
+await pickIn('Party', 'sunlord');
 let saved = await savedNow();
 if (saved.roster.find((r) => r.characterId === 'aren').classId !== 'sunlord') fail('Aren deveria ser Lorde Solar');
-if (saved.seals !== 1) fail(`deveria sobrar 1 selo (selos=${saved.seals})`);
+if ('seals' in saved) fail('o save não deveria ter mais selos');
+if ((await partyStep()) === 'promoteList') await pickIn('Party', 'later');
+await page.waitForTimeout(200);
+await shot('21c-c2-party');
+await pickIn('Party', 'aren');
 // Dar a Poção do Aren para a Mira
 const miraItemsBefore = saved.roster.find((r) => r.characterId === 'mira').items.length;
 await pickIn('Party', 'give');
@@ -382,10 +387,18 @@ await shot('22-c2-party-actions');
 await pickIn('Party', 'back');
 await pickIn('Party', 'kaira');
 await pickIn('Party', 'equip');
-await pickIn('Party', '0');
+await pickIn('Party', String((await savedNow()).convoy.weapons.indexOf('steel_axe')));
 saved = await savedNow();
 if (saved.roster.find((r) => r.characterId === 'kaira').weaponId !== 'steel_axe') fail('Kaira deveria ter equipado o Machado de Aço');
 if (!saved.convoy.weapons.includes('iron_axe')) fail('o Machado de Ferro deveria ter voltado ao baú');
+await pickIn('Party', 'back');
+// Hadric veste a Cota de Malha achada nas ruínas
+await pickIn('Party', 'hadric');
+await pickIn('Party', 'armor');
+await pickIn('Party', String((await savedNow()).convoy.armors.indexOf('chainmail')));
+saved = await savedNow();
+if (saved.roster.find((r) => r.characterId === 'hadric').armorId !== 'chainmail') fail('Hadric deveria vestir a Cota de Malha');
+await shot('22b-c2-armor');
 await pickIn('Party', 'back');
 await pickIn('Party', 'exit');
 await until(() => window.__FIRE_CREST__.scene.isActive('Result'), null, 10000, 'volta ao resultado');
@@ -419,7 +432,44 @@ const fromSave = await page.evaluate(() => {
   const b = window.__FIRE_CREST__.scene.getScene('Battle').battle;
   return { stage: b.stage.id, heroes: b.units.filter((u) => u.faction === 'player').map((u) => u.characterId).sort().join(',') };
 });
-if (fromSave.stage !== 'c2s1' || fromSave.heroes !== 'aren,hadric,kaira,mira') fail(`Continuar do Cap. 1 inesperado: ${JSON.stringify(fromSave)}`);
+if (fromSave.stage !== 'c2s1' || fromSave.heroes !== 'aren,brielle,hadric,kaira,mira') fail(`Continuar do Cap. 1 inesperado: ${JSON.stringify(fromSave)}`);
+
+// --- Tier 3 bifurcado: Aren Lorde Solar nível 5 vence a fase e escolhe o caminho ---
+await page.evaluate(() => {
+  const roster = ['aren', 'mira', 'hadric', 'kaira'].map((id) => ({
+    characterId: id, level: id === 'aren' ? 5 : 3, exp: 0, classId: id === 'aren' ? 'sunlord' : undefined,
+    weaponId: id === 'hadric' ? 'iron_lance' : id === 'kaira' ? 'iron_axe' : 'iron_sword',
+    stats: { hp: 30, str: 9, mag: 1, skl: 9, spd: 9, lck: 6, def: 7, res: 3 }, items: [], alive: true,
+  }));
+  localStorage.setItem('fire-crest-save-v1', JSON.stringify({
+    version: 4, mode: 'classic', chapterId: 'c2', nextStageIndex: 1, roster, convoy: { items: [], weapons: [], armors: [] },
+  }));
+});
+await page.goto(url);
+await page.waitForFunction(() => window.__FIRE_CREST__?.scene.isActive('Title'));
+await page.waitForTimeout(500);
+await press('Enter', 300);
+await until(idle, null, 20000, 'Cap. 2, Fase 2 pelo Continuar');
+await page.evaluate(() => {
+  const sc = window.__FIRE_CREST__.scene.getScene('Battle');
+  for (const u of sc.battle.units) if (u.faction === 'enemy') u.hp = 0;
+  sc.checkOutcome();
+});
+await page.waitForTimeout(900);
+await press('Enter', 600);
+await until(() => window.__FIRE_CREST__.scene.isActive('Result'), null, 20000, 'resultado da Fase 2 do Cap. 2');
+await page.waitForTimeout(400);
+await pickResult('promote');
+await until(() => window.__FIRE_CREST__.scene.isActive('Party'), null, 10000, 'promoção tier 3');
+await page.waitForTimeout(300);
+await pickIn('Party', 'aren');
+const paths = await page.evaluate(() => window.__FIRE_CREST__.scene.getScene('Party').menu.options.map((o) => o.id));
+if (paths.join(',') !== 'solar_king,crest_avatar,back') fail(`caminhos inesperados: ${paths}`);
+await pickIn('Party', 'crest_avatar');
+await page.waitForTimeout(200);
+await shot('23b-tier3-path');
+saved = await savedNow();
+if (saved.roster.find((r) => r.characterId === 'aren').classId !== 'crest_avatar') fail('Aren deveria ser Avatar da Crista');
 
 // --- Regressão: clique na ponta da linha do menu de ações com a câmera rolada (Cap. 2) ---
 await page.goto(`${url}/?stage=c2s4&seed=5`);

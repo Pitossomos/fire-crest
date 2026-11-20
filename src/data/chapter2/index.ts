@@ -10,7 +10,6 @@ export const CHAPTER_2: ChapterDef = {
   order: 2,
   name: 'O Caminho dos Faróis',
   stageIds: [C2_STAGE_1.id, C2_STAGE_2.id, C2_STAGE_3.id, C2_STAGE_4.id, C2_STAGE_5.id],
-  startSeals: 1,
   // Time para começar o Capítulo 2 direto do título (sem save do Capítulo 1).
   premade: [
     { characterId: 'aren', level: 6 },

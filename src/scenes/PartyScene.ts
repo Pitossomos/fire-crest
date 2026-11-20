@@ -1,23 +1,30 @@
 import Phaser from 'phaser';
-import { canPromote, promote, rosterClassId } from '../core/campaign';
-import { MAX_ITEMS, canEquip, equipWeapon, giveItem, storeItem, takeItem } from '../core/party';
+import { canPromote, promote, promotionOptions, rosterClassId } from '../core/campaign';
+import { applyArmor, armorBonusLabel } from '../core/equipment';
+import {
+  MAX_ITEMS, canEquip, canEquipArmor, equipArmor, equipWeapon, giveItem, removeArmor, storeItem, takeItem,
+} from '../core/party';
 import { DB } from '../data';
-import type { RosterEntry, SaveData } from '../data/types';
+import type { ClassDef, RosterEntry, SaveData } from '../data/types';
 import { COLORS, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH } from '../render/layout';
 import { TextMenu, type TextMenuOption } from '../render/TextMenu';
 import { playSfx } from '../render/sfx';
 import { writeSave } from '../save/save';
 import type { PartyData, ResultData } from './scene-data';
 
-
 const MENU_X = 36;
 const MENU_Y = 104;
 const PANEL_X = 380;
 
+const WEAPON_TYPE_NAME: Record<string, string> = {
+  sword: 'espada', lance: 'lança', axe: 'machado', bow: 'arco', tome: 'tomo',
+  light: 'luz', dark: 'trevas', staff: 'cajado', claw: 'garras',
+};
+
 /**
- * Gerenciar o time entre as fases: dar itens, guardar/pegar do baú, equipar
- * armas encontradas e promover com Selos da Brasa. Cada passo troca o menu da
- * esquerda; os detalhes do herói e o baú ficam à direita.
+ * Gerenciar o time entre as fases: promover (nível 5+, com escolha de caminho
+ * no nível 3), dar itens, guardar/pegar do baú, equipar armas e armaduras.
+ * Cada passo troca o menu da esquerda; os detalhes do herói e o baú ficam à direita.
  */
 export class PartyScene extends Phaser.Scene {
   /** Menu atual (lido por testes de ponta a ponta). */
@@ -42,13 +49,16 @@ export class PartyScene extends Phaser.Scene {
     this.cameras.main.fadeIn(200);
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x15111b).setOrigin(0);
     this.add.rectangle(PANEL_X - 16, 92, GAME_WIDTH - PANEL_X, GAME_HEIGHT - 120, COLORS.panel, 1).setOrigin(0).setStrokeStyle(2, COLORS.panelBorder);
-    this.add.text(GAME_WIDTH / 2, 30, 'Gerenciar time', { fontFamily: FONT_TITLE, fontSize: '32px', color: COLORS.accent, fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 30, data.focus === 'promote' ? 'Promover heróis' : 'Gerenciar time', {
+      fontFamily: FONT_TITLE, fontSize: '32px', color: COLORS.accent, fontStyle: 'bold',
+    }).setOrigin(0.5);
     this.header = this.add.text(GAME_WIDTH / 2, 62, '', { fontFamily: FONT_UI, fontSize: '14px', color: COLORS.textDim }).setOrigin(0.5);
     this.prompt = this.add.text(MENU_X - 10, 78, '', { fontFamily: FONT_UI, fontSize: '13px', color: COLORS.textDim });
-    this.details = this.add.text(PANEL_X, 104, '', { fontFamily: FONT_UI, fontSize: '14px', color: COLORS.text, lineSpacing: 5 });
-    this.convoyText = this.add.text(PANEL_X, 336, '', { fontFamily: FONT_UI, fontSize: '13px', color: COLORS.text, lineSpacing: 4, wordWrap: { width: GAME_WIDTH - PANEL_X - 40 } });
+    this.details = this.add.text(PANEL_X, 104, '', { fontFamily: FONT_UI, fontSize: '14px', color: COLORS.text, lineSpacing: 5, wordWrap: { width: GAME_WIDTH - PANEL_X - 40 } });
+    this.convoyText = this.add.text(PANEL_X, 372, '', { fontFamily: FONT_UI, fontSize: '13px', color: COLORS.text, lineSpacing: 4, wordWrap: { width: GAME_WIDTH - PANEL_X - 40 } });
     this.message = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 16, '', { fontFamily: FONT_UI, fontSize: '14px', color: '#7CFC9A' }).setOrigin(0.5);
-    this.heroStep();
+    if (data.focus === 'promote') this.promoteListStep();
+    else this.heroStep();
   }
 
   // ---------------------------------------------------------------------------
@@ -65,6 +75,14 @@ export class PartyScene extends Phaser.Scene {
     return DB.characters[id].name;
   }
 
+  private cls(r: RosterEntry): ClassDef {
+    return DB.classes[rosterClassId(r, DB)];
+  }
+
+  private stars(c: ClassDef): string {
+    return (c.tier ?? 1) > 2 ? ' ★★' : (c.tier ?? 1) > 1 ? ' ★' : '';
+  }
+
   private itemLabel(i: { itemId: string; uses: number }): string {
     return `${DB.items[i.itemId].name} (${i.uses})`;
   }
@@ -75,27 +93,44 @@ export class PartyScene extends Phaser.Scene {
     return w.heal ? `${w.name} · Cura ${w.heal}` : `${w.name} · Pod ${w.might} Pre ${w.hit} Alc ${range}`;
   }
 
+  private armorLabel(id: string): string {
+    const a = DB.armors[id];
+    return `${a.name} · ${armorBonusLabel(a)}`;
+  }
+
+  private weaponTypes(c: ClassDef): string {
+    return c.weaponTypes.map((t) => WEAPON_TYPE_NAME[t] ?? t).join('/');
+  }
+
   private refresh(heroId?: string): void {
-    this.header.setText(`Selos da Brasa: ${this.save.seals}   ·   Cada herói carrega até ${MAX_ITEMS} itens`);
+    const ready = this.alive().filter((r) => canPromote(r, DB)).length;
+    this.header.setText(`${ready ? `${ready} herói${ready === 1 ? '' : 's'} pronto${ready === 1 ? '' : 's'} para promover ✦   ·   ` : ''}Cada herói carrega até ${MAX_ITEMS} itens`);
     const c = this.save.convoy;
     this.convoyText.setText([
-      `Baú do grupo — itens: ${c.items.length ? c.items.map((i) => this.itemLabel(i)).join(', ') : 'vazio'}`,
+      `Baú — itens: ${c.items.length ? c.items.map((i) => this.itemLabel(i)).join(', ') : 'vazio'}`,
       `Armas: ${c.weapons.length ? c.weapons.map((w) => DB.weapons[w].name).join(', ') : 'nenhuma'}`,
+      `Armaduras: ${c.armors.length ? c.armors.map((a) => DB.armors[a].name).join(', ') : 'nenhuma'}`,
     ].join('\n'));
     if (!heroId) {
       this.details.setText('');
       return;
     }
     const r = this.entry(heroId);
-    const cls = DB.classes[rosterClassId(r, DB)];
-    const s = r.stats;
-    const promo = cls.promotesTo ? (canPromote(r, DB) ? `Pode promover para ${DB.classes[cls.promotesTo].name}` : `Promove para ${DB.classes[cls.promotesTo].name} no nível 5`) : 'Classe avançada ★';
+    const cls = this.cls(r);
+    const armor = r.armorId ? DB.armors[r.armorId] : undefined;
+    const s = applyArmor(r.stats, armor, 1);
+    const options = promotionOptions(r, DB).map((id) => DB.classes[id].name);
+    const promo = options.length === 0
+      ? 'Classe mestra ★★ — topo da árvore.'
+      : canPromote(r, DB) ? `Pronto para promover: ${options.join(' ou ')}` : `No nível 5 promove para: ${options.join(' ou ')}`;
     this.details.setText([
-      `${this.name(heroId)} — ${cls.name}  Nv ${r.level}  EXP ${r.exp}`,
+      `${this.name(heroId)} — ${cls.name}${this.stars(cls)}  Nv ${r.level}  EXP ${r.exp}`,
       `HP ${s.hp}  FOR ${s.str}  MAG ${s.mag}  HAB ${s.skl}`,
       `VEL ${s.spd}  SOR ${s.lck}  DEF ${s.def}  RES ${s.res}  MOV ${cls.move}`,
       '',
       `Arma: ${this.weaponLabel(r.weaponId)}`,
+      `Usa: ${this.weaponTypes(cls)}${cls.heavyArmor ? ' · veste armaduras pesadas' : ''}`,
+      `Armadura: ${armor ? this.armorLabel(armor.id) : '—'}`,
       `Itens (${r.items.length}/${MAX_ITEMS}): ${r.items.length ? r.items.map((i) => this.itemLabel(i)).join(', ') : '—'}`,
       '',
       promo,
@@ -112,14 +147,12 @@ export class PartyScene extends Phaser.Scene {
 
   private done(text: string): void {
     writeSave(this.save);
-    playSfx(this, 'heal');
-    this.message.setText(text);
+    this.message.setColor('#7CFC9A').setText(text);
   }
 
   private fail(err: unknown): void {
     playSfx(this, 'cancel');
     this.message.setColor('#ff9a9a').setText(err instanceof Error ? err.message : String(err));
-    this.time.delayedCall(1500, () => this.message.setColor('#7CFC9A'));
   }
 
   // --- passos ----------------------------------------------------------------
@@ -127,13 +160,13 @@ export class PartyScene extends Phaser.Scene {
   private heroStep(): void {
     this.step = 'hero';
     const heroes = this.alive();
-    const options: TextMenuOption[] = heroes.map((r) => {
-      const cls = DB.classes[rosterClassId(r, DB)];
-      return { id: r.characterId, label: `${this.name(r.characterId)}${canPromote(r, DB) ? ' ✦' : ''}${(cls.tier ?? 1) > 1 ? ' ★' : ''}` };
-    });
+    const options: TextMenuOption[] = heroes.map((r) => ({
+      id: r.characterId,
+      label: `${this.name(r.characterId)}${canPromote(r, DB) ? ' ✦' : ''}${this.stars(this.cls(r))}`,
+    }));
     options.push({ id: 'exit', label: 'Concluir e voltar' });
     this.refresh(heroes[0]?.characterId);
-    this.setMenu('Escolha um herói (✦ pode promover):', options, (id) => (id === 'exit' ? this.exit() : this.actionStep(id)),
+    this.setMenu('Escolha um herói (✦ pronto para promover):', options, (id) => (id === 'exit' ? this.exit() : this.actionStep(id)),
       () => this.exit(), (id) => this.refresh(id === 'exit' ? undefined : id));
   }
 
@@ -142,23 +175,87 @@ export class PartyScene extends Phaser.Scene {
     this.refresh(heroId);
     const r = this.entry(heroId);
     const others = this.alive().filter((o) => o.characterId !== heroId && o.items.length < MAX_ITEMS);
-    const equippable = this.save.convoy.weapons.some((w) => canEquip(this.save, heroId, w, DB));
     const options: TextMenuOption[] = [
+      { id: 'promote', label: 'Promover', enabled: canPromote(r, DB) },
       { id: 'give', label: 'Dar item a outro herói', enabled: r.items.length > 0 && others.length > 0 },
       { id: 'store', label: 'Guardar item no baú', enabled: r.items.length > 0 },
       { id: 'take', label: 'Pegar item do baú', enabled: this.save.convoy.items.length > 0 && r.items.length < MAX_ITEMS },
-      { id: 'equip', label: 'Equipar arma do baú', enabled: equippable },
-      { id: 'promote', label: `Promover (${this.save.seals} selo${this.save.seals === 1 ? '' : 's'})`, enabled: this.save.seals > 0 && canPromote(r, DB) },
+      { id: 'equip', label: 'Equipar arma do baú', enabled: this.save.convoy.weapons.some((w) => canEquip(this.save, heroId, w, DB)) },
+      { id: 'armor', label: 'Vestir armadura do baú', enabled: this.save.convoy.armors.some((a) => canEquipArmor(this.save, heroId, a, DB)) },
+      { id: 'unarmor', label: 'Tirar armadura', enabled: !!r.armorId },
       { id: 'back', label: 'Voltar' },
     ];
     this.setMenu(`${this.name(heroId)}: o que fazer?`, options, (id) => {
       if (id === 'back') this.heroStep();
+      else if (id === 'promote') this.promoteStep(heroId, () => this.actionStep(heroId));
       else if (id === 'give') this.pickItem(heroId, (slot) => this.pickTarget(heroId, slot));
       else if (id === 'store') this.pickItem(heroId, (slot) => this.apply(heroId, () => storeItem(this.save, heroId, slot), 'Guardado no baú.'));
       else if (id === 'take') this.pickConvoyItem(heroId);
       else if (id === 'equip') this.pickWeapon(heroId);
-      else if (id === 'promote') this.apply(heroId, () => promote(this.save, heroId, DB), () => `${this.name(heroId)} agora é ${DB.classes[rosterClassId(this.entry(heroId), DB)].name}!`, 'levelup');
+      else if (id === 'armor') this.pickArmor(heroId);
+      else if (id === 'unarmor') this.apply(heroId, () => removeArmor(this.save, heroId), 'Armadura guardada no baú.');
     }, () => this.heroStep());
+  }
+
+  /** Lista só dos heróis prontos (atalho da tela de resultado). */
+  private promoteListStep(): void {
+    this.step = 'promoteList';
+    const ready = this.alive().filter((r) => canPromote(r, DB));
+    if (ready.length === 0) {
+      this.heroStep();
+      return;
+    }
+    const options: TextMenuOption[] = ready.map((r) => ({
+      id: r.characterId,
+      label: `${this.name(r.characterId)}: ${this.cls(r).name} → ${promotionOptions(r, DB).map((c) => DB.classes[c].name).join(' / ')}`,
+    }));
+    options.push({ id: 'later', label: 'Agora não — gerenciar o time' });
+    options.push({ id: 'exit', label: 'Concluir e voltar' });
+    this.refresh(ready[0].characterId);
+    this.setMenu('Quem promover? (o herói volta ao nível 1 da classe nova)', options, (id) => {
+      if (id === 'later') this.heroStep();
+      else if (id === 'exit') this.exit();
+      else this.promoteStep(id, () => this.promoteListStep());
+    }, () => this.heroStep(), (id) => this.refresh(['later', 'exit'].includes(id) ? undefined : id));
+  }
+
+  /** Escolha do caminho (ou confirmação, quando há um só destino). */
+  private promoteStep(heroId: string, back: () => void): void {
+    this.step = 'promote';
+    const r = this.entry(heroId);
+    const targets = promotionOptions(r, DB);
+    const preview = (target: string) => {
+      const to = DB.classes[target];
+      const b = to.promotionBonus;
+      const bonus = b ? Object.entries(b).filter(([, v]) => v > 0).map(([k, v]) => `+${v} ${({ hp: 'HP', str: 'FOR', mag: 'MAG', skl: 'HAB', spd: 'VEL', lck: 'SOR', def: 'DEF', res: 'RES' } as Record<string, string>)[k]}`).join(', ') : '';
+      this.details.setText([
+        `${this.name(heroId)}: ${this.cls(r).name} → ${to.name}${this.stars(to)}`,
+        '',
+        to.blurb ?? '',
+        `Bônus: ${bonus}`,
+        `Movimento: ${to.move}   ·   Usa: ${this.weaponTypes(to)}`,
+        to.heavyArmor ? 'Veste armaduras pesadas.' : '',
+        '',
+        'O herói volta ao nível 1 da classe nova, com mais espaço para crescer.',
+      ].join('\n'));
+    };
+    const options: TextMenuOption[] = targets.map((t) => ({ id: t, label: `${targets.length > 1 ? 'Caminho: ' : 'Promover para '}${DB.classes[t].name}` }));
+    options.push({ id: 'back', label: 'Agora não' });
+    preview(targets[0]);
+    this.setMenu(targets.length > 1 ? 'Escolha o caminho:' : 'Confirmar a promoção?', options, (id) => {
+      if (id === 'back') {
+        back();
+        return;
+      }
+      try {
+        this.save = promote(this.save, heroId, DB, id);
+        playSfx(this, 'levelup');
+        this.done(`${this.name(heroId)} agora é ${DB.classes[id].name}!`);
+      } catch (err) {
+        this.fail(err);
+      }
+      back();
+    }, back, (id) => (id === 'back' ? this.refresh(heroId) : preview(id)));
   }
 
   private pickItem(heroId: string, next: (slot: number) => void): void {
@@ -196,18 +293,30 @@ export class PartyScene extends Phaser.Scene {
       id: String(k), label: this.weaponLabel(w), enabled: canEquip(this.save, heroId, w, DB),
     }));
     options.push({ id: 'back', label: 'Voltar' });
-    this.setMenu(`Equipar qual arma? (a atual volta ao baú)`, options, (id) => {
+    this.setMenu('Equipar qual arma? (a atual volta ao baú)', options, (id) => {
       if (id === 'back') this.actionStep(heroId);
       else this.apply(heroId, () => equipWeapon(this.save, heroId, Number(id), DB), () => `${this.name(heroId)} equipou ${DB.weapons[this.entry(heroId).weaponId].name}.`);
     }, () => this.actionStep(heroId));
   }
 
+  private pickArmor(heroId: string): void {
+    this.step = 'pickArmor';
+    const options: TextMenuOption[] = this.save.convoy.armors.map((a, k) => ({
+      id: String(k), label: this.armorLabel(a), enabled: canEquipArmor(this.save, heroId, a, DB),
+    }));
+    options.push({ id: 'back', label: 'Voltar' });
+    this.setMenu('Vestir qual armadura? (a atual volta ao baú)', options, (id) => {
+      if (id === 'back') this.actionStep(heroId);
+      else this.apply(heroId, () => equipArmor(this.save, heroId, Number(id), DB), () => `${this.name(heroId)} vestiu ${DB.armors[this.entry(heroId).armorId!].name}.`);
+    }, () => this.actionStep(heroId));
+  }
+
   /** Aplica uma operação do núcleo, grava e volta ao menu de ações do herói. */
-  private apply(heroId: string, op: () => SaveData, msg: string | (() => string), sfx: 'heal' | 'levelup' = 'heal'): void {
+  private apply(heroId: string, op: () => SaveData, msg: string | (() => string)): void {
     try {
       this.save = op();
+      playSfx(this, 'heal');
       this.done(typeof msg === 'string' ? msg : msg());
-      if (sfx === 'levelup') playSfx(this, 'levelup');
     } catch (err) {
       this.fail(err);
     }

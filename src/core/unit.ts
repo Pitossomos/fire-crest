@@ -1,4 +1,4 @@
-import type { AiBehavior, ClassDef, Faction, ItemDef, Stats, WeaponDef } from '../data/types';
+import type { AiBehavior, ArmorDef, ClassDef, Faction, ItemDef, Stats, WeaponDef } from '../data/types';
 
 /** Item carregado, com usos restantes. */
 export interface CarriedItem {
@@ -21,6 +21,8 @@ export interface UnitInit {
   ai?: AiBehavior;
   boss?: boolean;
   items?: CarriedItem[];
+  /** Armadura equipada (o bônus já vem somado em `stats`). */
+  armor?: ArmorDef;
   exp?: number;
   hp?: number;
 }
@@ -45,6 +47,7 @@ export class Unit {
   y: number;
   hasActed = false;
   items: CarriedItem[];
+  armor?: ArmorDef;
 
   constructor(init: UnitInit) {
     this.id = init.id;
@@ -58,6 +61,7 @@ export class Unit {
     this.hp = init.hp ?? init.stats.hp;
     this.exp = init.exp ?? 0;
     this.items = (init.items ?? []).map((i) => ({ ...i }));
+    this.armor = init.armor;
     this.x = init.position.x;
     this.y = init.position.y;
     this.characterId = init.characterId;

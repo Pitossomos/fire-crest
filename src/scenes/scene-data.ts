@@ -16,4 +16,6 @@ export interface PartyData {
   save: SaveData;
   /** Para voltar à tela de resultado com o save atualizado. */
   result: ResultData;
+  /** 'promote': abre direto na lista de heróis prontos para promover. */
+  focus?: 'promote';
 }

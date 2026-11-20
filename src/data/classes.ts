@@ -56,12 +56,10 @@ export const CLASSES: Record<string, ClassDef> = {
   cavalier: {
     id: 'cavalier', name: 'Cavaleira', move: 7, weaponTypes: ['lance'], sprite: 'unit_cavalier', movement: 'mounted',
     baseStats: stats(22, 6, 0, 6, 7, 4, 6, 1), growths: stats(75, 45, 0, 45, 45, 35, 30, 15),
-    promotesTo: 'paladin',
   },
   scout: {
     id: 'scout', name: 'Batedora', move: 6, weaponTypes: ['sword'], sprite: 'unit_scout',
     baseStats: stats(17, 4, 0, 8, 11, 8, 2, 2), growths: stats(60, 35, 5, 55, 70, 60, 15, 25),
-    promotesTo: 'shadowblade',
   },
   // --- Capítulo 2: novos inimigos ---
   dusk_knight: {
@@ -88,6 +86,27 @@ function promoted(baseId: string, id: string, name: string, move: number, bonus:
   };
 }
 
+/**
+ * Classes mestras (tier 3): cada classe promovida escolhe um de dois caminhos.
+ * Muitas ganham um segundo tipo de arma — o que dá uso às armas do baú.
+ */
+function master(
+  fromId: string, id: string, name: string, move: number, bonus: ClassDef['baseStats'],
+  weaponTypes: ClassDef['weaponTypes'], blurb: string,
+): ClassDef {
+  const from = CLASSES[fromId];
+  const baseStats = { ...from.baseStats };
+  for (const k of Object.keys(baseStats) as (keyof typeof baseStats)[]) baseStats[k] += bonus[k];
+  return {
+    ...from, id, name, move, tier: 3, sprite: `unit_${id}`, artBase: from.artBase ?? fromId,
+    weaponTypes, blurb, promotesTo: undefined, promotionBonus: bonus, baseStats,
+  };
+}
+
+// Linhas que vestem armaduras pesadas (os promovidos herdam).
+Object.assign(CLASSES.lancer, { heavyArmor: true });
+Object.assign(CLASSES.axefighter, { heavyArmor: true });
+
 for (const c of [
   promoted('bearer', 'sunlord', 'Lorde Solar', 6, stats(4, 2, 1, 2, 2, 1, 2, 2)),
   promoted('swordfighter', 'blademaster', 'Mestre de Lâminas', 6, stats(3, 2, 0, 2, 2, 0, 1, 1)),
@@ -103,12 +122,40 @@ for (const c of [
   CLASSES[c.id] = c;
 }
 
-// Cada classe básica de herói promove para a sua versão avançada.
-Object.assign(CLASSES.bearer, { promotesTo: 'sunlord' });
-Object.assign(CLASSES.swordfighter, { promotesTo: 'blademaster' });
-Object.assign(CLASSES.lancer, { promotesTo: 'bastion' });
-Object.assign(CLASSES.axefighter, { promotesTo: 'berserker' });
-Object.assign(CLASSES.archer, { promotesTo: 'sniper' });
-Object.assign(CLASSES.cleric, { promotesTo: 'bishop' });
-Object.assign(CLASSES.pyromancer, { promotesTo: 'archmage' });
-Object.assign(CLASSES.lightmage, { promotesTo: 'dawnherald' });
+for (const c of [
+  master('sunlord', 'solar_king', 'Rei Solar', 7, stats(4, 3, 0, 2, 1, 1, 3, 2), ['sword', 'lance'], 'Comandante: espada e lança, defesa sólida.'),
+  master('sunlord', 'crest_avatar', 'Avatar da Crista', 7, stats(3, 1, 4, 2, 2, 1, 1, 3), ['sword', 'light'], 'A Crista desperta: espada e magia de luz.'),
+  master('blademaster', 'sword_saint', 'Santo da Espada', 7, stats(3, 3, 0, 4, 2, 1, 1, 1), ['sword'], 'Golpes certeiros: muita FOR e HAB.'),
+  master('blademaster', 'blade_dancer', 'Dançarina das Lâminas', 7, stats(2, 1, 0, 2, 4, 3, 1, 1), ['sword'], 'Rápida como o vento: VEL e SOR altíssimas.'),
+  master('bastion', 'living_wall', 'Muralha Viva', 5, stats(5, 2, 0, 1, 0, 0, 5, 1), ['lance', 'axe'], 'Defesa quase impenetrável; lança e machado.'),
+  master('bastion', 'grand_paladin', 'Grão-Paladino', 6, stats(4, 2, 0, 2, 2, 1, 2, 4), ['lance', 'sword'], 'Equilíbrio: lança e espada, boa RES.'),
+  master('berserker', 'warlady', 'Senhora da Guerra', 6, stats(5, 3, 0, 2, 1, 0, 3, 1), ['axe', 'sword'], 'Machado e espada, muito resistente.'),
+  master('berserker', 'red_fury', 'Fúria Rubra', 7, stats(4, 4, 0, 1, 3, 0, 0, 0), ['axe'], 'Força bruta e velocidade.'),
+  master('sniper', 'hawkeye', 'Olho de Falcão', 6, stats(2, 2, 0, 4, 2, 2, 1, 1), ['bow'], 'Precisão e críticos com o arco.'),
+  master('sniper', 'ranger', 'Guarda-Florestal', 7, stats(3, 2, 0, 2, 2, 1, 1, 1), ['bow', 'sword'], 'Arco e espada; anda longe.'),
+  master('bishop', 'oracle', 'Oráculo', 6, stats(3, 0, 3, 2, 1, 1, 1, 3), ['staff', 'light'], 'Cura e ataca com magia de luz.'),
+  master('bishop', 'dawn_saint', 'Santa da Aurora', 6, stats(4, 0, 4, 1, 1, 2, 1, 4), ['staff'], 'Curas fortíssimas e muita RES.'),
+  master('archmage', 'flame_lord', 'Senhor das Chamas', 6, stats(3, 0, 5, 2, 1, 0, 1, 2), ['tome'], 'Magia de fogo devastadora.'),
+  master('archmage', 'arcane_sage', 'Sábio Arcano', 6, stats(3, 0, 3, 2, 2, 1, 1, 3), ['tome', 'light'], 'Fogo e luz: eficaz contra o Ocaso.'),
+  master('dawnherald', 'dawn_blade', 'Lâmina da Alvorada', 7, stats(4, 3, 2, 2, 2, 0, 2, 1), ['light', 'sword'], 'Luz e espada na linha de frente.'),
+  master('dawnherald', 'sun_prophet', 'Profeta Solar', 6, stats(3, 0, 4, 2, 1, 1, 1, 3), ['light', 'staff'], 'Magia de luz e cura.'),
+  master('paladin', 'sky_knight', 'Cavaleira Celeste', 8, stats(3, 2, 0, 2, 3, 1, 2, 1), ['lance', 'sword'], 'Montaria veloz: lança e espada.'),
+  master('paladin', 'sun_valkyrie', 'Valquíria Solar', 8, stats(3, 1, 3, 1, 2, 1, 1, 3), ['lance', 'light'], 'Montada, com magia de luz.'),
+  master('shadowblade', 'assassin', 'Assassina', 7, stats(2, 3, 0, 3, 3, 1, 0, 1), ['sword'], 'Ataques letais e certeiros.'),
+  master('shadowblade', 'wanderer', 'Andarilha', 8, stats(3, 2, 0, 2, 2, 2, 1, 1), ['sword', 'bow'], 'Espada e arco; a que mais anda.'),
+]) {
+  CLASSES[c.id] = c;
+}
+
+// Árvore de promoção: tier 1 → tier 2 (um destino) → tier 3 (dois caminhos).
+const TREE: Record<string, string[]> = {
+  bearer: ['sunlord'], swordfighter: ['blademaster'], lancer: ['bastion'], axefighter: ['berserker'],
+  archer: ['sniper'], cleric: ['bishop'], pyromancer: ['archmage'], lightmage: ['dawnherald'],
+  cavalier: ['paladin'], scout: ['shadowblade'],
+  sunlord: ['solar_king', 'crest_avatar'], blademaster: ['sword_saint', 'blade_dancer'],
+  bastion: ['living_wall', 'grand_paladin'], berserker: ['warlady', 'red_fury'],
+  sniper: ['hawkeye', 'ranger'], bishop: ['oracle', 'dawn_saint'], archmage: ['flame_lord', 'arcane_sage'],
+  dawnherald: ['dawn_blade', 'sun_prophet'], paladin: ['sky_knight', 'sun_valkyrie'],
+  shadowblade: ['assassin', 'wanderer'],
+};
+for (const [from, to] of Object.entries(TREE)) CLASSES[from].promotesTo = to;

@@ -1,9 +1,10 @@
-import type { ChapterDef, CharacterDef, ClassDef, ItemDef, StageDef, TerrainDef, WeaponDef } from './types';
+import type { ArmorDef, ChapterDef, CharacterDef, ClassDef, ItemDef, StageDef, TerrainDef, WeaponDef } from './types';
 import { CLASSES } from './classes';
 import { WEAPONS } from './weapons';
 import { TERRAIN } from './terrain';
 import { CHARACTERS } from './characters';
 import { ITEMS } from './items';
+import { ARMORS } from './armors';
 import { CHAPTER_1, CHAPTER_1_STAGES } from './chapter1';
 import { CHAPTER_2, CHAPTER_2_STAGES } from './chapter2';
 
@@ -20,6 +21,7 @@ export interface GameDatabase {
   terrain: Record<string, TerrainDef>;
   characters: Record<string, CharacterDef>;
   items: Record<string, ItemDef>;
+  armors: Record<string, ArmorDef>;
   stages: Record<string, StageDef>;
   chapters: Record<string, ChapterDef>;
   /** Ids dos capítulos em ordem. */
@@ -32,6 +34,7 @@ export const DB: GameDatabase = {
   terrain: TERRAIN,
   characters: CHARACTERS,
   items: ITEMS,
+  armors: ARMORS,
   stages: Object.fromEntries(CHAPTERS.flatMap((c) => c.stages).map((s) => [s.id, s])),
   chapters: Object.fromEntries(CHAPTERS.map((c) => [c.chapter.id, c.chapter])),
   chapterOrder: CHAPTERS.map((c) => c.chapter.id),

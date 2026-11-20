@@ -11,6 +11,7 @@ export const TERRAIN: Record<string, TerrainDef> = {
   floor:  { id: 'floor',  name: 'Piso',      moveCost: 1,    def: 0, avoid: 0,  heal: 0 },
   bridge: { id: 'bridge', name: 'Ponte',     moveCost: 1,    def: 0, avoid: 0,  heal: 0 },
   swamp:  { id: 'swamp',  name: 'Pântano',   moveCost: 2,    def: 0, avoid: -10, heal: 0, costs: { mounted: 4, armored: 4 } },
+  ruins:  { id: 'ruins',  name: 'Ruínas',    moveCost: 1,    def: 1, avoid: 15, heal: 0, searchable: true },
   pillar: { id: 'pillar', name: 'Pilar',     moveCost: 2,    def: 1, avoid: 20, heal: 0 },
   water:  { id: 'water',  name: 'Rio',       moveCost: null, def: 0, avoid: 0,  heal: 0 },
   wall:   { id: 'wall',   name: 'Muralha',   moveCost: null, def: 0, avoid: 0,  heal: 0 },
@@ -29,6 +30,7 @@ export const DEFAULT_LEGEND: Record<string, string> = {
   ',': 'floor',
   'p': 'swamp',
   'P': 'pillar',
+  'R': 'ruins',
   '~': 'water',
   '#': 'wall',
 };

@@ -11,15 +11,15 @@ export const STAGE_1: StageDef = {
   map: {
     rows: [
       'hhff....ff..fhh',
-      'hf.....=....ffh',
+      'hf....H=....ffh',
       'f......=.....f.',
       '~~~b~~~b~~~~b~~',
-      '..f....=.......',
+      '..f....=.....R.',
       '.H..H..=..H..f.',
       '...====F====...',
       '.H.....=...H...',
       'ff..H..=..H..ff',
-      'fff....=....fff',
+      'fff..R.=....fff',
     ],
     legend: DEFAULT_LEGEND,
   },
@@ -37,6 +37,9 @@ export const STAGE_1: StageDef = {
   caches: [
     { x: 4, y: 8, itemId: 'potion' },
     { x: 11, y: 7, weaponId: 'hand_axe', text: 'Na despensa da casa, uma Machadinha de lenhador. Dá para arremessar!' },
+    { x: 6, y: 1, armorId: 'leather' },
+    { x: 13, y: 4, itemId: 'potion' },
+    { x: 5, y: 9, armorId: 'chainmail', text: 'Entre as pedras da ruína, uma velha Cota de Malha ainda inteira.' },
   ],
   preDialogue: [
     { speakerId: 'narrator', side: 'left', text: 'Ano 300 do Longo Crepúsculo. O sol nasce cada vez mais pálido sobre o vale de Brasalva.' },

@@ -133,9 +133,38 @@ describe('simulação do capítulo (sanidade e balanceamento)', () => {
         }
         if (!won) break;
       }
-      report.push(`seed ${seed}: ${save.nextStageIndex}/5 fases, selos ${save.seals}`);
+      report.push(`seed ${seed}: ${save.nextStageIndex}/5 fases, baú ${save.convoy.weapons.length} armas e ${save.convoy.armors.length} armaduras`);
     }
     console.log(`[balanceamento Cap. 2]\n${report.join('\n')}`);
     expect(report).toHaveLength(4);
+  });
+});
+
+describe('aliados ao alcance', () => {
+  const talkRecruits = ALL_STAGES.flatMap((st) =>
+    (st.events ?? []).filter((e) => e.on === 'talk' && e.recruitId).map((e) => [`${st.id} ${e.recruitId}`, st, e.recruitId!] as [string, StageDef, string]));
+
+  it('há aliados recrutáveis por conversa', () => expect(talkRecruits.length).toBeGreaterThanOrEqual(3));
+
+  it.each(talkRecruits)('%s começa perto do grupo e fora do alcance inimigo no turno 1', (_n, stage, recruitId) => {
+    const state = new BattleState(stage, DB, { seed: 1 });
+    const ally = state.units.find((u) => u.characterId === recruitId)!;
+    expect(ally.faction).toBe('ally');
+    expect(ally.ai).toBe('stationary');
+    const players = state.units.filter((u) => u.faction === 'player');
+    const near = Math.min(...players.map((p) => Math.abs(p.x - ally.x) + Math.abs(p.y - ally.y)));
+    expect(near).toBeLessThanOrEqual(3);
+    for (const e of state.units.filter((u) => u.faction === 'enemy')) {
+      const threat = state.rangeFor(e).attack.map(pointKey);
+      expect(threat, `${e.name} alcança ${recruitId}`).not.toContain(pointKey(ally.position));
+    }
+  });
+
+  it('Wren e Brielle entram no time logo no início', () => {
+    for (const [sid, id] of [['c1s3', 'wren'], ['c2s1', 'brielle']] as const) {
+      const p = DB.stages[sid].units.find((u) => u.characterId === id)!;
+      expect(p.faction, id).toBe('player');
+      expect(p.joins, id).toBe(true);
+    }
   });
 });

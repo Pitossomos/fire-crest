@@ -26,20 +26,21 @@ Os valores ficam em `src/data/classes.ts`, `src/data/weapons.ts` e `src/data/cha
 
 ## Capítulo 2: promoção, montaria e mapas grandes
 
-- **Selos da Brasa:** são ganhos no início do Capítulo 2 (1) e ao vencer as Fases 2, 3 e 4 (1 cada). Na tela de resultado, um herói de **nível 5+** pode gastar um selo para **promover**: muda para a classe avançada, soma um bônus de atributos (e geralmente +1 de movimento) e volta ao nível 1 da classe nova. Classes avançadas contam como 10 níveis acima no cálculo de EXP.
+- **Promoção por nível (sem selos):** quando um herói chega ao **nível 5**, a tela de resultado da vitória destaca **"Promover heróis ✦ (N prontos)"**. O jogador escolhe quem promover, ou "agora não" (a promoção continua disponível depois, em *Gerenciar time*). O herói muda de classe, soma um bônus de atributos e volta ao nível 1 da classe nova. Cada tier conta como +10 níveis no cálculo de EXP.
+- **Árvore de classes:** tier 1 → um tier 2 → **dois caminhos de tier 3**, à escolha do jogador. A tela mostra uma prévia de cada caminho: bônus, movimento e tipos de arma. Vários caminhos ganham um segundo tipo de arma. O tier 3 aparece com capa e diadema dourados e ★★ no painel.
 
-| Classe | Promove para |
-|---|---|
-| Portador | Lorde Solar |
-| Espadachim | Mestre de Lâminas |
-| Lanceiro | Baluarte |
-| Guerreira | Berserker |
-| Arqueiro | Atiradora |
-| Clérigo | Sacerdotisa |
-| Piromante | Arquimago |
-| Mago de Luz | Arauto da Aurora |
-| Cavaleira | Paladina |
-| Batedora | Lâmina Sombria |
+| Tier 1 | Tier 2 | Caminho A | Caminho B |
+|---|---|---|---|
+| Portador | Lorde Solar | Rei Solar (espada/lança) | Avatar da Crista (espada/luz) |
+| Espadachim | Mestre de Lâminas | Santo da Espada | Dançarina das Lâminas |
+| Lanceiro | Baluarte | Muralha Viva (lança/machado) | Grão-Paladino (lança/espada) |
+| Guerreira | Berserker | Senhora da Guerra (machado/espada) | Fúria Rubra |
+| Arqueiro | Atiradora | Olho de Falcão | Guarda-Florestal (arco/espada) |
+| Clérigo | Sacerdotisa | Oráculo (cajado/luz) | Santa da Aurora |
+| Piromante | Arquimago | Senhor das Chamas | Sábio Arcano (tomo/luz) |
+| Mago de Luz | Arauto da Aurora | Lâmina da Alvorada (luz/espada) | Profeta Solar (luz/cajado) |
+| Cavaleira | Paladina | Cavaleira Celeste (lança/espada) | Valquíria Solar (lança/luz) |
+| Batedora | Lâmina Sombria | Assassina | Andarilha (espada/arco) |
 
 - **Tipos de movimento:** *a pé*, *montado* (Cavaleira, Cavaleiro do Ocaso) e *blindado* (Sentinela Cinzenta). Cada terreno pode ter custos próprios por tipo. O painel lateral mostra esses custos.
 - **Mapas maiores** (até 24×16): a câmera rola para acompanhar o cursor, as unidades da IA, os reforços e os alvos. Painel, menus e previsão ficam fixos na tela.
@@ -47,15 +48,29 @@ Os valores ficam em `src/data/classes.ts`, `src/data/weapons.ts` e `src/data/cha
 
 ## Investigar, baú e gerenciar o time
 
-- **Investigar:** toda **Casa** e **Fortaleza/ruína** pode ser investigada uma vez por fase. Basta parar a unidade em cima e escolher *Investigar*, o que gasta a ação. Algumas escondem itens, armas ou **Selos da Brasa** (definidos em `caches` de cada fase); as outras rendem só uma fala.
-  - Há um selo escondido por fase: Fases 2–5 do Capítulo 1 e Fases 1–5 do Capítulo 2.
-  - Armas novas também se acham assim: Machadinha, Espada de Aço, Machado de Aço, Arco de Aço, Tomo das Labaredas e Tomo Radiante.
-- **Inventário:** cada herói carrega até **5 itens**. O que não cabe, e toda arma achada, vai para o **baú do grupo**. Os achados só entram no save se a fase for vencida.
+- **Investigar:** toda **Casa**, **Fortaleza** e **Ruína** pode ser investigada uma vez por fase. Basta parar a unidade em cima e escolher *Investigar*, o que gasta a ação. Algumas escondem itens, armas ou **armaduras** (definidos em `caches` de cada fase); as outras rendem só uma fala.
+  - Cada fase tem de 4 a 8 esconderijos, e o equipamento fica mais forte com o avanço: couro e malha no Capítulo 1; aço, prata e mantos no Capítulo 2. No fim estão a **Égide da Aurora** e a lendária **Lâmina do Sol** (C2 F5).
+  - Armas que se acham assim: Machadinha; Espada, Lança, Machado e Arco de Aço; Espada, Lança, Machado e Arco de Prata; Tomo das Labaredas, do Sol Poente, Radiante e da Alvorada; Cajado Solar; Lâmina do Sol.
+- **Armaduras:** **um espaço por herói**, com bônus somados aos atributos na batalha. O roster guarda os atributos de base, então o crescimento por nível não muda. As **pesadas** só servem para as linhas do Lanceiro e da Guerreira (`ClassDef.heavyArmor`).
+
+| Armadura | Bônus |
+|---|---|
+| Couraça de Couro | +1 DEF |
+| Cota de Malha | +2 DEF, −1 VEL |
+| Manto Rúnico | +3 RES |
+| Armadura de Placas | +4 DEF, +2 HP, −2 VEL (pesada) |
+| Manto do Ocaso | +2 DEF, +3 RES |
+| Armadura do Baluarte | +6 DEF, +3 HP, −3 VEL (pesada) |
+| Égide da Aurora | +3 DEF, +3 RES, +3 HP |
+
+- **Inventário:** cada herói carrega até **5 itens**. O que não cabe, e toda arma ou armadura achada, vai para o **baú do grupo**. Os achados só entram no save se a fase for vencida.
 - **Gerenciar time** (na tela de resultado, após cada vitória), passo a passo à esquerda e detalhes à direita:
   - dar um item a outro herói;
   - guardar ou pegar itens do baú;
   - equipar uma arma do baú (só se a classe usar aquele tipo; a arma antiga volta ao baú);
-  - promover com Selo da Brasa.
+  - vestir ou tirar uma armadura (a antiga volta ao baú);
+  - promover (nível 5+), escolhendo o caminho no tier 3.
+- **Aliados ao alcance:** Wren (C1 F3) e Brielle (C2 F1) entram no time logo no início, com uma cena de apresentação. Ilian (C1 F2), Lys (C1 F4) e Sorrel (C2 F2) continuam recrutáveis por conversa, mas começam parados a até 3 tiles do grupo e fora do alcance de qualquer inimigo no turno 1. Um teste garante isso.
 
 ## Terreno
 
@@ -69,6 +84,7 @@ Os valores ficam em `src/data/classes.ts`, `src/data/weapons.ts` e `src/data/cha
 | Rio / Muralha | — | — | — | Intransponível |
 | Pântano | 2 | 0 | −10 | Montados e blindados: 4 |
 | Pilar | 2 | +1 | +20 | Cobertura em interiores |
+| Ruínas | 1 | +1 | +15 | Investigável |
 
 Na floresta, montados e blindados pagam 3; na colina, 5.
 
@@ -141,7 +157,9 @@ Os botões simulam as teclas, então funcionam em todas as telas: título, batal
 | M5 | Conversar, curar, itens (Poção/Elixir), tomar, fase aliada | ✅ |
 | M6 | Fases 2–5 (mapas, eventos, diálogos), validação automática das fases e simulação de balanceamento | ✅ |
 | M7 | Campanha com save, título (Clássico/Casual/Continuar), tela de resultado, efeitos sonoros sintetizados, transições | ✅ |
-| C2 | Capítulo 2: 5 fases em mapas grandes com câmera, Cavaleira e Batedora, Cavaleiros do Ocaso e Sentinelas, promoção com Selos da Brasa, movimento montado/blindado, continuidade do save | ✅ |
+| C2 | Capítulo 2: 5 fases em mapas grandes com câmera, Cavaleira e Batedora, Cavaleiros do Ocaso e Sentinelas, promoção, movimento montado/blindado, continuidade do save | ✅ |
+| C3 | Investigar construções, baú e gerenciar o time | ✅ |
+| C4 | Promoção por nível sem selos, tier 3 bifurcado (20 classes), armaduras, ruínas, mais esconderijos com armas de prata, aliados seguros | ✅ |
 
 ### Desvios do plano original
 

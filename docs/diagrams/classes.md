@@ -65,6 +65,9 @@ classDiagram
     class mod_core_combat["combat.ts"] {
       <<module>>
     }
+    class mod_core_equipment["equipment.ts"] {
+      <<module>>
+    }
     class EventEngine
     class EventEffects {
       <<interface>>
@@ -125,6 +128,9 @@ classDiagram
       <<interface>>
     }
     class ItemDef {
+      <<interface>>
+    }
+    class ArmorDef {
       <<interface>>
     }
     class InventorySlot {
@@ -300,6 +306,7 @@ classDiagram
   BattleState --> GameDatabase : db
   BattleState --> Rng : rng
   BattleState --> StageDef : stage
+  CacheDef --> ArmorDef : armorId
   CacheDef --> ItemDef : itemId
   CacheDef --> WeaponDef : weaponId
   CarriedItem --> ItemDef : def
@@ -309,6 +316,7 @@ classDiagram
   CharacterDef --> ClassDef : classId
   CharacterDef --> WeaponDef : weaponId
   CombatResult "1" *-- "*" Strike : strikes
+  Convoy "1" *-- "*" ArmorDef : armors
   Convoy "1" *-- "*" InventorySlot : items
   Convoy "1" *-- "*" WeaponDef : weapons
   DialogueData "1" *-- "*" DialogueLine : lines
@@ -331,6 +339,7 @@ classDiagram
   Forecast --> Unit : attacker
   Forecast --> Unit : defender
   FoundLoot "1" *-- "*" InventorySlot : items
+  GameDatabase "1" *-- "*" ArmorDef : armors
   GameDatabase "1" *-- "*" ChapterDef : chapters
   GameDatabase "1" *-- "*" CharacterDef : characters
   GameDatabase "1" *-- "*" ClassDef : classes
@@ -364,6 +373,7 @@ classDiagram
   ResultData --> SaveData : save
   ResultScene --> TextMenu : menu
   RosterEntry "1" *-- "*" InventorySlot : items
+  RosterEntry --> ArmorDef : armorId
   RosterEntry --> CharacterDef : characterId
   RosterEntry --> ClassDef : classId
   RosterEntry --> WeaponDef : weaponId
@@ -390,9 +400,11 @@ classDiagram
   TextMenu --> TextMenuStyle : style
   TitleScene --> TextMenu : menu
   Unit "1" *-- "*" CarriedItem : items
+  Unit --> ArmorDef : armor
   Unit --> ClassDef : classDef
   Unit --> WeaponDef : weapon
   UnitInit "1" *-- "*" CarriedItem : items
+  UnitInit --> ArmorDef : armor
   UnitInit --> ClassDef : classDef
   UnitInit --> Point : position
   UnitInit --> WeaponDef : weapon
@@ -492,9 +504,9 @@ classDiagram
     }
     class FoundLoot {
       <<interface>>
-      +seals: number
       +items: InventorySlot[]
       +weapons: string[]
+      +armors: string[]
     }
     class InvestigateOutcome {
       <<interface>>
@@ -525,8 +537,9 @@ classDiagram
       +buildStageUnits(stage: StageDef, save: SaveData, db: GameDatabase) Unit[]
       +applyVictory(save: SaveData, state: BattleState) SaveData
       +rosterClassId(entry: RosterEntry, db: GameDatabase) string
+      +promotionOptions(entry: RosterEntry, db: GameDatabase) string[]
       +canPromote(entry: RosterEntry, db: GameDatabase) boolean
-      +promote(save: SaveData, characterId: string, db: GameDatabase) SaveData
+      +promote(save: SaveData, characterId: string, db: GameDatabase, targetClassId: string) SaveData
       +livingRoster(save: SaveData) RosterEntry[]
       +devSaveForStage(stageId: string, db: GameDatabase) SaveData
     }
@@ -568,6 +581,12 @@ classDiagram
       +strikeStats(a: Unit, d: Unit, dTerrain: TerrainDef) Omit~StrikeStats, strikes~
       +forecast(map: BattleMap, attacker: Unit, defender: Unit, from: Point) Forecast
       +resolveCombat(map: BattleMap, attacker: Unit, defender: Unit, rng: Rng) CombatResult
+    }
+    class mod_core_equipment["equipment.ts"] {
+      <<module>>
+      +applyArmor(stats: Stats, armor: ArmorDef | undefined, sign: 1 | -1) Stats
+      +canWear(cls: ClassDef, armor: ArmorDef) boolean
+      +armorBonusLabel(a: ArmorDef) string
     }
     class EventEngine {
       -state: BattleState
@@ -628,7 +647,10 @@ classDiagram
       +takeItem(save: SaveData, convoyIndex: number, heroId: string) SaveData
       +canEquip(save: SaveData, heroId: string, weaponId: string, db: GameDatabase) boolean
       +equipWeapon(save: SaveData, heroId: string, convoyIndex: number, db: GameDatabase) SaveData
-      +addToConvoy(save: SaveData, items: InventorySlot[], weapons: string[]) SaveData
+      +addToConvoy(save: SaveData, items: InventorySlot[], weapons: string[], armors: string[]) SaveData
+      +canEquipArmor(save: SaveData, heroId: string, armorId: string, db: GameDatabase) boolean
+      +equipArmor(save: SaveData, heroId: string, convoyIndex: number, db: GameDatabase) SaveData
+      +removeArmor(save: SaveData, heroId: string) SaveData
     }
     class ReachNode {
       <<interface>>
@@ -673,6 +695,7 @@ classDiagram
       +y: number
       +hasActed: boolean
       +items: CarriedItem[]
+      +armor: ArmorDef
       +maxHp: number
       +move: number
       +isLord: boolean
@@ -703,6 +726,7 @@ classDiagram
       +ai?: AiBehavior
       +boss?: boolean
       +items?: CarriedItem[]
+      +armor?: ArmorDef
       +exp?: number
       +hp?: number
     }
@@ -757,6 +781,7 @@ classDiagram
       +terrain: Record~string, TerrainDef~
       +characters: Record~string, CharacterDef~
       +items: Record~string, ItemDef~
+      +armors: Record~string, ArmorDef~
       +stages: Record~string, StageDef~
       +chapters: Record~string, ChapterDef~
       +chapterOrder: string[]
@@ -801,6 +826,16 @@ classDiagram
       +heal: number
       +uses: number
     }
+    class ArmorDef {
+      <<interface>>
+      +id: string
+      +name: string
+      +def: number
+      +res: number
+      +hp?: number
+      +spd?: number
+      +heavy?: boolean
+    }
     class InventorySlot {
       <<interface>>
       +itemId: Ref~ItemDef~
@@ -818,7 +853,9 @@ classDiagram
       +isLord?: boolean
       +movement?: MoveType
       +tier?: number
-      +promotesTo?: Ref~ClassDef~
+      +promotesTo?: Ref~ClassDef~[]
+      +heavyArmor?: boolean
+      +blurb?: string
       +promotionBonus?: Stats
       +artBase?: Ref~ClassDef~
     }
@@ -890,7 +927,7 @@ classDiagram
       +y: number
       +itemId?: Ref~ItemDef~
       +weaponId?: Ref~WeaponDef~
-      +seals?: number
+      +armorId?: Ref~ArmorDef~
       +text?: string
     }
     class StageDef {
@@ -906,7 +943,6 @@ classDiagram
       +postDialogue: DialogueLine[]
       +events: EventTrigger[]
       +recruitOnClear?: Ref~CharacterDef~[]
-      +rewardSeals?: number
       +caches?: CacheDef[]
     }
     class PremadeMember {
@@ -921,7 +957,6 @@ classDiagram
       +name: string
       +stageIds: Ref~StageDef~[]
       +nextChapterId?: Ref~ChapterDef~
-      +startSeals?: number
       +premade?: PremadeMember[]
     }
     class RosterEntry {
@@ -932,6 +967,7 @@ classDiagram
       +exp: number
       +stats: Stats
       +weaponId: Ref~WeaponDef~
+      +armorId?: Ref~ArmorDef~
       +items: InventorySlot[]
       +alive: boolean
     }
@@ -939,6 +975,7 @@ classDiagram
       <<interface>>
       +items: InventorySlot[]
       +weapons: Ref~WeaponDef~[]
+      +armors: Ref~ArmorDef~[]
     }
     class SaveData {
       <<interface>>
@@ -947,10 +984,10 @@ classDiagram
       +chapterId: Ref~ChapterDef~
       +nextStageIndex: number
       +roster: RosterEntry[]
-      +seals: number
       +convoy: Convoy
     }
   }
+  CacheDef --> ArmorDef : armorId
   CacheDef --> ItemDef : itemId
   CacheDef --> WeaponDef : weaponId
   ChapterDef "1" *-- "*" PremadeMember : premade
@@ -958,6 +995,7 @@ classDiagram
   CharacterDef "1" *-- "*" ItemDef : items
   CharacterDef --> ClassDef : classId
   CharacterDef --> WeaponDef : weaponId
+  Convoy "1" *-- "*" ArmorDef : armors
   Convoy "1" *-- "*" InventorySlot : items
   Convoy "1" *-- "*" WeaponDef : weapons
   DialogueLine --> CharacterDef : speakerId
@@ -966,6 +1004,7 @@ classDiagram
   EventTrigger --> CharacterDef : otherUnitId
   EventTrigger --> CharacterDef : recruitId
   EventTrigger --> CharacterDef : unitId
+  GameDatabase "1" *-- "*" ArmorDef : armors
   GameDatabase "1" *-- "*" ChapterDef : chapters
   GameDatabase "1" *-- "*" CharacterDef : characters
   GameDatabase "1" *-- "*" ClassDef : classes
@@ -978,6 +1017,7 @@ classDiagram
   ObjectiveDef --> CharacterDef : targetId
   PremadeMember --> CharacterDef : characterId
   RosterEntry "1" *-- "*" InventorySlot : items
+  RosterEntry --> ArmorDef : armorId
   RosterEntry --> CharacterDef : characterId
   RosterEntry --> ClassDef : classId
   RosterEntry --> WeaponDef : weaponId
@@ -1043,6 +1083,7 @@ classDiagram
       +hair?: string
       +mounted?: boolean
       +promoted?: boolean
+      +master?: boolean
       +layerOf?: string
     }
     class mod_render_art["art.ts"] {
@@ -1357,19 +1398,26 @@ classDiagram
       -alive() RosterEntry[]
       -entry(id: string) RosterEntry
       -name(id: string) string
+      -cls(r: RosterEntry) ClassDef
+      -stars(c: ClassDef) string
       -itemLabel(i: object) string
       -weaponLabel(id: string) string
+      -armorLabel(id: string) string
+      -weaponTypes(c: ClassDef) string
       -refresh(heroId: string) void
       -setMenu(prompt: string, options: TextMenuOption[], onPick: Function, onCancel: Function, onHover: Function) void
       -done(text: string) void
       -fail(err: unknown) void
       -heroStep() void
       -actionStep(heroId: string) void
+      -promoteListStep() void
+      -promoteStep(heroId: string, back: Function) void
       -pickItem(heroId: string, next: Function) void
       -pickTarget(heroId: string, slot: number) void
       -pickConvoyItem(heroId: string) void
       -pickWeapon(heroId: string) void
-      -apply(heroId: string, op: Function, msg: Function, sfx: heal | levelup) void
+      -pickArmor(heroId: string) void
+      -apply(heroId: string, op: Function, msg: Function) void
       -exit() void
     }
     class ResultScene {
@@ -1391,6 +1439,7 @@ classDiagram
       <<interface>>
       +save: SaveData
       +result: ResultData
+      +focus?: promote
     }
     class TitleScene {
       +menu: TextMenu

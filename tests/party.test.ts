@@ -8,7 +8,7 @@ function team(): SaveData {
   return {
     ...newCampaign('classic'),
     roster: ['aren', 'mira', 'hadric', 'corvin'].map((id) => premadeEntry(id, 5, DB)),
-    convoy: { items: [{ itemId: 'elixir', uses: 1 }], weapons: ['steel_sword', 'steel_lance'] },
+    convoy: { items: [{ itemId: 'elixir', uses: 1 }], weapons: ['steel_sword', 'steel_lance'], armors: [] },
   };
 }
 const items = (s: SaveData, id: string) => s.roster.find((r) => r.characterId === id)!.items.map((i) => i.itemId);

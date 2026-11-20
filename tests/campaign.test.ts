@@ -50,12 +50,25 @@ describe('campanha', () => {
     expect(buildStageUnits(STAGE_3, casual, DB).some((u) => u.characterId === 'mira')).toBe(true);
   });
 
+  it('Wren entra no time no início da Fase 3 e fica no roster', () => {
+    const save = { ...afterStage1('classic'), nextStageIndex: 2 };
+    const units = buildStageUnits(STAGE_3, save, DB);
+    expect(units.find((u) => u.characterId === 'wren')?.faction).toBe('player');
+    const state = new BattleState(STAGE_3, DB, { units });
+    expect(applyVictory(save, state).roster.find((r) => r.characterId === 'wren')?.alive).toBe(true);
+  });
+
   it('aliada NPC com recruitOnClear entra no roster só se sobreviver', () => {
     let save = afterStage1('classic');
     save = { ...save, nextStageIndex: 2 };
-    const alive = new BattleState(STAGE_3, DB, { units: buildStageUnits(STAGE_3, save, DB) });
+    const npcStage = {
+      ...STAGE_3,
+      recruitOnClear: ['wren'],
+      units: STAGE_3.units.map((u) => (u.characterId === 'wren' ? { ...u, faction: 'ally' as const, joins: undefined, ai: 'guard' as const } : u)),
+    };
+    const alive = new BattleState(npcStage, DB, { units: buildStageUnits(npcStage, save, DB) });
     expect(applyVictory(save, alive).roster.some((r) => r.characterId === 'wren')).toBe(true);
-    const dead = new BattleState(STAGE_3, DB, { units: buildStageUnits(STAGE_3, save, DB) });
+    const dead = new BattleState(npcStage, DB, { units: buildStageUnits(npcStage, save, DB) });
     dead.units.find((u) => u.characterId === 'wren')!.hp = 0;
     expect(applyVictory(save, dead).roster.some((r) => r.characterId === 'wren')).toBe(false);
   });

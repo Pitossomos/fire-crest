@@ -379,8 +379,9 @@ export class BattleScene extends Phaser.Scene {
       this.panel.setHelp(out.text);
       await floatText(this, unit.x, unit.y, 'Nada aqui', '#cfd8e3', 16);
     } else {
-      playSfx(this, out.cache?.seals ? 'levelup' : 'heal');
-      for (const g of out.gained) await floatText(this, unit.x, unit.y, g, out.cache?.seals ? '#ffd34d' : '#9fe3b0', 16);
+      const rare = !!(out.cache?.weaponId || out.cache?.armorId);
+      playSfx(this, rare ? 'levelup' : 'heal');
+      for (const g of out.gained) await floatText(this, unit.x, unit.y, g, rare ? '#ffd34d' : '#9fe3b0', 16);
       await runDialogue(this, [{ speakerId: 'narrator', side: 'left', text: out.text }]);
     }
     this.refreshPanel();

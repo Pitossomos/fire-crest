@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { BattleState } from '../src/core/battle-state';
 import {
-  PROMOTION_LEVEL, buildStageUnits, canPromote, newCampaign, premadeEntry, promote,
+  PROMOTION_LEVEL, buildStageUnits, canPromote, newCampaign, premadeEntry, promote, promotionOptions,
 } from '../src/core/campaign';
-import { combatExp } from '../src/core/leveling';
+import { combatExp, effectiveLevel } from '../src/core/leveling';
 import { pointKey } from '../src/core/grid';
 import { DB } from '../src/data';
 import { STAGE_3 } from '../src/data/chapter1/stage3';
@@ -11,13 +11,18 @@ import type { SaveData } from '../src/data/types';
 import { SAVE_KEY, loadSave } from '../src/save/save';
 import { makeStage } from './helpers';
 
-function saveWith(level: number, seals = 1): SaveData {
+function saveWith(level: number): SaveData {
   return {
     ...newCampaign('classic'),
     nextStageIndex: 2,
-    seals,
     roster: ['aren', 'mira', 'hadric', 'kaira'].map((id) => premadeEntry(id, level, DB)),
   };
+}
+
+/** Save com Aren já no tier 2 (Lorde Solar) e no nível pedido. */
+function tier2Save(level: number): SaveData {
+  const s = promote(saveWith(6), 'aren', DB);
+  return { ...s, roster: s.roster.map((r) => (r.characterId === 'aren' ? { ...r, level } : r)) };
 }
 
 describe('time pré-montado', () => {
@@ -31,22 +36,38 @@ describe('time pré-montado', () => {
 });
 
 describe('promoção', () => {
-  it(`exige nível ${PROMOTION_LEVEL}, selo e classe com promoção`, () => {
+  it(`exige só nível ${PROMOTION_LEVEL} e classe com promoção (sem selos)`, () => {
     expect(canPromote(premadeEntry('aren', PROMOTION_LEVEL - 1, DB), DB)).toBe(false);
     expect(canPromote(premadeEntry('aren', PROMOTION_LEVEL, DB), DB)).toBe(true);
-    expect(() => promote(saveWith(PROMOTION_LEVEL, 0), 'aren', DB)).toThrow();
+    expect(() => promote(saveWith(PROMOTION_LEVEL - 1), 'aren', DB)).toThrow();
+    expect(() => promote(saveWith(PROMOTION_LEVEL), 'aren', DB)).not.toThrow();
   });
 
-  it('troca a classe, soma o bônus, volta ao nível 1 e gasta o selo', () => {
-    const save = saveWith(6, 2);
+  it('troca a classe, soma o bônus e volta ao nível 1', () => {
+    const save = saveWith(6);
     const before = save.roster.find((r) => r.characterId === 'aren')!;
     const after = promote(save, 'aren', DB);
     const aren = after.roster.find((r) => r.characterId === 'aren')!;
     expect(aren.classId).toBe('sunlord');
     expect(aren.level).toBe(1);
+    expect(aren.exp).toBe(0);
     expect(aren.stats.str).toBe(before.stats.str + DB.classes.sunlord.promotionBonus!.str);
-    expect(after.seals).toBe(1);
-    expect(canPromote(aren, DB)).toBe(false); // já é tier 2
+    expect(promotionOptions(aren, DB)).toEqual(['solar_king', 'crest_avatar']);
+    expect(canPromote(aren, DB)).toBe(false); // nível 1 de novo
+  });
+
+  it('no tier 3 o jogador escolhe o caminho; destino inválido é recusado', () => {
+    const save = tier2Save(PROMOTION_LEVEL);
+    expect(canPromote(save.roster.find((r) => r.characterId === 'aren')!, DB)).toBe(true);
+    expect(() => promote(save, 'aren', DB)).toThrow(/caminho/);
+    expect(() => promote(save, 'aren', DB, 'red_fury')).toThrow();
+    const a = promote(save, 'aren', DB, 'solar_king').roster.find((r) => r.characterId === 'aren')!;
+    const b = promote(save, 'aren', DB, 'crest_avatar').roster.find((r) => r.characterId === 'aren')!;
+    expect(a.classId).toBe('solar_king');
+    expect(b.classId).toBe('crest_avatar');
+    expect(DB.classes.solar_king.weaponTypes).toContain('lance');
+    expect(DB.classes.crest_avatar.weaponTypes).toContain('light');
+    expect(canPromote({ ...a, level: 20 }, DB)).toBe(false); // tier 3 é o topo
   });
 
   it('a unidade promovida entra na fase com a classe nova (mov e lorde mantidos)', () => {
@@ -55,16 +76,34 @@ describe('promoção', () => {
     expect(aren.classDef.id).toBe('sunlord');
     expect(aren.move).toBe(6);
     expect(aren.isLord).toBe(true);
+    const king = buildStageUnits(STAGE_3, promote(tier2Save(5), 'aren', DB, 'solar_king'), DB)
+      .find((u) => u.characterId === 'aren')!;
+    expect(king.isLord).toBe(true);
+    expect(king.classDef.tier).toBe(3);
   });
 
-  it('todo herói tem promoção e toda classe promovida aceita a arma original', () => {
-    for (const ch of Object.values(DB.characters).filter((c) => !c.villain && DB.classes[c.classId].tier !== 2)) {
+  it('árvore: tier 1 → um tier 2 → dois tier 3, que aceitam as armas da classe anterior', () => {
+    let tier3 = 0;
+    for (const cls of Object.values(DB.classes)) {
+      for (const toId of cls.promotesTo ?? []) {
+        const to = DB.classes[toId];
+        expect(to, toId).toBeDefined();
+        expect(to.tier, toId).toBe((cls.tier ?? 1) + 1);
+        for (const t of cls.weaponTypes) expect(to.weaponTypes, `${cls.id} → ${toId}`).toContain(t);
+        if (to.tier === 3) tier3++;
+      }
+      if (cls.tier === 1 && cls.promotesTo) expect(cls.promotesTo).toHaveLength(1);
+      if (cls.tier === 2) expect(cls.promotesTo, cls.id).toHaveLength(2);
+      if (cls.tier === 3) expect(cls.promotesTo).toBeUndefined();
+    }
+    expect(tier3).toBe(20);
+  });
+
+  it('todo herói tem promoção', () => {
+    for (const ch of Object.values(DB.characters).filter((c) => !c.villain)) {
       const cls = DB.classes[ch.classId];
       if (['bandit', 'hollow', 'dusk_monk', 'inquisitor'].includes(cls.id)) continue;
-      expect(cls.promotesTo, ch.id).toBeDefined();
-      const to = DB.classes[cls.promotesTo!];
-      expect(to.weaponTypes).toContain(DB.weapons[ch.weaponId].type);
-      expect(to.tier).toBe(2);
+      expect(cls.promotesTo?.length, ch.id).toBeGreaterThan(0);
     }
   });
 
@@ -75,6 +114,9 @@ describe('promoção', () => {
     const hollow = s.units.find((u) => u.classDef.id === 'hollow' && !u.boss)!;
     // Esvaído nível 2 contra Lorde Solar nível 1 (efetivo 11): abate rende o mínimo.
     expect(combatExp(aren, hollow, true, true)).toBe(10);
+    const king = buildStageUnits(STAGE_3, promote(tier2Save(5), 'aren', DB, 'solar_king'), DB)
+      .find((u) => u.characterId === 'aren')!;
+    expect(effectiveLevel(king)).toBe(21);
   });
 });
 
@@ -101,15 +143,29 @@ describe('movimento por tipo', () => {
 });
 
 describe('migração de saves antigos', () => {
-  it('migra saves antigos sem perder o progresso', () => {
+  const memory = () => {
     const store = new Map<string, string>();
-    const kv = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v), removeItem: (k: string) => void store.delete(k) };
-    const { seals: _s, convoy: _c, ...v1 } = { ...newCampaign('casual'), nextStageIndex: 3 };
-    kv.setItem(SAVE_KEY, JSON.stringify({ ...v1, version: 1 }));
+    return { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v), removeItem: (k: string) => void store.delete(k) };
+  };
+
+  it('v1 (sem baú) → v4 sem perder o progresso', () => {
+    const kv = memory();
+    const { convoy: _c, ...v1 } = { ...newCampaign('casual'), nextStageIndex: 3 };
+    kv.setItem(SAVE_KEY, JSON.stringify({ ...v1, version: 1, seals: 2 }));
     const loaded = loadSave(kv)!;
     expect(loaded.nextStageIndex).toBe(3);
-    expect(loaded.seals).toBe(0);
-    expect(loaded.version).toBe(3);
-    expect(loaded.convoy).toEqual({ items: [], weapons: [] });
+    expect(loaded.version).toBe(4);
+    expect('seals' in loaded).toBe(false);
+    expect(loaded.convoy).toEqual({ items: [], weapons: [], armors: [] });
+  });
+
+  it('v3 (com selos e baú sem armaduras) → v4 descarta os selos e mantém o baú', () => {
+    const kv = memory();
+    const v3 = { ...newCampaign('classic'), version: 3, seals: 1, convoy: { items: [{ itemId: 'potion', uses: 3 }], weapons: ['steel_sword'] } };
+    kv.setItem(SAVE_KEY, JSON.stringify(v3));
+    const loaded = loadSave(kv)!;
+    expect(loaded.version).toBe(4);
+    expect('seals' in loaded).toBe(false);
+    expect(loaded.convoy).toEqual({ items: [{ itemId: 'potion', uses: 3 }], weapons: ['steel_sword'], armors: [] });
   });
 });

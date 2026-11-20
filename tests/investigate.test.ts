@@ -14,22 +14,22 @@ function village(): BattleState {
     { classId: 'bandit', weaponId: 'iron_axe', faction: 'enemy', x: 1, y: 1 },
   ]);
   stage.caches = [
-    { x: 1, y: 0, itemId: 'potion', seals: 1 },
+    { x: 1, y: 0, itemId: 'potion', armorId: 'chainmail' },
     { x: 1, y: 1, weaponId: 'steel_sword' },
   ];
   return new BattleState(stage, DB, { seed: 1 });
 }
 
 describe('investigar construções', () => {
-  it('acha item e selo uma única vez e consome a ação', () => {
+  it('acha item e armadura uma única vez e consome a ação', () => {
     const s = village();
     const aren = s.units[0];
     const before = aren.items.length;
     expect(s.canInvestigate(aren)).toBe(true);
     const out = s.investigate(aren);
-    expect(out.gained).toEqual(['Poção', 'Selo da Brasa']);
+    expect(out.gained).toEqual(['Poção', 'Cota de Malha (baú)']);
     expect(aren.items).toHaveLength(before + 1);
-    expect(s.found.seals).toBe(1);
+    expect(s.found.armors).toEqual(['chainmail']);
     expect(aren.hasActed).toBe(true);
     expect(s.canInvestigate(aren)).toBe(false);
     expect(() => s.investigate(aren)).toThrow();
@@ -41,14 +41,14 @@ describe('investigar construções', () => {
     const out = s.investigate(mira);
     expect(out.gained).toEqual([]);
     expect(out.text.length).toBeGreaterThan(5);
-    expect(s.found).toEqual({ seals: 0, items: [], weapons: [] });
+    expect(s.found).toEqual({ items: [], weapons: [], armors: [] });
   });
 
   it('inventário cheio manda o item para o baú; armas sempre vão para o baú', () => {
     const s = village();
     const aren = s.units[0];
     while (aren.items.length < MAX_ITEMS) aren.items.push({ def: DB.items.potion, uses: 3 });
-    expect(s.investigate(aren).gained).toEqual(['Poção (baú)', 'Selo da Brasa']);
+    expect(s.investigate(aren).gained).toEqual(['Poção (baú)', 'Cota de Malha (baú)']);
     expect(s.found.items).toEqual([{ itemId: 'potion', uses: 3 }]);
   });
 
@@ -61,7 +61,7 @@ describe('investigar construções', () => {
     expect(s.canInvestigate(aren)).toBe(false);
   });
 
-  it('a vitória leva selos e achados ao save (baú)', () => {
+  it('a vitória leva os achados ao save (baú)', () => {
     const save = { ...newCampaign('classic'), nextStageIndex: 2 };
     const s = new BattleState(STAGE_3, DB, { units: buildStageUnits(STAGE_3, save, DB) });
     const hadric = s.units.find((u) => u.characterId === 'hadric')!;
@@ -69,27 +69,36 @@ describe('investigar construções', () => {
     s.investigate(hadric);
     s.found.weapons.push('steel_sword');
     const after = applyVictory(save, s);
-    expect(after.seals).toBe(save.seals + 1);
+    expect(after.convoy.armors).toEqual(['runic_mantle']);
     expect(after.convoy.weapons).toEqual(['steel_sword']);
   });
 });
 
 describe('esconderijos das fases', () => {
-  it('ficam em construções, apontam para itens/armas existentes e somam ~1 selo por fase', () => {
-    let seals = 0;
+  it('ficam em construções, apontam para itens/armas/armaduras existentes, sem duplicatas', () => {
+    let armors = 0;
     for (const stage of Object.values(DB.stages)) {
       const s = new BattleState(stage, DB, { seed: 1 });
       const keys = new Set<string>();
-      for (const c of stage.caches ?? []) {
+      const caches = stage.caches ?? [];
+      expect(caches.length, `${stage.id}: poucos esconderijos`).toBeGreaterThanOrEqual(3);
+      for (const c of caches) {
         expect(s.map.terrainAt({ x: c.x, y: c.y }).searchable, `${stage.id} (${c.x},${c.y})`).toBe(true);
         if (c.itemId) expect(DB.items[c.itemId], c.itemId).toBeDefined();
         if (c.weaponId) expect(DB.weapons[c.weaponId], c.weaponId).toBeDefined();
-        expect(c.itemId || c.weaponId || c.seals, `${stage.id} vazio`).toBeTruthy();
+        if (c.armorId) expect(DB.armors[c.armorId], c.armorId).toBeDefined();
+        expect(c.itemId || c.weaponId || c.armorId, `${stage.id} vazio`).toBeTruthy();
         keys.add(`${c.x},${c.y}`);
-        seals += c.seals ?? 0;
+        if (c.armorId) armors++;
       }
-      expect(keys.size, `${stage.id}: esconderijos duplicados`).toBe((stage.caches ?? []).length);
+      expect(keys.size, `${stage.id}: esconderijos duplicados`).toBe(caches.length);
     }
-    expect(seals).toBe(9); // C1 Fases 2–5 + C2 Fases 1–5
+    expect(armors).toBeGreaterThanOrEqual(10);
+  });
+
+  it('o terreno de ruínas existe nos mapas e é investigável', () => {
+    expect(DB.terrain.ruins.searchable).toBe(true);
+    const withRuins = Object.values(DB.stages).filter((st) => st.map.rows.some((r) => r.includes('R')));
+    expect(withRuins.length).toBeGreaterThanOrEqual(8);
   });
 });

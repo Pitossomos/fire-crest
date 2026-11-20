@@ -69,6 +69,19 @@ export interface ItemDef {
   uses: number;
 }
 
+/** @entity Armadura: um espaço por herói; bônus somados aos atributos. */
+export interface ArmorDef {
+  id: string;
+  name: string;
+  def: number;
+  res: number;
+  hp?: number;
+  /** Penalidade de velocidade (negativa nas pesadas). */
+  spd?: number;
+  /** Pesada: só classes com `heavyArmor` usam. */
+  heavy?: boolean;
+}
+
 /** @entity Item no inventário de uma unidade, com os usos restantes. */
 export interface InventorySlot {
   itemId: Ref<ItemDef>;
@@ -89,10 +102,14 @@ export interface ClassDef {
   isLord?: boolean;
   /** Tipo de movimento (padrão: a pé). */
   movement?: MoveType;
-  /** 1 = classe básica (padrão), 2 = classe promovida. */
+  /** 1 = classe básica (padrão), 2 = promovida, 3 = mestre (caminho escolhido). */
   tier?: number;
-  /** Classe avançada para a qual promove com um Selo da Brasa. */
-  promotesTo?: Ref<ClassDef>;
+  /** Classes para as quais promove ao atingir o nível 5 (duas = caminho à escolha). */
+  promotesTo?: Ref<ClassDef>[];
+  /** Pode usar armaduras pesadas. */
+  heavyArmor?: boolean;
+  /** Uma linha descrevendo o estilo da classe (mostrada ao escolher o caminho). */
+  blurb?: string;
   /** Bônus de atributos ao promover para esta classe. */
   promotionBonus?: Stats;
   /** Classe cujo desenho serve de base (classes promovidas). */
@@ -180,7 +197,7 @@ export interface CacheDef {
   y: number;
   itemId?: Ref<ItemDef>;
   weaponId?: Ref<WeaponDef>;
-  seals?: number;
+  armorId?: Ref<ArmorDef>;
   /** Fala do narrador ao encontrar (opcional). */
   text?: string;
 }
@@ -199,8 +216,6 @@ export interface StageDef {
   events: EventTrigger[];
   /** Aliados NPC que entram no time se sobreviverem até o fim da fase. */
   recruitOnClear?: Ref<CharacterDef>[];
-  /** Selos da Brasa ganhos ao vencer a fase. */
-  rewardSeals?: number;
   /** Esconderijos nas construções da fase. */
   caches?: CacheDef[];
 }
@@ -219,8 +234,6 @@ export interface ChapterDef {
   stageIds: Ref<StageDef>[];
   /** Capítulo seguinte (ausente = fim do jogo por enquanto). */
   nextChapterId?: Ref<ChapterDef>;
-  /** Selos da Brasa recebidos ao começar o capítulo. */
-  startSeals?: number;
   /** Time usado ao começar o capítulo direto do título. */
   premade?: PremadeMember[];
 }
@@ -234,6 +247,8 @@ export interface RosterEntry {
   exp: number;
   stats: Stats;
   weaponId: Ref<WeaponDef>;
+  /** Armadura equipada (os atributos salvos são os de base, sem o bônus). */
+  armorId?: Ref<ArmorDef>;
   items: InventorySlot[];
   alive: boolean;
 }
@@ -242,6 +257,7 @@ export interface RosterEntry {
 export interface Convoy {
   items: InventorySlot[];
   weapons: Ref<WeaponDef>[];
+  armors: Ref<ArmorDef>[];
 }
 
 /** @entity Save do jogo (localStorage). */
@@ -251,8 +267,6 @@ export interface SaveData {
   chapterId: Ref<ChapterDef>;
   nextStageIndex: number;
   roster: RosterEntry[];
-  /** Selos da Brasa disponíveis para promover heróis. */
-  seals: number;
   /** Baú do grupo. */
   convoy: Convoy;
 }

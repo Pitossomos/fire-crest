@@ -299,6 +299,23 @@ const PROMOTED_OVERLAY: readonly string[] = [
   '...y........y...',
 ];
 
+/** Classes mestras (tier 3): diadema e capa dourada nas laterais. */
+const MASTER_OVERLAY: readonly string[] = [
+  '................',
+  '................',
+  '.....y....y.....',
+  '......yyyy......',
+  '................',
+  '................',
+  '................',
+  '...yy......yy...',
+  '..yy........yy..',
+  '..y..........y..',
+  '..y..........y..',
+  '..y..........y..',
+  '..yy........yy..',
+];
+
 /** Armas desenhadas na mão direita (lado direito do sprite). */
 const WEAPON_LAYERS: Record<string, readonly string[]> = {
   sword: [
@@ -451,6 +468,8 @@ export interface UnitArtSpec {
   mounted?: boolean;
   /** Classe promovida: ombreiras douradas. */
   promoted?: boolean;
+  /** Classe mestra (tier 3): diadema e capa dourada. */
+  master?: boolean;
   /** Camada de outra classe a usar (classes promovidas usam a da classe base). */
   layerOf?: string;
 }
@@ -473,6 +492,7 @@ export function drawUnit(spec: UnitArtSpec): PixelCanvas {
   const layer = LAYERS[spec.layerOf ?? spec.classId];
   if (layer) canvas.stamp(layer, palette);
   if (spec.promoted) canvas.stamp(PROMOTED_OVERLAY, palette);
+  if (spec.master) canvas.stamp(MASTER_OVERLAY, palette);
   const weapon = spec.classId === 'inquisitor' ? ROSARY : WEAPON_LAYERS[spec.weaponType];
   if (weapon) canvas.stamp(weapon, palette);
   return canvas;
@@ -483,6 +503,7 @@ export const ALL_TEMPLATES: Record<string, readonly string[]> = {
   body: BODY,
   mounted: MOUNTED_BODY,
   promoted: PROMOTED_OVERLAY,
+  master: MASTER_OVERLAY,
   rosary: ROSARY,
   ...Object.fromEntries(Object.entries(LAYERS).map(([k, v]) => [`layer:${k}`, v])),
   ...Object.fromEntries(Object.entries(WEAPON_LAYERS).map(([k, v]) => [`weapon:${k}`, v])),
@@ -616,6 +637,24 @@ const GATE: readonly string[] = [
 ];
 const GATE_PALETTE = { s: '#8a8a92', S: '#6a6a74', d: '#2a2028', w: '#5b3a1e' };
 
+const RUINS: readonly string[] = [
+  '..ss........ss..',
+  '..sS........sS..',
+  '..ss.....m..ss..',
+  '..sS........ss..',
+  '..ss..m.....sS..',
+  '..ss........ss..',
+  '..sS....r...ss..',
+  '..ss...rr..sss..',
+  '.sss..rrrr.sSs..',
+  'ssSs.....m.ssss.',
+  'ssss..rr...sSss.',
+  '.....rrrr.......',
+  'ssssssssssssssss',
+  'sSsssSsssSsssSss',
+];
+const RUINS_PALETTE = { s: '#9a948a', S: '#76706a', r: '#b4aea2', m: '#5a7a3a' };
+
 /** Desenha o tile 16×16 do terreno (com variação por `variant`). */
 export function drawTerrain(terrainId: string, variant: number): PixelCanvas {
   const c = new PixelCanvas(N, N);
@@ -639,6 +678,10 @@ export function drawTerrain(terrainId: string, variant: number): PixelCanvas {
     case 'house':
       grass(c, variant);
       c.stamp(HOUSE, HOUSE_PALETTE, 0, 1);
+      break;
+    case 'ruins':
+      grass(c, variant);
+      c.stamp(RUINS, RUINS_PALETTE, 0, 1);
       break;
     case 'fort':
       c.fill('#9e9070');
