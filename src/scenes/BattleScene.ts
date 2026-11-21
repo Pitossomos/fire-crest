@@ -21,7 +21,7 @@ import type { SaveData } from '../data/types';
 import { writeSave } from '../save/save';
 import { playSfx, toggleMute } from '../render/sfx';
 import { forecast } from '../core/combat';
-import { MAP_AREA, TILE } from '../render/layout';
+import { MAP_AREA, TILE, VIEW } from '../render/layout';
 
 /** Modos de interação do jogador. */
 type Mode = 'idle' | 'selected' | 'moving' | 'menu' | 'inspect' | 'targeting' | 'busy';
@@ -50,6 +50,17 @@ const HELP: Record<Mode, string> = {
   busy: '',
 };
 
+/** Ajuda para o celular (botões virtuais e toque no mapa). */
+const TOUCH_HELP: Record<Mode, string> = {
+  idle: 'Toque numa unidade ou use o direcional · ✓ seleciona · ⚙ tela e zoom',
+  selected: 'Toque no destino (azul) · vermelho = alcance da arma · ✕ cancela',
+  moving: '',
+  menu: 'Toque na ação ou use ▲/▼ e ✓ · ✕ volta',
+  inspect: 'Alcance de ameaça da unidade · ✕ fecha',
+  targeting: 'Toque no alvo ou use ◀/▶ · ✓ ataca · ✕ volta',
+  busy: '',
+};
+
 /**
  * Controlador da batalha: traduz entrada do jogador em comandos para o
  * BattleState (lógica pura) e mantém a visualização sincronizada.
@@ -71,6 +82,9 @@ export class BattleScene extends Phaser.Scene {
   /** Resultado final (lido por testes de ponta a ponta). */
   outcome?: 'victory' | 'defeat';
   private targeting?: Targeting;
+  /** Troca de layout/zoom esperando a cena ficar ociosa. */
+  private pendingRelayout = false;
+  private inDialogue = false;
 
   constructor() {
     super('Battle');
@@ -98,6 +112,7 @@ export class BattleScene extends Phaser.Scene {
     this.menu = new ActionMenu(this);
     this.forecastPanel = new ForecastPanel(this);
     this.targeting = undefined;
+    this.pendingRelayout = false;
     this.ended = false;
     this.outcome = undefined;
 
@@ -113,7 +128,7 @@ export class BattleScene extends Phaser.Scene {
   /** Diálogo de abertura → banner do turno 1 → eventos de início de turno. */
   private async intro(): Promise<void> {
     await this.wait(300);
-    await runDialogue(this, this.state.stage.preDialogue);
+    await this.dialogue(this.state.stage.preDialogue);
     await this.announcePhase();
     await this.runEvents(this.eventEngine.turnStart());
     this.setMode('idle');
@@ -133,7 +148,7 @@ export class BattleScene extends Phaser.Scene {
         this.sprites.get(u.id)?.refresh();
         await floatText(this, u.x, u.y, 'Recrutado!', '#9cc0ff', 18);
       }
-      await runDialogue(this, fx.dialogue);
+      await this.dialogue(fx.dialogue);
     }
     this.refreshPanel();
   }
@@ -382,7 +397,7 @@ export class BattleScene extends Phaser.Scene {
       const rare = !!(out.cache?.weaponId || out.cache?.armorId);
       playSfx(this, rare ? 'levelup' : 'heal');
       for (const g of out.gained) await floatText(this, unit.x, unit.y, g, rare ? '#ffd34d' : '#9fe3b0', 16);
-      await runDialogue(this, [{ speakerId: 'narrator', side: 'left', text: out.text }]);
+      await this.dialogue([{ speakerId: 'narrator', side: 'left', text: out.text }]);
     }
     this.refreshPanel();
     await this.finishAction(unit);
@@ -621,7 +636,7 @@ export class BattleScene extends Phaser.Scene {
     await this.waitForConfirm();
     let save = this.save;
     if (result === 'victory') {
-      await runDialogue(this, this.state.stage.postDialogue);
+      await this.dialogue(this.state.stage.postDialogue);
       save = applyVictory(this.save, this.state);
       writeSave(save);
     }
@@ -661,9 +676,62 @@ export class BattleScene extends Phaser.Scene {
 
   private setMode(mode: Mode): void {
     this.mode = mode;
-    this.panel.setHelp(HELP[mode]);
+    this.panel.setHelp((VIEW.touch ? TOUCH_HELP : HELP)[mode]);
     this.mapView.setCursorVisible(mode !== 'busy' && mode !== 'moving');
     if (mode !== 'targeting') this.forecastPanel?.hide();
+    if (mode === 'idle' && this.pendingRelayout) {
+      this.pendingRelayout = false;
+      this.time.delayedCall(0, () => this.relayout());
+    }
+  }
+
+  /** Roda um diálogo; enquanto ele está aberto, a batalha pode se reorganizar com segurança. */
+  private async dialogue(lines: Parameters<typeof runDialogue>[1]): Promise<void> {
+    this.inDialogue = true;
+    try {
+      if (this.pendingRelayout) this.relayout();
+      await runDialogue(this, lines);
+    } finally {
+      this.inDialogue = false;
+    }
+  }
+
+  /**
+   * Reorganiza a tela após trocar a orientação ou o zoom. Seleções e menus
+   * abertos são desfeitos (como o botão Voltar); durante animações e turnos
+   * inimigos, a troca espera a cena ficar ociosa.
+   */
+  relayout(): void {
+    if (this.ended || !this.state) return;
+    for (let i = 0; i < 4 && ['selected', 'inspect', 'targeting', 'menu'].includes(this.mode); i++) this.cancel();
+    // Fora do ocioso, só é seguro redesenhar enquanto a batalha espera um
+    // diálogo (nenhuma animação em curso); senão, espera.
+    if (this.mode !== 'idle' && !this.inDialogue) {
+      this.pendingRelayout = true;
+      return;
+    }
+    this.pendingRelayout = false;
+    this.rebuildView();
+  }
+
+  /** Recria mapa, unidades e painéis a partir do estado (que não muda). */
+  private rebuildView(): void {
+    this.tweens.killAll();
+    this.mapView.destroy();
+    this.menu.close();
+    this.forecastPanel.hide();
+    this.children.removeAll(true);
+    const stage = this.state.stage;
+    this.mapView = new MapView(this, this.state.map);
+    this.sprites.clear();
+    for (const u of this.state.units) if (u.isAlive()) this.sprites.set(u.id, new UnitSprite(this, u));
+    this.panel = new SidePanel(this, stage.name, stage.objective.description);
+    this.panel.setTurn(this.state.turn, this.state.phase);
+    this.menu = new ActionMenu(this);
+    this.forecastPanel = new ForecastPanel(this);
+    this.mapView.centerOn(this.cursor);
+    this.setCursor(this.cursor);
+    this.setMode(this.mode);
   }
 
   private setCursor(p: Point): void {

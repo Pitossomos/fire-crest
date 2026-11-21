@@ -194,6 +194,24 @@ classDiagram
       <<module>>
     }
     class ForecastPanel
+    class Rect {
+      <<interface>>
+    }
+    class TouchZones {
+      <<interface>>
+    }
+    class Layout {
+      <<interface>>
+    }
+    class mod_render_layout["layout.ts"] {
+      <<module>>
+    }
+    class Scroll {
+      <<interface>>
+    }
+    class mod_render_map_camera["map-camera.ts"] {
+      <<module>>
+    }
     class MapView
     class MenuRows {
       <<interface>>
@@ -206,6 +224,13 @@ classDiagram
     }
     class PixelCanvas
     class mod_render_pixel_canvas["pixel-canvas.ts"] {
+      <<module>>
+    }
+    class ScreenManager
+    class Relayoutable {
+      <<interface>>
+    }
+    class mod_render_screen["screen.ts"] {
       <<module>>
     }
     class mod_render_sfx["sfx.ts"] {
@@ -231,6 +256,12 @@ classDiagram
     class mod_save_save["save.ts"] {
       <<module>>
     }
+    class ViewPrefs {
+      <<interface>>
+    }
+    class mod_save_view_prefs["view-prefs.ts"] {
+      <<module>>
+    }
   }
   namespace scenes {
     class BattleScene
@@ -249,6 +280,9 @@ classDiagram
       <<module>>
     }
     class PartyScene
+    class PartyGeometry {
+      <<interface>>
+    }
     class ResultScene
     class ResultData {
       <<interface>>
@@ -272,7 +306,28 @@ classDiagram
     class Timers {
       <<interface>>
     }
+    class ScreenRect {
+      <<interface>>
+    }
+    class ButtonSpot {
+      <<interface>>
+    }
+    class ControlPlacement {
+      <<interface>>
+    }
     class mod_ui_touch_controls["touch-controls.ts"] {
+      <<module>>
+    }
+    class ViewOptionsState {
+      <<interface>>
+    }
+    class ViewOptionsHandlers {
+      <<interface>>
+    }
+    class ViewOptionsHandle {
+      <<interface>>
+    }
+    class mod_ui_view_options["view-options.ts"] {
       <<module>>
     }
   }
@@ -316,6 +371,9 @@ classDiagram
   CharacterDef --> ClassDef : classId
   CharacterDef --> WeaponDef : weaponId
   CombatResult "1" *-- "*" Strike : strikes
+  ControlPlacement --> ButtonSpot : cancel
+  ControlPlacement --> ButtonSpot : confirm
+  ControlPlacement --> ButtonSpot : pad
   Convoy "1" *-- "*" ArmorDef : armors
   Convoy "1" *-- "*" InventorySlot : items
   Convoy "1" *-- "*" WeaponDef : weapons
@@ -351,11 +409,19 @@ classDiagram
   HoldRepeater --> Timers : timers
   InventorySlot --> ItemDef : itemId
   InvestigateOutcome --> CacheDef : cache
+  Layout --> Rect : bottom
+  Layout --> Rect : content
+  Layout --> Rect : map
+  Layout --> Rect : side
+  Layout --> TouchZones : menuZones
+  Layout --> TouchZones : touchZones
   MapDef "1" *-- "*" TerrainDef : legend
   MapView --> BattleMap : map
   ObjectiveDef --> CharacterDef : targetId
   PartyData --> ResultData : result
   PartyData --> SaveData : save
+  PartyScene --> PartyData : lastData
+  PartyScene --> PartyGeometry : geo
   PartyScene --> ResultData : result
   PartyScene --> SaveData : save
   PartyScene --> TextMenu : menu
@@ -371,6 +437,7 @@ classDiagram
   RangeInfo "1" *-- "*" ReachNode : reach
   ReachNode --> Point : point
   ResultData --> SaveData : save
+  ResultScene --> ResultData : lastData
   ResultScene --> TextMenu : menu
   RosterEntry "1" *-- "*" InventorySlot : items
   RosterEntry --> ArmorDef : armorId
@@ -380,6 +447,9 @@ classDiagram
   SaveData "1" *-- "*" RosterEntry : roster
   SaveData --> ChapterDef : chapterId
   SaveData --> Convoy : convoy
+  ScreenManager --> KeyValueStore : kv
+  ScreenManager --> Layout : layout
+  ScreenManager --> ViewPrefs : prefs
   Selection --> Point : origin
   Selection --> RangeInfo : range
   Selection --> Unit : unit
@@ -399,6 +469,8 @@ classDiagram
   TextMenu --> MenuRows : rows
   TextMenu --> TextMenuStyle : style
   TitleScene --> TextMenu : menu
+  TouchZones --> Rect : buttons
+  TouchZones --> Rect : pad
   Unit "1" *-- "*" CarriedItem : items
   Unit --> ArmorDef : armor
   Unit --> ClassDef : classDef
@@ -1055,6 +1127,7 @@ classDiagram
       -container: Phaser.GameObjects.Container
       -options: MenuOption[]
       -index: number
+      -itemH: number
       -items: Phaser.GameObjects.Text[]
       -highlight: Phaser.GameObjects.Rectangle
       -onPick: Function
@@ -1102,7 +1175,56 @@ classDiagram
       -container: Phaser.GameObjects.Container
       +show(f: Forecast, unitsOnTop: any) void
       +hide() void
-      -column(u: Unit, s: StrikeStats, foe: Unit, x: number) Phaser.GameObjects.Text[]
+      -column(u: Unit, s: StrikeStats, foe: Unit, x: number, width: number) Phaser.GameObjects.Text[]
+    }
+    class Rect {
+      <<interface>>
+      +x: number
+      +y: number
+      +width: number
+      +height: number
+    }
+    class TouchZones {
+      <<interface>>
+      +pad: Rect
+      +buttons: Rect
+      +stacked: boolean
+    }
+    class Layout {
+      <<interface>>
+      +mode: ScreenMode
+      +touch: boolean
+      +width: number
+      +height: number
+      +map: Rect
+      +side: Rect
+      +bottom: Rect
+      +content: Rect
+      +touchZones: TouchZones | null
+      +menuZones: TouchZones | null
+      +fontScale: number
+    }
+    class mod_render_layout["layout.ts"] {
+      <<module>>
+      +computeLayout(mode: ScreenMode, opts: object) Layout
+      +resolveMode(pref: ScreenPref, viewport: object) ScreenMode
+      +applyLayout(l: Layout) void
+      +setZoom(scale: number) number
+      +fsize(px: number) number
+      +fs(px: number) string
+    }
+    class Scroll {
+      <<interface>>
+      +x: number
+      +y: number
+    }
+    class mod_render_map_camera["map-camera.ts"] {
+      <<module>>
+      +scrollLimits(mapPx: number, areaStart: number, areaSize: number) object
+      +clampScroll(s: Scroll, mapW: number, mapH: number, area: Rect) Scroll
+      +screenToTile(sx: number, sy: number, scroll: Scroll, area: Rect, tile: number) Point | null
+      +scrollToShow(p: Point, s: Scroll, area: Rect, tile: number, margin: number) Scroll
+      +scrollToCenter(p: Point, area: Rect, tile: number) Scroll
     }
     class MapView {
       -scene: Phaser.Scene
@@ -1112,8 +1234,10 @@ classDiagram
       -cursor: Phaser.GameObjects.Graphics
       -cursorTween: Phaser.Tweens.Tween
       -scrollTween: Phaser.Tweens.Tween
+      -pixelSize: object
       +scrolls: boolean
       +toScreen(p: Point) object
+      -applyScroll(target: Scroll, animate: boolean) void
       +ensureVisible(p: Point, margin: any, animate: any) void
       +centerOn(p: Point) void
       +toPixel(p: Point) object$
@@ -1160,6 +1284,34 @@ classDiagram
       <<module>>
       +hash2(x: number, y: number, seed: any) number
     }
+    class ScreenManager {
+      -game: Phaser.Game
+      -prefs: ViewPrefs
+      -layout: Layout
+      -listeners: Function
+      -timer: number
+      +win: Window
+      +touch: boolean
+      +kv: KeyValueStore
+      +current: Layout
+      +preferences: ViewPrefs
+      +attach(game: Phaser.Game) void
+      +onChange(fn: Function) void
+      +setScreen(screen: ScreenPref) void
+      +zoom(delta: 1 | -1) number
+      -compute() Layout
+      +update(force: boolean) void
+      -relayoutScenes() void
+      -notify() void
+    }
+    class Relayoutable {
+      <<interface>>
+      +relayout() void
+    }
+    class mod_render_screen["screen.ts"] {
+      <<module>>
+      +openViewOptions(game: Phaser.Game) void
+    }
     class mod_render_sfx["sfx.ts"] {
       <<module>>
       +isMuted() boolean
@@ -1173,6 +1325,8 @@ classDiagram
       -unitText: Phaser.GameObjects.Text
       -hpBar: Phaser.GameObjects.Graphics
       -helpText: Phaser.GameObjects.Text
+      -hpBarAt: object
+      -colW: number
       +setTurn(turn: number, phase: keyof typeof PHASE_LABEL) void
       +setTerrain(t: TerrainDef) void
       +setUnit(u: Unit | undefined) void
@@ -1195,6 +1349,7 @@ classDiagram
       -onPointerDown(pointer: Phaser.Input.Pointer) void
       -move(delta: number) void
       -select(i: number, silent: any) void
+      +rearm() void
       -confirm() void
     }
     class TextMenuOption {
@@ -1240,9 +1395,18 @@ classDiagram
   }
   ActionMenu "1" *-- "*" MenuOption : options
   ActionMenu --> MenuRows : rows
+  Layout --> Rect : bottom
+  Layout --> Rect : content
+  Layout --> Rect : map
+  Layout --> Rect : side
+  Layout --> TouchZones : menuZones
+  Layout --> TouchZones : touchZones
+  ScreenManager --> Layout : layout
   TextMenu "1" *-- "*" TextMenuOption : options
   TextMenu --> MenuRows : rows
   TextMenu --> TextMenuStyle : style
+  TouchZones --> Rect : buttons
+  TouchZones --> Rect : pad
 ```
 
 ## Camada `save`
@@ -1268,6 +1432,16 @@ classDiagram
       +loadSave(store: KeyValueStore | undefined) SaveData | undefined
       +writeSave(data: SaveData, store: KeyValueStore | undefined) boolean
       +clearSave(store: KeyValueStore | undefined) void
+    }
+    class ViewPrefs {
+      <<interface>>
+      +screen: ScreenPreference
+      +zoom: number
+    }
+    class mod_save_view_prefs["view-prefs.ts"] {
+      <<module>>
+      +loadViewPrefs(kv: KeyValueStore) ViewPrefs
+      +writeViewPrefs(prefs: ViewPrefs, kv: KeyValueStore) void
     }
   }
 ```
@@ -1299,6 +1473,8 @@ classDiagram
       -ended: boolean
       +outcome: victory | defeat
       -targeting: Targeting
+      -pendingRelayout: boolean
+      -inDialogue: boolean
       +battle: BattleState
       +create(data: object) void
       -intro() Promise~void~
@@ -1335,6 +1511,9 @@ classDiagram
       -waitForConfirm() Promise~void~
       -announcePhase() Promise~void~
       -setMode(mode: Mode) void
+      -dialogue(lines: Parameters~typeof runDialogue~[1]) Promise~void~
+      +relayout() void
+      -rebuildView() void
       -setCursor(p: Point) void
       -showForecast(attacker: Unit, defender: Unit) void
       -refreshPanel() void
@@ -1371,6 +1550,7 @@ classDiagram
       -fullText: string
       -finished: boolean
       +create(data: DialogueData) void
+      +relayout() void
       -showLine() void
       -advance() void
       -finish() void
@@ -1394,6 +1574,9 @@ classDiagram
       -header: Phaser.GameObjects.Text
       -message: Phaser.GameObjects.Text
       -prompt: Phaser.GameObjects.Text
+      -geo: PartyGeometry
+      -lastData: PartyData
+      +relayout() void
       +create(data: PartyData) void
       -alive() RosterEntry[]
       -entry(id: string) RosterEntry
@@ -1420,8 +1603,21 @@ classDiagram
       -apply(heroId: string, op: Function, msg: Function) void
       -exit() void
     }
+    class PartyGeometry {
+      <<interface>>
+      +menuX: number
+      +menuY: number
+      +menuW: number
+      +panelX: number
+      +panelY: number
+      +panelW: number
+      +panelH: number
+      +convoyY: number
+    }
     class ResultScene {
       +menu: TextMenu
+      -lastData: ResultData
+      +relayout() void
       +create(data: ResultData) void
       -go(target: Function) void
       -mainMenu(data: ResultData, chapterDone: boolean) void
@@ -1443,6 +1639,7 @@ classDiagram
     }
     class TitleScene {
       +menu: TextMenu
+      +relayout() void
       +create() void
       -newGame(mode: GameMode, chapterId: any) SaveData
       -startBattle(save: SaveData) void
@@ -1459,6 +1656,8 @@ classDiagram
   BattleScene --> Selection : selection
   BattleScene --> Targeting : targeting
   PartyData --> ResultData : result
+  PartyScene --> PartyData : lastData
+  PartyScene --> PartyGeometry : geo
   PartyScene --> ResultData : result
   Phaser_Scene <|-- BattleScene
   Phaser_Scene <|-- BootScene
@@ -1466,6 +1665,7 @@ classDiagram
   Phaser_Scene <|-- PartyScene
   Phaser_Scene <|-- ResultScene
   Phaser_Scene <|-- TitleScene
+  ResultScene --> ResultData : lastData
   Targeting --> Selection : sel
 ```
 
@@ -1509,12 +1709,61 @@ classDiagram
       +clearTimeout(id: unknown) void
       +clearInterval(id: unknown) void
     }
+    class ScreenRect {
+      <<interface>>
+      +left: number
+      +top: number
+      +width: number
+      +height: number
+    }
+    class ButtonSpot {
+      <<interface>>
+      +left: number
+      +top: number
+      +size: number
+    }
+    class ControlPlacement {
+      <<interface>>
+      +pad: ButtonSpot
+      +confirm: ButtonSpot
+      +cancel: ButtonSpot
+    }
     class mod_ui_touch_controls["touch-controls.ts"] {
       <<module>>
       +shouldShowTouchControls(env: TouchEnvironment) boolean
       +makeKeyEvent(type: keydown | keyup, k: VirtualKey) KeyboardEvent
+      +placeControls(pad: ScreenRect, buttons: ScreenRect, stacked: boolean) ControlPlacement
+      +positionTouchControls(p: ControlPlacement, doc: Document) void
+      +detectTouch(win: Window) boolean
       +installTouchControls(win: Window) boolean
     }
+    class ViewOptionsState {
+      <<interface>>
+      +screen: ScreenPreference
+      +zoom: number
+      +canZoomIn: boolean
+      +canZoomOut: boolean
+    }
+    class ViewOptionsHandlers {
+      <<interface>>
+      +state() ViewOptionsState
+      +setScreen(pref: ScreenPreference) void
+      +zoom(delta: 1 | -1) void
+    }
+    class ViewOptionsHandle {
+      <<interface>>
+      +open() void
+      +close() void
+      +isOpen() boolean
+      +refresh() void
+    }
+    class mod_ui_view_options["view-options.ts"] {
+      <<module>>
+      +installViewOptions(handlers: ViewOptionsHandlers, win: Window) ViewOptionsHandle
+    }
   }
+  ControlPlacement --> ButtonSpot : cancel
+  ControlPlacement --> ButtonSpot : confirm
+  ControlPlacement --> ButtonSpot : pad
   HoldRepeater --> Timers : timers
 ```

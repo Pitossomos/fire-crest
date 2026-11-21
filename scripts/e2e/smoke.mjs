@@ -543,6 +543,105 @@ const backMode = await mpage.evaluate(() => window.__FIRE_CREST__.scene.getScene
 if (backMode !== 'idle') fail(`Voltar virtual deveria cancelar a seleção (modo ${backMode})`);
 await phone.close();
 
+// --- Celular em pé: resolução em retrato, toque no mapa, girar, zoom e preferência fixa ---
+const tall = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+const tpage = await tall.newPage();
+tpage.on('console', (m) => { if (m.type() === 'error') errors.push(`[retrato] ${m.text()}`); });
+tpage.on('pageerror', (e) => errors.push(`[retrato] ${String(e)}`));
+const tshot = (name) => tpage.screenshot({ path: join(shots, `${name}.png`) });
+const tIdle = async (label) => {
+  for (let i = 0; i < 60; i++) {
+    const st = await tpage.evaluate(() => ({
+      d: window.__FIRE_CREST__.scene.isActive('Dialogue'),
+      m: window.__FIRE_CREST__.scene.getScene('Battle')?.mode,
+      a: window.__FIRE_CREST__.scene.isActive('Battle'),
+    }));
+    if (st.d) await tpage.keyboard.press('Escape');
+    else if (st.a && st.m === 'idle') return;
+    await tpage.waitForTimeout(200);
+  }
+  fail(`tempo esgotado esperando: ${label}`);
+};
+const view = () => tpage.evaluate(() => {
+  const g = window.__FIRE_CREST__;
+  const L = window.__FIRE_CREST_LAYOUT__;
+  const b = g.scene.getScene('Battle');
+  return {
+    w: g.scale.gameSize.width, h: g.scale.gameSize.height, tile: L.tile, mode: L.layout.mode, map: L.layout.map,
+    turn: b?.battle?.turn, units: b?.battle?.units.filter((u) => u.isAlive()).length, cursor: b ? { ...b.cursor } : null,
+  };
+});
+await tpage.goto(`${url}/?stage=c1s1&seed=1`);
+await tpage.waitForFunction(() => window.__FIRE_CREST__?.scene.isActive('Battle'));
+await tIdle('Fase 1 no retrato');
+let v = await view();
+if (v.mode !== 'portrait' || v.w !== 540 || v.h <= v.w) fail(`o celular em pé deveria usar o retrato: ${JSON.stringify(v)}`);
+await tshot('28-portrait-battle');
+// Tocar no Aren seleciona (coordenadas do canvas → tela)
+const arenTap = await tpage.evaluate(() => {
+  const g = window.__FIRE_CREST__;
+  const b = g.scene.getScene('Battle');
+  const cam = b.cameras.main;
+  const aren = b.battle.units.find((u) => u.characterId === 'aren');
+  const tile = window.__FIRE_CREST_LAYOUT__.tile;
+  const r = g.canvas.getBoundingClientRect();
+  const k = r.width / g.scale.gameSize.width;
+  return { x: r.left + (aren.x * tile + tile / 2 - cam.scrollX) * k, y: r.top + (aren.y * tile + tile / 2 - cam.scrollY) * k };
+});
+await tpage.touchscreen.tap(arenTap.x, arenTap.y);
+await tpage.waitForTimeout(300);
+const tapMode = await tpage.evaluate(() => window.__FIRE_CREST__.scene.getScene('Battle').mode);
+if (tapMode !== 'selected') fail(`tocar no Aren no retrato deveria selecioná-lo (modo ${tapMode})`);
+await tshot('29-portrait-selected');
+// Girar o celular: paisagem de toque, mesma batalha, botões fora do mapa
+const beforeTurn = await view();
+await tpage.setViewportSize({ width: 844, height: 390 });
+await tpage.waitForTimeout(900);
+await tIdle('batalha após girar');
+v = await view();
+if (v.mode !== 'landscape' || v.w <= 1000) fail(`girar deveria trocar para a paisagem de toque: ${JSON.stringify(v)}`);
+if (v.turn !== beforeTurn.turn || v.units !== beforeTurn.units) fail(`girar não deveria mudar a batalha: ${JSON.stringify({ beforeTurn, v })}`);
+const overMap = await tpage.evaluate(() => {
+  const g = window.__FIRE_CREST__;
+  const r = g.canvas.getBoundingClientRect();
+  const k = r.width / g.scale.gameSize.width;
+  const m = window.__FIRE_CREST_LAYOUT__.layout.map;
+  const mapL = r.left + m.x * k;
+  const mapR = r.left + (m.x + m.width) * k;
+  return [...document.querySelectorAll('#touch-controls button')].filter((el) => {
+    const b = el.getBoundingClientRect();
+    return b.right > mapL + 1 && b.left < mapR - 1 && b.top < r.top + (m.y + m.height) * k;
+  }).map((el) => el.dataset.key);
+});
+if (overMap.length) fail(`na paisagem os botões não deveriam cobrir o mapa: ${overMap}`);
+await tshot('30-landscape-touch');
+// Zoom + pelo painel de opções: tile maior, cursor no mesmo lugar
+const cursorBeforeZoom = (await view()).cursor;
+await tpage.locator('#view-options-toggle').tap();
+await tpage.locator('#view-options [data-zoom="+"]').tap();
+await tpage.waitForTimeout(300);
+await tshot('31-view-options');
+await tpage.locator('#view-options [data-close]').tap();
+await tIdle('batalha após zoom');
+v = await view();
+if (v.tile !== 64) fail(`o zoom + deveria aumentar o tile para 64 (veio ${v.tile})`);
+if (v.cursor.x !== cursorBeforeZoom.x || v.cursor.y !== cursorBeforeZoom.y) fail('o zoom não deveria mover o cursor');
+await tshot('32-zoom');
+// Retrato fixo: girar para deitado não troca mais
+await tpage.locator('#view-options-toggle').tap();
+await tpage.locator('#view-options [data-screen="portrait"]').tap();
+await tpage.locator('#view-options [data-close]').tap();
+await tpage.waitForTimeout(600);
+v = await view();
+if (v.mode !== 'portrait') fail(`a opção Retrato deveria fixar o retrato: ${JSON.stringify(v)}`);
+await tpage.reload();
+await tpage.waitForFunction(() => window.__FIRE_CREST__?.scene.isActive('Battle'));
+await tIdle('recarregar com retrato fixo');
+v = await view();
+if (v.mode !== 'portrait' || v.tile !== 64) fail(`as preferências de tela deveriam ser lembradas: ${JSON.stringify(v)}`);
+await tshot('33-portrait-fixed');
+await tall.close();
+
 if (errors.length) fail(`erros no console:\n${errors.join('\n')}`);
 await browser.close();
 console.log(process.exitCode ? 'Smoke test com falhas.' : `Smoke test OK. Screenshots em ${shots}/`);

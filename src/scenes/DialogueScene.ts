@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { DB } from '../data';
 import { NARRATOR_ID } from '../data/characters';
 import type { DialogueLine } from '../data/types';
-import { COLORS, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH } from '../render/layout';
+import { COLORS, CONTENT, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH, fs, fsize } from '../render/layout';
 import { resolveUnitTexture } from '../render/textures';
 
 interface DialogueData {
@@ -10,7 +10,8 @@ interface DialogueData {
   onDone: () => void;
 }
 
-const BOX = { x: 20, y: 384, w: GAME_WIDTH - 40, h: 140 };
+/** Caixa de texto no pé da área livre (calculada a cada abertura: a tela muda com a orientação). */
+let BOX = { x: 20, y: 384, w: 920, h: 140 };
 const PORTRAIT = 152;
 const CHARS_PER_SECOND = 55;
 
@@ -41,6 +42,8 @@ export class DialogueScene extends Phaser.Scene {
     this.onDone = data.onDone;
     this.index = 0;
     this.finished = false;
+    const h = fsize(140);
+    BOX = { x: CONTENT.x + 20, y: GAME_HEIGHT - h - 16, w: CONTENT.width - 40, h };
 
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.35).setOrigin(0);
     this.portraitFrame = this.add.rectangle(0, BOX.y - PORTRAIT - 8, PORTRAIT, PORTRAIT, COLORS.panel, 0.95)
@@ -48,13 +51,13 @@ export class DialogueScene extends Phaser.Scene {
     this.portrait = this.add.image(0, BOX.y - PORTRAIT / 2 - 8, '__DEFAULT').setScale(8);
     this.add.rectangle(BOX.x, BOX.y, BOX.w, BOX.h, COLORS.panel, 0.96).setOrigin(0).setStrokeStyle(3, COLORS.panelBorder);
     this.namePlate = this.add.rectangle(0, BOX.y - 18, 220, 30, 0x5c4630, 1).setOrigin(0, 0).setStrokeStyle(2, 0xffb347);
-    this.nameText = this.add.text(0, BOX.y - 13, '', { fontFamily: FONT_TITLE, fontSize: '18px', color: COLORS.accent, fontStyle: 'bold' });
+    this.nameText = this.add.text(0, BOX.y - 13, '', { fontFamily: FONT_TITLE, fontSize: fs(18), color: COLORS.accent, fontStyle: 'bold' });
     this.body = this.add.text(BOX.x + 22, BOX.y + 24, '', {
-      fontFamily: FONT_UI, fontSize: '18px', color: COLORS.text, lineSpacing: 8,
+      fontFamily: FONT_UI, fontSize: fs(18), color: COLORS.text, lineSpacing: 8,
       wordWrap: { width: BOX.w - 44 },
     });
     this.hint = this.add.text(BOX.x + BOX.w - 16, BOX.y + BOX.h - 10, '▼  Z/Enter/clique · Esc pula', {
-      fontFamily: FONT_UI, fontSize: '12px', color: COLORS.textDim,
+      fontFamily: FONT_UI, fontSize: fs(12), color: COLORS.textDim,
     }).setOrigin(1, 1);
 
     this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
@@ -63,6 +66,13 @@ export class DialogueScene extends Phaser.Scene {
     });
     this.input.on('pointerdown', () => this.advance());
     this.showLine();
+  }
+
+  /** Troca de orientação: reabre a partir da fala atual, no tamanho novo. */
+  relayout(): void {
+    if (this.finished) return;
+    this.typing?.remove();
+    this.scene.restart({ lines: this.lines.slice(this.index), onDone: this.onDone } satisfies DialogueData);
   }
 
   private showLine(): void {

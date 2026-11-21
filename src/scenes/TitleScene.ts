@@ -4,7 +4,8 @@ import {
 } from '../core/campaign';
 import { DB } from '../data';
 import type { GameMode, SaveData } from '../data/types';
-import { COLORS, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH } from '../render/layout';
+import { COLORS, CONTENT, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH, fs } from '../render/layout';
+import { openViewOptions } from '../render/screen';
 import { TextMenu, type TextMenuOption } from '../render/TextMenu';
 import { isMuted, toggleMute } from '../render/sfx';
 import { clearSave, loadSave, writeSave } from '../save/save';
@@ -29,8 +30,16 @@ export class TitleScene extends Phaser.Scene {
     super('Title');
   }
 
+  /** Troca de orientação: redesenha a tela no tamanho novo. */
+  relayout(): void {
+    this.scene.restart();
+  }
+
   create(): void {
-    const cx = GAME_WIDTH / 2;
+    const cx = CONTENT.x + CONTENT.width / 2;
+    // O bloco foi desenhado para 540 de altura; em telas mais altas (retrato) fica centralizado.
+    const dy = Math.max(0, Math.round((CONTENT.height - 560) / 2)) + CONTENT.y;
+    const narrow = CONTENT.width < 700;
     const bg = this.add.graphics();
     bg.fillGradientStyle(0x0d0b12, 0x0d0b12, 0x3a1410, 0x3a1410, 1);
     bg.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -39,15 +48,17 @@ export class TitleScene extends Phaser.Scene {
     for (let i = 0; i < 40; i++) this.spawnEmber(true);
     this.time.addEvent({ delay: 180, loop: true, callback: () => this.spawnEmber(false) });
 
-    this.add.text(cx, 120, 'FIRE CREST', {
-      fontFamily: FONT_TITLE, fontSize: '72px', color: '#ffb347', fontStyle: 'bold',
+    this.add.text(cx, dy + 120, 'FIRE CREST', {
+      fontFamily: FONT_TITLE, fontSize: narrow ? '64px' : '72px', color: '#ffb347', fontStyle: 'bold',
       stroke: '#3a1410', strokeThickness: 8,
     }).setOrigin(0.5);
-    this.add.text(cx, 184, 'A Crista de Fogo', {
+    this.add.text(cx, dy + 184, 'A Crista de Fogo', {
       fontFamily: FONT_TITLE, fontSize: '26px', color: COLORS.text, fontStyle: 'italic',
     }).setOrigin(0.5);
-    this.add.text(cx, 226, 'Cap. 1 — Brasas no Vale · Cap. 2 — O Caminho dos Faróis', {
-      fontFamily: FONT_UI, fontSize: '16px', color: COLORS.textDim,
+    this.add.text(cx, dy + 226, narrow
+      ? 'Cap. 1 — Brasas no Vale\nCap. 2 — O Caminho dos Faróis'
+      : 'Cap. 1 — Brasas no Vale · Cap. 2 — O Caminho dos Faróis', {
+      fontFamily: FONT_UI, fontSize: fs(16), color: COLORS.textDim, align: 'center',
     }).setOrigin(0.5);
 
     // Atalho de desenvolvimento: ?stage=c1s4 abre a fase direto (roster novo, modo Casual).
@@ -73,9 +84,13 @@ export class TitleScene extends Phaser.Scene {
     options.push({ id: 'casual', label: 'Novo jogo — Casual (caídos voltam)' });
     options.push({ id: 'c2-classic', label: 'Capítulo 2 com time pronto — Clássico' });
     options.push({ id: 'c2-casual', label: 'Capítulo 2 com time pronto — Casual' });
+    options.push({ id: 'view', label: 'Opções de tela' });
 
-    this.menu = new TextMenu(this, cx, 280, options, (id) => {
-      if (id === 'continue' && save) {
+    this.menu = new TextMenu(this, cx, dy + (narrow ? 290 : 280), options, (id) => {
+      if (id === 'view') {
+        openViewOptions(this.game);
+        this.menu?.rearm();
+      } else if (id === 'continue' && save) {
         writeSave(save);
         this.startBattle(save);
       } else if (id.startsWith('c2-')) {
@@ -83,11 +98,11 @@ export class TitleScene extends Phaser.Scene {
       } else {
         this.startBattle(this.newGame(id as GameMode));
       }
-    });
+    }, narrow ? 44 : 38, { fontSize: narrow ? 17 : 20 });
 
-    const help = this.add.text(cx, GAME_HEIGHT - 28,
+    const help = this.add.text(cx, CONTENT.y + CONTENT.height - 28,
       `↑/↓ e Enter, ou clique · M: som ${isMuted() ? 'desligado' : 'ligado'}`, {
-        fontFamily: FONT_UI, fontSize: '13px', color: COLORS.textDim,
+        fontFamily: FONT_UI, fontSize: fs(13), color: COLORS.textDim,
       }).setOrigin(0.5);
     this.input.keyboard?.on('keydown-M', () => help.setText(`↑/↓ e Enter, ou clique · M: som ${toggleMute() ? 'desligado' : 'ligado'}`));
   }

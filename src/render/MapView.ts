@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import type { BattleMap } from '../core/battle-map';
 import type { Point } from '../core/grid';
 import { hash2 } from './pixel-canvas';
-import { BOTTOM_BAR, COLORS, MAP_AREA, SCALE, SIDE_PANEL, TILE } from './layout';
+import { COLORS, MAP_AREA, SCALE, TILE } from './layout';
+import { type Scroll, clampScroll, screenToTile, scrollToCenter, scrollToShow } from './map-camera';
 import { terrainTextureKey } from './textures';
 
 export type HighlightKind = 'move' | 'attack' | 'heal';
@@ -41,13 +42,16 @@ export class MapView {
     this.pathLayer = scene.add.graphics().setDepth(2);
     this.cursor = scene.add.graphics().setDepth(20);
     this.drawCursor();
-    // Mapas maiores que a área visível rolam com a câmera. Os painéis cobrem a
-    // faixa da direita e a de baixo, então os limites somam essas faixas para
-    // que a última coluna/linha do mapa ainda possa aparecer na área visível.
+    // A câmera rola livremente (os limites são calculados aqui, já que a
+    // área do mapa pode começar depois da margem dos botões). Os painéis e as
+    // margens ficam por cima, com scrollFactor 0.
     const cam = scene.cameras.main;
-    cam.setBounds(0, 0, Math.max(map.width * TILE, MAP_AREA.width) + SIDE_PANEL.width,
-      Math.max(map.height * TILE, MAP_AREA.height) + BOTTOM_BAR.height);
-    cam.setScroll(0, 0);
+    cam.removeBounds();
+    this.applyScroll({ x: cam.scrollX, y: cam.scrollY }, false);
+  }
+
+  private get pixelSize(): { w: number; h: number } {
+    return { w: this.map.width * TILE, h: this.map.height * TILE };
   }
 
   /** O mapa é maior que a área visível (precisa de câmera)? */
@@ -61,39 +65,28 @@ export class MapView {
     return { x: p.x * TILE - cam.scrollX, y: p.y * TILE - cam.scrollY };
   }
 
-  /** Rola a câmera para que o tile fique visível com uma margem de tiles. */
-  ensureVisible(p: Point, margin = 2, animate = true): void {
-    if (!this.scrolls) return;
+  private applyScroll(target: Scroll, animate: boolean): void {
     const cam = this.scene.cameras.main;
-    const maxX = Math.max(0, this.map.width * TILE - MAP_AREA.width);
-    const maxY = Math.max(0, this.map.height * TILE - MAP_AREA.height);
-    const m = margin * TILE;
-    let { scrollX: x, scrollY: y } = cam;
-    if (p.x * TILE - m < x) x = p.x * TILE - m;
-    if ((p.x + 1) * TILE + m > x + MAP_AREA.width) x = (p.x + 1) * TILE + m - MAP_AREA.width;
-    if (p.y * TILE - m < y) y = p.y * TILE - m;
-    if ((p.y + 1) * TILE + m > y + MAP_AREA.height) y = (p.y + 1) * TILE + m - MAP_AREA.height;
-    x = Phaser.Math.Clamp(x, 0, maxX);
-    y = Phaser.Math.Clamp(y, 0, maxY);
-    if (x === cam.scrollX && y === cam.scrollY) return;
+    const { w, h } = this.pixelSize;
+    const s = clampScroll(target, w, h, MAP_AREA);
+    if (s.x === cam.scrollX && s.y === cam.scrollY) return;
     this.scrollTween?.stop();
     if (!animate) {
-      cam.setScroll(x, y);
+      cam.setScroll(s.x, s.y);
       return;
     }
-    this.scrollTween = this.scene.tweens.add({ targets: cam, scrollX: x, scrollY: y, duration: 140, ease: 'Sine.easeOut' });
+    this.scrollTween = this.scene.tweens.add({ targets: cam, scrollX: s.x, scrollY: s.y, duration: 140, ease: 'Sine.easeOut' });
   }
 
-  /** Centraliza a câmera no tile (início da fase). */
-  centerOn(p: Point): void {
-    if (!this.scrolls) return;
+  /** Rola a câmera para que o tile fique visível com uma margem de tiles. */
+  ensureVisible(p: Point, margin = 2, animate = true): void {
     const cam = this.scene.cameras.main;
-    const maxX = Math.max(0, this.map.width * TILE - MAP_AREA.width);
-    const maxY = Math.max(0, this.map.height * TILE - MAP_AREA.height);
-    cam.setScroll(
-      Phaser.Math.Clamp(p.x * TILE + TILE / 2 - MAP_AREA.width / 2, 0, maxX),
-      Phaser.Math.Clamp(p.y * TILE + TILE / 2 - MAP_AREA.height / 2, 0, maxY),
-    );
+    this.applyScroll(scrollToShow(p, { x: cam.scrollX, y: cam.scrollY }, MAP_AREA, TILE, margin * TILE), animate);
+  }
+
+  /** Centraliza a câmera no tile (início da fase, troca de layout ou zoom). */
+  centerOn(p: Point): void {
+    this.applyScroll(scrollToCenter(p, MAP_AREA, TILE), false);
   }
 
   static toPixel(p: Point): { x: number; y: number } {
@@ -102,12 +95,9 @@ export class MapView {
 
   /** Converte coordenadas de tela em tile (ou null fora da área do mapa ou do mapa). */
   toTile(screenX: number, screenY: number): Point | null {
-    if (screenX < MAP_AREA.x || screenY < MAP_AREA.y || screenX >= MAP_AREA.x + MAP_AREA.width || screenY >= MAP_AREA.y + MAP_AREA.height) {
-      return null;
-    }
     const cam = this.scene.cameras.main;
-    const p = { x: Math.floor((screenX + cam.scrollX) / TILE), y: Math.floor((screenY + cam.scrollY) / TILE) };
-    return this.map.inBounds(p) ? p : null;
+    const p = screenToTile(screenX, screenY, { x: cam.scrollX, y: cam.scrollY }, MAP_AREA, TILE);
+    return p && this.map.inBounds(p) ? p : null;
   }
 
   showRanges(move: Point[], attack: Point[], attackKind: HighlightKind = 'attack'): void {

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, FONT_UI } from './layout';
+import { COLORS, FONT_UI, fs } from './layout';
 import { type MenuRows, menuHitTest } from './menu-geometry';
 import { playSfx } from './sfx';
 
@@ -47,7 +47,7 @@ export class TextMenu {
     const align = style.align ?? 'center';
     this.index = Math.max(0, options.findIndex((o) => o.enabled !== false));
     this.items = options.map((o, i) => scene.add.text(x, y + i * spacing, `  ${o.label}`, {
-      fontFamily: FONT_UI, fontSize: `${style.fontSize ?? 20}px`, color: o.enabled === false ? '#6b6070' : COLORS.text,
+      fontFamily: FONT_UI, fontSize: fs(style.fontSize ?? 20), color: o.enabled === false ? '#6b6070' : COLORS.text,
     }).setOrigin(align === 'center' ? 0.5 : 0, 0.5));
     const textWidth = Math.max(...this.items.map((t) => t.width), 120);
     const width = style.width ?? textWidth + 60;
@@ -130,6 +130,11 @@ export class TextMenu {
       t.setColor(!enabled ? '#6b6070' : k === i ? COLORS.accent : COLORS.text);
     });
     if (changed || silent) this.style.onHover?.(this.options[i].id);
+  }
+
+  /** Volta a aceitar escolhas (para opções que não trocam de tela). */
+  rearm(): void {
+    this.done = false;
   }
 
   private confirm(): void {

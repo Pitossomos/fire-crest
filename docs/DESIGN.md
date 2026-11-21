@@ -127,6 +127,8 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 | Ver o alcance de um inimigo | Selecionar o inimigo | Clicar no inimigo |
 | Ligar/desligar o som | M | — |
 | Pular diálogo | Esc | — |
+| Opções de tela | O | Botão ⚙ (canto superior esquerdo) |
+| Zoom do mapa | + / − | Opções de tela |
 
 **Menus:** a linha inteira de cada opção é clicável, inclusive no celular e com a câmera rolada. Clicar na borda do menu não faz nada; clicar fora dele cancela.
 
@@ -135,6 +137,28 @@ Pontuação de cada alvo: dano esperado + chance de matar − dano recebido.
 - **À direita:** **✓** (Enter) e **✕** (Esc, para voltar ou cancelar).
 
 Os botões simulam as teclas, então funcionam em todas as telas: título, batalha, menus, diálogos e resultado. Tocar no mapa continua funcionando. `?touch=1` na URL força os botões no desktop; `?touch=0` esconde no celular.
+
+## Tela: resolução por orientação
+
+A resolução do jogo acompanha a orientação do aparelho (`src/render/layout.ts`, `src/render/screen.ts`):
+
+| Modo | Resolução | Organização |
+|---|---|---|
+| Paisagem (desktop) | 960×540 | Mapa 720×480, painel à direita, ajuda embaixo. |
+| Paisagem de toque | 1100–1280 × 540, pela proporção da tela | Margens laterais só para os botões (direcional à esquerda; ✓ e ✕ empilhados à direita), sem cobrir o mapa nem o painel. |
+| Retrato | 540 × 900–1170, pela proporção da tela | Mapa na largura toda em cima, painel em duas colunas embaixo. Na batalha, os botões flutuam sobre a parte de baixo do mapa; nas telas de menu, ficam numa faixa no pé da tela. |
+
+- **Opções de tela** (botão ⚙, tecla O ou o item no título):
+  - **Tela:** Automática (girar o celular troca sozinho), Paisagem ou Retrato fixos;
+  - **Zoom do mapa:** tiles de 32, 48 ou 64 px;
+  - **Tela cheia:** onde o navegador permite; o iPhone não deixa páginas usarem tela cheia.
+
+  As escolhas ficam salvas no aparelho (`fire-crest-view`), separadas do save da campanha.
+- **Textos:** no toque, as fontes de painéis, menus, diálogos e previsão ficam 20% maiores (`fs()`/`fsize()`), e a ajuda da batalha troca as teclas pelos botões.
+- **Troca no meio do jogo:**
+  - a batalha recria mapa, unidades e painéis a partir do estado, que não muda; seleções abertas são desfeitas como no ✕;
+  - durante animações e turnos inimigos, a troca espera a cena ficar ociosa ou um diálogo abrir;
+  - título, resultado, time e diálogo se redesenham no tamanho novo, sem perder o progresso.
 
 **Atalhos de desenvolvimento** (URL): `?stage=c1s4` abre a fase direto (roster novo, modo Casual); `?seed=42` fixa o RNG.
 
@@ -160,6 +184,7 @@ Os botões simulam as teclas, então funcionam em todas as telas: título, batal
 | C2 | Capítulo 2: 5 fases em mapas grandes com câmera, Cavaleira e Batedora, Cavaleiros do Ocaso e Sentinelas, promoção, movimento montado/blindado, continuidade do save | ✅ |
 | C3 | Investigar construções, baú e gerenciar o time | ✅ |
 | C4 | Promoção por nível sem selos, tier 3 bifurcado (20 classes), armaduras, ruínas, mais esconderijos com armas de prata, aliados seguros | ✅ |
+| C5 | Celular: resolução por orientação (retrato e paisagem de toque), botões fora do mapa na paisagem, textos maiores, zoom do mapa, tela cheia e opções de tela | ✅ |
 
 ### Desvios do plano original
 

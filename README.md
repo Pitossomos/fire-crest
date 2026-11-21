@@ -46,7 +46,8 @@ Os **Capítulos 1 (Brasas no Vale) e 2 (O Caminho dos Faróis)** estão completo
 - promoção de classe no nível 5, com dois caminhos à escolha no tier 3 (20 classes mestras); unidades montadas e mapas grandes com câmera (Capítulo 2);
 - investigar casas, fortalezas e ruínas em busca de itens, armas e armaduras, e gerenciar o time entre as fases (trocar itens, baú do grupo, equipar armas e armaduras, promover);
 - efeitos sonoros (tecla M liga e desliga);
-- no celular, botões virtuais flutuantes (direcional, Confirmar e Voltar).
+- no celular, botões virtuais (direcional, Confirmar e Voltar), resolução que acompanha a orientação (retrato ou paisagem), textos maiores e zoom do mapa;
+- opções de tela (botão ⚙ ou tecla O): orientação automática ou fixa, zoom e tela cheia.
 
 Veja o [roadmap e os desvios do plano](docs/DESIGN.md#roadmap).
 

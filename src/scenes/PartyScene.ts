@@ -6,15 +6,38 @@ import {
 } from '../core/party';
 import { DB } from '../data';
 import type { ClassDef, RosterEntry, SaveData } from '../data/types';
-import { COLORS, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH } from '../render/layout';
+import { COLORS, CONTENT, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH, fs, fsize } from '../render/layout';
 import { TextMenu, type TextMenuOption } from '../render/TextMenu';
 import { playSfx } from '../render/sfx';
 import { writeSave } from '../save/save';
 import type { PartyData, ResultData } from './scene-data';
 
-const MENU_X = 36;
-const MENU_Y = 104;
-const PANEL_X = 380;
+/** Geometria da tela: menu à esquerda e detalhes à direita, ou empilhados no retrato. */
+interface PartyGeometry {
+  menuX: number; menuY: number; menuW: number;
+  panelX: number; panelY: number; panelW: number; panelH: number;
+  convoyY: number;
+}
+
+function partyGeometry(): PartyGeometry {
+  const { x, y, width, height } = CONTENT;
+  if (width >= 800) {
+    const panelX = x + Math.round(width * 0.4);
+    return {
+      menuX: x + 36, menuY: y + 124, menuW: panelX - x - 66,
+      panelX, panelY: y + 104, panelW: x + width - panelX - 40, panelH: height - 132,
+      convoyY: y + fsize(372),
+    };
+  }
+  // Retrato: até 11 linhas de menu em cima, detalhes e baú embaixo.
+  const panelY = y + 130 + 11 * fsize(32) + 8;
+  const panelH = height - (panelY - y) - 40;
+  return {
+    menuX: x + 30, menuY: y + 130, menuW: width - 60,
+    panelX: x + 30, panelY: panelY + 12, panelW: width - 60, panelH,
+    convoyY: panelY + 12 + 13 * (fsize(14) + 5),
+  };
+}
 
 const WEAPON_TYPE_NAME: Record<string, string> = {
   sword: 'espada', lance: 'lança', axe: 'machado', bow: 'arco', tome: 'tomo',
@@ -38,25 +61,37 @@ export class PartyScene extends Phaser.Scene {
   private header!: Phaser.GameObjects.Text;
   private message!: Phaser.GameObjects.Text;
   private prompt!: Phaser.GameObjects.Text;
+  private geo!: PartyGeometry;
+  private lastData?: PartyData;
 
   constructor() {
     super('Party');
   }
 
+  /** Troca de orientação: redesenha no tamanho novo, com o save atualizado. */
+  relayout(): void {
+    if (this.lastData) this.scene.restart({ ...this.lastData, save: this.save });
+  }
+
   create(data: PartyData): void {
+    this.lastData = data;
+    const geo = partyGeometry();
+    this.geo = geo;
+    const cx = CONTENT.x + CONTENT.width / 2;
     this.save = data.save;
     this.result = data.result;
     this.cameras.main.fadeIn(200);
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x15111b).setOrigin(0);
-    this.add.rectangle(PANEL_X - 16, 92, GAME_WIDTH - PANEL_X, GAME_HEIGHT - 120, COLORS.panel, 1).setOrigin(0).setStrokeStyle(2, COLORS.panelBorder);
-    this.add.text(GAME_WIDTH / 2, 30, data.focus === 'promote' ? 'Promover heróis' : 'Gerenciar time', {
+    this.add.rectangle(geo.panelX - 16, geo.panelY - 12, geo.panelW + 32, geo.panelH, COLORS.panel, 1).setOrigin(0).setStrokeStyle(2, COLORS.panelBorder);
+    this.add.text(cx, 30, data.focus === 'promote' ? 'Promover heróis' : 'Gerenciar time', {
       fontFamily: FONT_TITLE, fontSize: '32px', color: COLORS.accent, fontStyle: 'bold',
     }).setOrigin(0.5);
-    this.header = this.add.text(GAME_WIDTH / 2, 62, '', { fontFamily: FONT_UI, fontSize: '14px', color: COLORS.textDim }).setOrigin(0.5);
-    this.prompt = this.add.text(MENU_X - 10, 78, '', { fontFamily: FONT_UI, fontSize: '13px', color: COLORS.textDim });
-    this.details = this.add.text(PANEL_X, 104, '', { fontFamily: FONT_UI, fontSize: '14px', color: COLORS.text, lineSpacing: 5, wordWrap: { width: GAME_WIDTH - PANEL_X - 40 } });
-    this.convoyText = this.add.text(PANEL_X, 372, '', { fontFamily: FONT_UI, fontSize: '13px', color: COLORS.text, lineSpacing: 4, wordWrap: { width: GAME_WIDTH - PANEL_X - 40 } });
-    this.message = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 16, '', { fontFamily: FONT_UI, fontSize: '14px', color: '#7CFC9A' }).setOrigin(0.5);
+    this.header = this.add.text(cx, 60, '', { fontFamily: FONT_UI, fontSize: fs(14), color: COLORS.textDim, align: 'center', wordWrap: { width: CONTENT.width - 20 } }).setOrigin(0.5);
+    // Instrução acima do menu (até duas linhas), ancorada pela base.
+    this.prompt = this.add.text(geo.menuX - 10, geo.menuY - 18, '', { fontFamily: FONT_UI, fontSize: fs(13), color: COLORS.textDim, wordWrap: { width: geo.menuW + 20 } }).setOrigin(0, 1);
+    this.details = this.add.text(geo.panelX, geo.panelY, '', { fontFamily: FONT_UI, fontSize: fs(14), color: COLORS.text, lineSpacing: 5, wordWrap: { width: geo.panelW } });
+    this.convoyText = this.add.text(geo.panelX, geo.convoyY, '', { fontFamily: FONT_UI, fontSize: fs(13), color: COLORS.text, lineSpacing: 4, wordWrap: { width: geo.panelW } });
+    this.message = this.add.text(cx, CONTENT.y + CONTENT.height - 16, '', { fontFamily: FONT_UI, fontSize: fs(14), color: '#7CFC9A', align: 'center', wordWrap: { width: CONTENT.width - 20 } }).setOrigin(0.5);
     if (data.focus === 'promote') this.promoteListStep();
     else this.heroStep();
   }
@@ -140,8 +175,8 @@ export class PartyScene extends Phaser.Scene {
   private setMenu(prompt: string, options: TextMenuOption[], onPick: (id: string) => void, onCancel: () => void, onHover?: (id: string) => void): void {
     this.menu?.destroy();
     this.prompt.setText(prompt);
-    this.menu = new TextMenu(this, MENU_X, MENU_Y, options, onPick, 32, {
-      align: 'left', fontSize: 16, width: PANEL_X - MENU_X - 30, onHover, onCancel,
+    this.menu = new TextMenu(this, this.geo.menuX, this.geo.menuY, options, onPick, fsize(32), {
+      align: 'left', fontSize: 16, width: this.geo.menuW, onHover, onCancel,
     });
   }
 

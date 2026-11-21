@@ -4,7 +4,7 @@ import {
 } from '../core/campaign';
 import { DB } from '../data';
 import type { SaveData } from '../data/types';
-import { COLORS, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH } from '../render/layout';
+import { COLORS, CONTENT, FONT_TITLE, FONT_UI, GAME_HEIGHT, GAME_WIDTH, fs, fsize } from '../render/layout';
 import { TextMenu, type TextMenuOption } from '../render/TextMenu';
 import { playSfx } from '../render/sfx';
 import { writeSave } from '../save/save';
@@ -22,13 +22,21 @@ export class ResultScene extends Phaser.Scene {
     super('Result');
   }
 
+  private lastData?: ResultData;
+
+  /** Troca de orientação: redesenha a tela no tamanho novo (sem repetir o som). */
+  relayout(): void {
+    if (this.lastData) this.scene.restart({ ...this.lastData, fromParty: true });
+  }
+
   create(data: ResultData): void {
+    this.lastData = data;
     this.cameras.main.fadeIn(250);
     const save = data.save;
     const victory = data.result === 'victory';
     const chapter = currentChapter(save, DB);
     const chapterDone = victory && isChapterDone(save, DB);
-    const cx = GAME_WIDTH / 2;
+    const cx = CONTENT.x + CONTENT.width / 2;
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, victory ? 0x1d1410 : 0x120f18).setOrigin(0);
     if (!data.message && !data.fromParty) playSfx(this, victory ? 'victory' : 'defeat');
 
@@ -38,17 +46,17 @@ export class ResultScene extends Phaser.Scene {
     }).setOrigin(0.5);
     const subtitle = chapterDone ? `${chapter.name} — mais um Farol voltou a arder.` : data.stageName;
     this.add.text(cx, 72, subtitle, {
-      fontFamily: FONT_UI, fontSize: '15px', color: COLORS.textDim,
+      fontFamily: FONT_UI, fontSize: fs(15), color: COLORS.textDim,
     }).setOrigin(0.5);
     if (data.message) {
-      this.add.text(cx, 96, data.message, { fontFamily: FONT_UI, fontSize: '15px', color: '#7CFC9A' }).setOrigin(0.5);
+      this.add.text(cx, 96, data.message, { fontFamily: FONT_UI, fontSize: fs(15), color: '#7CFC9A' }).setOrigin(0.5);
     }
 
     if (victory) {
       this.drawRoster(save);
     } else {
       this.add.text(cx, 200, 'Aren caiu, e a Crista se apagou.\nMas toda brasa pode ser reacesa.', {
-        fontFamily: FONT_UI, fontSize: '18px', color: COLORS.text, align: 'center', lineSpacing: 10,
+        fontFamily: FONT_UI, fontSize: fs(18), color: COLORS.text, align: 'center', lineSpacing: 10,
       }).setOrigin(0.5);
     }
 
@@ -78,7 +86,9 @@ export class ResultScene extends Phaser.Scene {
     }
     options.push({ id: 'title', label: victory && !(chapterDone && !nextChapter) ? 'Salvar e voltar ao título' : 'Voltar ao título' });
 
-    this.menu = new TextMenu(this, GAME_WIDTH / 2, GAME_HEIGHT - 22 - options.length * 32, options, (id) => {
+    const spacing = fsize(32);
+    const narrow = CONTENT.width < 700;
+    this.menu = new TextMenu(this, CONTENT.x + CONTENT.width / 2, CONTENT.y + CONTENT.height - 22 - options.length * spacing, options, (id) => {
       if (id === 'manage' || id === 'promote') {
         const focus = id === 'promote' ? 'promote' as const : undefined;
         this.go(() => this.scene.start('Party', { save, result: { ...data, message: undefined }, focus } satisfies PartyData));
@@ -94,23 +104,23 @@ export class ResultScene extends Phaser.Scene {
         return;
       }
       this.go(() => this.scene.start('Battle', { save }));
-    }, 32);
+    }, spacing, { fontSize: narrow ? 16 : 20 });
   }
 
   private drawRoster(save: SaveData): void {
-    const cols = 4;
+    const cols = CONTENT.width < 700 ? 2 : 4;
     const rows = Math.ceil(save.roster.length / cols);
+    const cardW = Math.min(222, Math.floor((CONTENT.width - 32 - (cols - 1) * 10) / cols));
+    const cardH = 70;
     if (save.roster.some((r) => canPromote(r, DB))) {
-      this.add.text(GAME_WIDTH - 16, 112 + rows * 78, 'Borda verde: pronto para promover (nível 5+) · ★ avançada · ★★ mestra', {
+      this.add.text(CONTENT.x + CONTENT.width - 16, 112 + rows * 78, 'Borda verde: pronto para promover (nível 5+) · ★ avançada · ★★ mestra', {
         fontFamily: FONT_UI, fontSize: '11px', color: '#7CFC9A',
       }).setOrigin(1, 0);
     }
-    const cardW = 222;
-    const cardH = 70;
     save.roster.forEach((r, i) => {
       const ch = DB.characters[r.characterId];
       const cls = DB.classes[rosterClassId(r, DB)];
-      const x = 16 + (i % cols) * (cardW + 10);
+      const x = CONTENT.x + 16 + (i % cols) * (cardW + 10);
       const y = 112 + Math.floor(i / cols) * (cardH + 8);
       const ready = canPromote(r, DB);
       this.add.rectangle(x, y, cardW, cardH, COLORS.panel, 1).setOrigin(0)

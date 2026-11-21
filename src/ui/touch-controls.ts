@@ -118,15 +118,92 @@ const LAYOUT: { button: VirtualButton; label: string; title: string; inPad: bool
   { button: 'cancel', label: '✕', title: 'Voltar (Esc)', inPad: false },
 ];
 
-/** Instala os controles virtuais se o aparelho for de toque. Retorna se instalou. */
-export function installTouchControls(win: Window = window): boolean {
-  const env: TouchEnvironment = {
+/** Retângulo em pixels de tela (CSS). */
+export interface ScreenRect { left: number; top: number; width: number; height: number }
+
+export interface ButtonSpot { left: number; top: number; size: number }
+
+/** Onde desenhar o direcional (canto do bloco 3×3) e os botões Confirmar/Voltar. */
+export interface ControlPlacement {
+  pad: ButtonSpot;
+  confirm: ButtonSpot;
+  cancel: ButtonSpot;
+}
+
+const clampN = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const MARGIN = 8;
+
+/**
+ * Encaixa os botões nas faixas reservadas pelo layout (já convertidas para
+ * pixels de tela). Mínimo de 40 px por botão, para o polegar.
+ * `stacked`: Voltar em cima de Confirmar (margem estreita da paisagem);
+ * senão, lado a lado (retrato).
+ */
+export function placeControls(pad: ScreenRect, buttons: ScreenRect, stacked: boolean): ControlPlacement {
+  const b = clampN(Math.floor((Math.min(pad.width, pad.height) - MARGIN * 2) / 3), 40, 64);
+  const padSize = b * 3;
+  const padSpot = {
+    left: Math.round(pad.left + Math.max(MARGIN / 2, (pad.width - padSize) / 2)),
+    top: Math.round(pad.top + pad.height - padSize - MARGIN),
+    size: b,
+  };
+  const right = buttons.left + buttons.width;
+  const bottom = buttons.top + buttons.height;
+  if (stacked) {
+    const c = clampN(Math.floor(buttons.width - MARGIN * 2), 44, 76);
+    const k = Math.round(c * 0.75);
+    const cx = buttons.left + buttons.width / 2;
+    const confirmTop = bottom - MARGIN - c;
+    return {
+      pad: padSpot,
+      confirm: { left: Math.round(cx - c / 2), top: Math.round(confirmTop), size: c },
+      cancel: { left: Math.round(cx - k / 2), top: Math.round(confirmTop - 14 - k), size: k },
+    };
+  }
+  const c = clampN(Math.floor(Math.min(buttons.height, buttons.width * 0.5) - MARGIN * 2), 44, 76);
+  const k = Math.round(c * 0.75);
+  const confirmLeft = right - MARGIN - c;
+  return {
+    pad: padSpot,
+    confirm: { left: Math.round(confirmLeft), top: Math.round(bottom - MARGIN - c), size: c },
+    cancel: { left: Math.round(confirmLeft - 14 - k), top: Math.round(bottom - MARGIN - k), size: k },
+  };
+}
+
+/** Aplica um posicionamento aos botões já instalados (sem efeito se não houver). */
+export function positionTouchControls(p: ControlPlacement, doc: Document = document): void {
+  const root = doc.getElementById('touch-controls');
+  if (!root) return;
+  const px = (n: number) => `${n}px`;
+  const padEl = root.querySelector<HTMLElement>('.pad');
+  if (padEl) {
+    Object.assign(padEl.style, { left: px(p.pad.left), top: px(p.pad.top), bottom: 'auto', width: px(p.pad.size * 3), height: px(p.pad.size * 3) });
+    const at: Record<string, [number, number]> = { up: [1, 0], down: [1, 2], left: [0, 1], right: [2, 1] };
+    for (const [name, [col, row]] of Object.entries(at)) {
+      const el = padEl.querySelector<HTMLElement>(`.${name}`);
+      if (el) Object.assign(el.style, { left: px(col * p.pad.size), top: px(row * p.pad.size), right: 'auto', bottom: 'auto', width: px(p.pad.size), height: px(p.pad.size) });
+    }
+  }
+  for (const name of ['confirm', 'cancel'] as const) {
+    const el = root.querySelector<HTMLElement>(`.${name}`);
+    const spot = p[name];
+    if (el) Object.assign(el.style, { left: px(spot.left), top: px(spot.top), right: 'auto', bottom: 'auto', width: px(spot.size), height: px(spot.size), fontSize: px(Math.round(spot.size * 0.38)) });
+  }
+}
+
+/** O aparelho é de toque (ou a URL força)? Decide os botões e o layout de toque. */
+export function detectTouch(win: Window = window): boolean {
+  return shouldShowTouchControls({
     search: win.location.search,
     coarsePointer: win.matchMedia?.('(pointer: coarse)').matches ?? false,
     canHover: win.matchMedia?.('(hover: hover)').matches ?? true,
     maxTouchPoints: win.navigator.maxTouchPoints ?? 0,
-  };
-  if (!shouldShowTouchControls(env)) return false;
+  });
+}
+
+/** Instala os controles virtuais se o aparelho for de toque. Retorna se instalou. */
+export function installTouchControls(win: Window = window): boolean {
+  if (!detectTouch(win)) return false;
   const doc = win.document;
   if (doc.getElementById('touch-controls')) return true;
 

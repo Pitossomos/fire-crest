@@ -14,28 +14,30 @@ title: Arquitetura — camadas
 ---
 flowchart TB
   app["<b>main.ts — bootstrap do Phaser</b><br/>1 módulo(s)"]:::layer_app
-  ui["<b>ui/ — controles de toque (DOM)</b><br/>1 módulo(s)"]:::layer_ui
+  ui["<b>ui/ — controles de toque (DOM)</b><br/>2 módulo(s)"]:::layer_ui
   scenes["<b>scenes/ — cenas Phaser (controladores)</b><br/>7 módulo(s)"]:::layer_scenes
-  render["<b>render/ — componentes visuais</b><br/>14 módulo(s)"]:::layer_render
+  render["<b>render/ — componentes visuais</b><br/>16 módulo(s)"]:::layer_render
   core["<b>core/ — regras do jogo (puro)</b><br/>16 módulo(s)"]:::layer_core
   data["<b>data/ — definições e conteúdo</b><br/>21 módulo(s)"]:::layer_data
-  save["<b>save/ — persistência</b><br/>1 módulo(s)"]:::layer_save
+  save["<b>save/ — persistência</b><br/>2 módulo(s)"]:::layer_save
   ext_phaser[("phaser")]:::external
   app -->|"1 import(s)"| ext_phaser
-  app -->|"1 import(s)"| render
+  app -->|"2 import(s)"| render
   app -->|"6 import(s)"| scenes
-  app -->|"1 import(s)"| ui
+  app -->|"2 import(s)"| ui
   core -->|"4 import(s), 15 só tipos"| data
-  render -.->|"9 só tipos"| core
+  render -.->|"10 só tipos"| core
   render -->|"1 import(s), 4 só tipos"| data
-  render -->|"10 import(s)"| ext_phaser
+  render -->|"10 import(s), 1 só tipos"| ext_phaser
+  render -->|"1 import(s), 1 só tipos"| save
   save -->|"1 import(s)"| core
   save -.->|"1 só tipos"| data
   scenes -->|"13 import(s), 1 só tipos"| core
   scenes -->|"7 import(s), 6 só tipos"| data
   scenes -->|"6 import(s)"| ext_phaser
-  scenes -->|"21 import(s)"| render
+  scenes -->|"22 import(s)"| render
   scenes -->|"4 import(s)"| save
+  ui -.->|"1 só tipos"| save
   classDef external fill:#e9e2cc,stroke:#5c4630,color:#1f1a24
   classDef layer_app fill:#f3dcc0,stroke:#8a4a2a,color:#1f1a24
   classDef layer_scenes fill:#f6c9c4,stroke:#7a2420,color:#1f1a24
@@ -60,6 +62,7 @@ flowchart TB
   end
   subgraph layer_ui["src/ui"]
     src_ui_touch_controls_ts["touch-controls.ts"]
+    src_ui_view_options_ts["view-options.ts"]
   end
   subgraph layer_scenes["src/scenes"]
     src_scenes_BattleScene_ts["BattleScene.ts"]
@@ -81,8 +84,10 @@ flowchart TB
     src_render_art_ts["art.ts"]
     src_render_effects_ts["effects.ts"]
     src_render_layout_ts["layout.ts"]
+    src_render_map_camera_ts["map-camera.ts"]
     src_render_menu_geometry_ts["menu-geometry.ts"]
     src_render_pixel_canvas_ts["pixel-canvas.ts"]
+    src_render_screen_ts["screen.ts"]
     src_render_sfx_ts["sfx.ts"]
     src_render_textures_ts["textures.ts"]
   end
@@ -129,6 +134,7 @@ flowchart TB
   end
   subgraph layer_save["src/save"]
     src_save_save_ts["save.ts"]
+    src_save_view_prefs_ts["view-prefs.ts"]
   end
   ext_phaser[("phaser")]:::external
   src_core_ai_ts --> src_core_combat_ts
@@ -190,6 +196,7 @@ flowchart TB
   src_data_index_ts --> src_data_weapons_ts
   src_main_ts --> ext_phaser
   src_main_ts --> src_render_layout_ts
+  src_main_ts --> src_render_screen_ts
   src_main_ts --> src_scenes_BattleScene_ts
   src_main_ts --> src_scenes_BootScene_ts
   src_main_ts --> src_scenes_DialogueScene_ts
@@ -197,6 +204,7 @@ flowchart TB
   src_main_ts --> src_scenes_ResultScene_ts
   src_main_ts --> src_scenes_TitleScene_ts
   src_main_ts --> src_ui_touch_controls_ts
+  src_main_ts --> src_ui_view_options_ts
   src_render_ActionMenu_ts --> ext_phaser
   src_render_ActionMenu_ts --> src_render_layout_ts
   src_render_ActionMenu_ts --> src_render_menu_geometry_ts
@@ -208,10 +216,13 @@ flowchart TB
   src_render_ForecastPanel_ts --> src_render_layout_ts
   src_render_MapView_ts --> ext_phaser
   src_render_MapView_ts --> src_render_layout_ts
+  src_render_MapView_ts --> src_render_map_camera_ts
   src_render_MapView_ts --> src_render_pixel_canvas_ts
   src_render_MapView_ts --> src_render_textures_ts
   src_render_PhaseBanner_ts --> ext_phaser
   src_render_PhaseBanner_ts --> src_render_layout_ts
+  src_render_screen_ts --> src_render_layout_ts
+  src_render_screen_ts --> src_save_view_prefs_ts
   src_render_sfx_ts --> ext_phaser
   src_render_SidePanel_ts --> ext_phaser
   src_render_SidePanel_ts --> src_data_index_ts
@@ -275,6 +286,7 @@ flowchart TB
   src_scenes_TitleScene_ts --> src_core_campaign_ts
   src_scenes_TitleScene_ts --> src_data_index_ts
   src_scenes_TitleScene_ts --> src_render_layout_ts
+  src_scenes_TitleScene_ts --> src_render_screen_ts
   src_scenes_TitleScene_ts --> src_render_sfx_ts
   src_scenes_TitleScene_ts --> src_render_TextMenu_ts
   src_scenes_TitleScene_ts --> src_save_save_ts
